@@ -1,10 +1,13 @@
-import type { StaticFileAnalysis, GraphSignals, TestSignals } from '../types/file-analysis.ts'
+import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../types/file-analysis.ts'
 import type { AiFileNote, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
+
+const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
 
 export function buildBasicNote(
   analysis: StaticFileAnalysis,
   graph: GraphSignals,
   tests: TestSignals,
+  git: GitSignals,
 ): AiFileNote {
   const purposeObserved: string[] = []
   const purposeEvidence: EvidenceItem[] = []
@@ -37,6 +40,7 @@ export function buildBasicNote(
     ...graph.reverseDependencies.slice(0, 5).map((r) => ({ type: 'graph' as const, detail: `Reverse dep: ${r}` })),
   ]
 
+  // knownPitfalls: comments + risky commit messages + high-frequency co-changes
   const pitfallsObserved: string[] = []
   const pitfallsEvidence: EvidenceItem[] = []
 
@@ -53,16 +57,37 @@ export function buildBasicNote(
     pitfallsEvidence.push({ type: 'comment', detail: hack })
   }
 
+  for (const msg of git.recentCommitMessages) {
+    const lower = msg.toLowerCase()
+    if (RISKY_COMMIT_KEYWORDS.some((kw) => lower.includes(kw))) {
+      pitfallsObserved.push(`Commit: "${msg}"`)
+      pitfallsEvidence.push({ type: 'git', detail: msg })
+    }
+  }
+
+  const highFreqCoChanged = git.coChangedFiles.filter((f) => f.count >= 2)
+  if (highFreqCoChanged.length > 0) {
+    pitfallsObserved.push(
+      `Co-changes frequently with: ${highFreqCoChanged.map((f) => f.path).join(', ')}`,
+    )
+    for (const f of highFreqCoChanged) {
+      pitfallsEvidence.push({ type: 'git', detail: `Co-changed ${f.count}x with ${f.path}` })
+    }
+  }
+
+  // impactValidation: consumers + tests + co-changed files
   const impactObserved: string[] = [
     ...graph.reverseDependencies,
     ...tests.relatedTests,
+    ...git.coChangedFiles.map((f) => f.path),
   ]
   const impactEvidence: EvidenceItem[] = [
     ...graph.reverseDependencies.map((r) => ({ type: 'graph' as const, detail: `Consumer: ${r}` })),
     ...tests.relatedTests.map((t) => ({ type: 'test' as const, detail: `Related test: ${t}` })),
+    ...git.coChangedFiles.map((f) => ({ type: 'git' as const, detail: `Co-changed ${f.count}x: ${f.path}` })),
   ]
 
-  const criticalityScore = computeCriticality(analysis, graph, tests)
+  const criticalityScore = computeCriticality(analysis, graph, tests, git)
 
   const emptyField = (): StructuredListField => ({
     observed: [],
@@ -94,7 +119,7 @@ export function buildBasicNote(
       evidence: pitfallsEvidence,
     },
     impactValidation: {
-      observed: impactObserved,
+      observed: [...new Set(impactObserved)],
       inferred: [],
       confidence: impactObserved.length > 0 ? 0.8 : 0.1,
       evidence: impactEvidence,
@@ -109,6 +134,7 @@ function computeCriticality(
   analysis: StaticFileAnalysis,
   graph: GraphSignals,
   tests: TestSignals,
+  git: GitSignals,
 ): number {
   let score = 0
 
@@ -116,7 +142,7 @@ function computeCriticality(
   score += Math.min(graph.reverseDependencies.length * 0.1, 0.4)
 
   // Hooks are generally critical
-  if (analysis.hooks.length > 0) score += 0.2
+  if (analysis.hooks.length > 0) score += 0.15
 
   // External deps (API, env) increase criticality
   if (analysis.externalImports.length > 0) score += 0.1
@@ -124,11 +150,17 @@ function computeCriticality(
 
   // Known pitfalls increase criticality
   if (analysis.comments.todo.length + analysis.comments.fixme.length + analysis.comments.hack.length > 0) {
-    score += 0.1
+    score += 0.05
   }
 
   // No tests = higher risk
   if (tests.relatedTests.length === 0) score += 0.1
+
+  // High churn = more critical (capped at 0.15)
+  score += Math.min(git.churnScore * 0.01, 0.15)
+
+  // Multiple authors = higher coordination risk
+  if (git.authorCount > 3) score += 0.05
 
   return Math.min(parseFloat(score.toFixed(2)), 1)
 }

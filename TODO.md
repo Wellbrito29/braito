@@ -60,7 +60,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Interactive UI** — `bun src/cli/index.ts ui` command serving a local web interface to browse the index, filter by domain/score, and trigger re-synthesis.
 
-- [ ] **Schema versioning** — add `schemaVersion` field to `AiFileNote` and `NoteIndex`; enables safe migration when the schema evolves without breaking old notes.
+- [x] **Schema versioning** — add `schemaVersion` field to `AiFileNote` and `NoteIndex`; enables safe migration when the schema evolves without breaking old notes.
 
 - [ ] **Diff mode** — `generate --diff` compares old vs. new notes and shows what changed per field; useful for PR review workflows.
 

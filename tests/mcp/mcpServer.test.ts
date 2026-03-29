@@ -11,6 +11,7 @@ let tmpDir: string
 let notesDir: string
 
 const MOCK_NOTE = {
+  schemaVersion: '1.0.0',
   filePath: '/project/src/a.ts',
   purpose: { observed: ['Exports: foo'], inferred: [], confidence: 0.6, evidence: [] },
   invariants: { observed: [], inferred: [], confidence: 0, evidence: [] },
@@ -24,6 +25,7 @@ const MOCK_NOTE = {
 }
 
 const MOCK_INDEX = {
+  schemaVersion: '1.0.0',
   generatedAt: new Date().toISOString(),
   totalFiles: 1,
   synthesizedFiles: 0,

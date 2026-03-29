@@ -11,6 +11,7 @@ export type StructuredListField = {
 }
 
 export type AiFileNote = {
+  schemaVersion: string
   filePath: string
   purpose: StructuredListField
   invariants: StructuredListField

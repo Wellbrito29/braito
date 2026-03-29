@@ -18,13 +18,13 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 ## Medium-term
 
-- [ ] **Heuristic pre-fill for `invariants` and `importantDecisions`** — these fields are currently only filled by LLM. A pattern matching pass (comments, ADR files, changelog) would improve coverage even without LLM.
+- [x] **Heuristic pre-fill for `invariants` and `importantDecisions`** — these fields are currently only filled by LLM. A pattern matching pass (comments, ADR files, changelog) would improve coverage even without LLM.
 
-- [ ] **Domain grouping in `index.md`** — group files by folder/package instead of a flat ranked list. Useful for monorepos where each package has its own criticality context.
+- [x] **Domain grouping in `index.md`** — group files by folder/package instead of a flat ranked list. Useful for monorepos where each package has its own criticality context.
 
-- [ ] **Stale note detection** — flag notes whose `generatedAt` is older than N days or whose source file has changed since last synthesis, prompting re-synthesis.
+- [x] **Stale note detection** — flag notes whose `generatedAt` is older than N days or whose source file has changed since last synthesis, prompting re-synthesis.
 
-- [ ] **Test coverage hints** — integrate with coverage reports (lcov, c8) to surface actual uncovered files in `impactValidation`, not just heuristic test discovery.
+- [x] **Test coverage hints** — integrate with coverage reports (lcov, c8) to surface actual uncovered files in `impactValidation`, not just heuristic test discovery.
 
 ---
 

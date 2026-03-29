@@ -23,4 +23,5 @@ export type AiNotesConfig = {
   output: string
   tsconfigPath?: string
   llm?: LLMConfig
+  staleThresholdDays?: number
 }

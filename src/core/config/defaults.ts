@@ -19,6 +19,8 @@ export const DEFAULT_EXCLUDE = [
   '**/*.config.js',
 ]
 
+export const DEFAULT_STALE_THRESHOLD_DAYS = 30
+
 export function withDefaults(partial: Partial<AiNotesConfig> & { root: string }): AiNotesConfig {
   return {
     root: partial.root,
@@ -26,5 +28,6 @@ export function withDefaults(partial: Partial<AiNotesConfig> & { root: string })
     exclude: partial.exclude ?? DEFAULT_EXCLUDE,
     output: partial.output ?? '.ai-notes',
     tsconfigPath: partial.tsconfigPath,
+    staleThresholdDays: partial.staleThresholdDays ?? DEFAULT_STALE_THRESHOLD_DAYS,
   }
 }

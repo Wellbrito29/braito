@@ -1,6 +1,6 @@
 # src/cli/index.ts
 
-**Criticality:** 0.22 | **Generated:** 2026-03-29 | **Model:** static
+**Criticality:** 0.23 | **Generated:** 2026-03-29 | **Model:** static
 
 
 
@@ -19,11 +19,13 @@
 
 | Type | Detail |
 |------|--------|
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts |
+| git | Co-changed 3x with /home/runner/work/braito/braito/src/cli/commands/generate.ts |
 
 ## Impact Validation
 
 - /home/runner/work/braito/braito/src/cli/commands/generate.ts
+- /home/runner/work/braito/braito/src/core/cache/analysisStore.ts
+- /home/runner/work/braito/braito/src/core/graph/loadBundlerAliases.ts
 - /home/runner/work/braito/braito/.github/workflows/ai-notes.yml
 - /home/runner/work/braito/braito/src/cli/commands/watch.ts
 - /home/runner/work/braito/braito/src/core/cache/cacheStore.ts
@@ -31,12 +33,12 @@
 - /home/runner/work/braito/braito/src/core/cache/isCacheValid.ts
 - /home/runner/work/braito/braito/src/core/output/buildIndex.ts
 - /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts
-- /home/runner/work/braito/braito/tests/cache/cacheStore.test.ts
-- /home/runner/work/braito/braito/tests/output/buildIndex.test.ts
 
 | Type | Detail |
 |------|--------|
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts |
+| git | Co-changed 3x: /home/runner/work/braito/braito/src/cli/commands/generate.ts |
+| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/analysisStore.ts |
+| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/graph/loadBundlerAliases.ts |
 | git | Co-changed 1x: /home/runner/work/braito/braito/.github/workflows/ai-notes.yml |
 | git | Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/watch.ts |
 | git | Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/cacheStore.ts |
@@ -44,5 +46,3 @@
 | git | Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/isCacheValid.ts |
 | git | Co-changed 1x: /home/runner/work/braito/braito/src/core/output/buildIndex.ts |
 | git | Co-changed 1x: /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/tests/cache/cacheStore.test.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/tests/output/buildIndex.test.ts |

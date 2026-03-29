@@ -40,29 +40,37 @@
     "evidence": [
       {
         "type": "git",
-        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+        "detail": "Co-changed 3x with /home/runner/work/braito/braito/src/cli/commands/generate.ts"
       }
     ]
   },
   "impactValidation": {
     "observed": [
       "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
+      "/home/runner/work/braito/braito/src/core/cache/analysisStore.ts",
+      "/home/runner/work/braito/braito/src/core/graph/loadBundlerAliases.ts",
       "/home/runner/work/braito/braito/.github/workflows/ai-notes.yml",
       "/home/runner/work/braito/braito/src/cli/commands/watch.ts",
       "/home/runner/work/braito/braito/src/core/cache/cacheStore.ts",
       "/home/runner/work/braito/braito/src/core/cache/computeHash.ts",
       "/home/runner/work/braito/braito/src/core/cache/isCacheValid.ts",
       "/home/runner/work/braito/braito/src/core/output/buildIndex.ts",
-      "/home/runner/work/braito/braito/src/core/output/writeIndexNote.ts",
-      "/home/runner/work/braito/braito/tests/cache/cacheStore.test.ts",
-      "/home/runner/work/braito/braito/tests/output/buildIndex.test.ts"
+      "/home/runner/work/braito/braito/src/core/output/writeIndexNote.ts"
     ],
     "inferred": [],
     "confidence": 0.8,
     "evidence": [
       {
         "type": "git",
-        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+        "detail": "Co-changed 3x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/analysisStore.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/graph/loadBundlerAliases.ts"
       },
       {
         "type": "git",
@@ -91,18 +99,10 @@
       {
         "type": "git",
         "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/cache/cacheStore.test.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/output/buildIndex.test.ts"
       }
     ]
   },
-  "criticalityScore": 0.22,
-  "generatedAt": "2026-03-29T01:29:22.056Z",
+  "criticalityScore": 0.23,
+  "generatedAt": "2026-03-29T01:55:37.529Z",
   "model": "static"
 }

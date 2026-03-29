@@ -1,375 +1,39 @@
 {
-  "generatedAt": "2026-03-29T01:29:22.753Z",
-  "totalFiles": 46,
+  "generatedAt": "2026-03-29T01:55:37.617Z",
+  "totalFiles": 4,
   "synthesizedFiles": 0,
   "entries": [
     {
-      "filePath": "/home/runner/work/braito/braito/src/core/types/file-analysis.ts",
-      "relativePath": "src/core/types/file-analysis.ts",
-      "criticalityScore": 0.52,
-      "model": "static",
-      "purpose": "Exports: StaticFileAnalysis, GraphSignals, TestSignals, GitSignals",
-      "generatedAt": "2026-03-29T01:29:22.696Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/types/project.ts",
-      "relativePath": "src/core/types/project.ts",
-      "criticalityScore": 0.52,
-      "model": "static",
-      "purpose": "Exports: DiscoveredFile, LLMProviderName, LLMConfig, AiNotesConfig",
-      "generatedAt": "2026-03-29T01:29:22.713Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/cache/cacheStore.ts",
-      "relativePath": "src/core/cache/cacheStore.ts",
-      "criticalityScore": 0.51,
-      "model": "static",
-      "purpose": "Exports: loadCache, saveCache, HashStore",
-      "generatedAt": "2026-03-29T01:29:22.252Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/config/loadConfig.ts",
-      "relativePath": "src/core/config/loadConfig.ts",
-      "criticalityScore": 0.51,
-      "model": "static",
-      "purpose": "Exports: loadConfig",
-      "generatedAt": "2026-03-29T01:29:22.307Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/types.ts",
-      "relativePath": "src/core/llm/provider/types.ts",
-      "criticalityScore": 0.51,
-      "model": "static",
-      "purpose": "Exports: LLMRequest, LLMResponse, LLMProvider",
-      "generatedAt": "2026-03-29T01:29:22.500Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/output/buildIndex.ts",
-      "relativePath": "src/core/output/buildIndex.ts",
-      "criticalityScore": 0.51,
-      "model": "static",
-      "purpose": "Exports: buildIndex, IndexEntry, NoteIndex",
-      "generatedAt": "2026-03-29T01:29:22.567Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/types/ai-note.ts",
-      "relativePath": "src/core/types/ai-note.ts",
-      "criticalityScore": 0.51,
-      "model": "static",
-      "purpose": "Exports: EvidenceItem, StructuredListField, AiFileNote",
-      "generatedAt": "2026-03-29T01:29:22.682Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/utils/logger.ts",
-      "relativePath": "src/core/utils/logger.ts",
-      "criticalityScore": 0.51,
-      "model": "static",
-      "purpose": "Exports: logger",
-      "generatedAt": "2026-03-29T01:29:22.726Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/ast/parseFile.ts",
-      "relativePath": "src/core/ast/parseFile.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: parseFile",
-      "generatedAt": "2026-03-29T01:29:22.228Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/cache/computeHash.ts",
-      "relativePath": "src/core/cache/computeHash.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: computeHash",
-      "generatedAt": "2026-03-29T01:29:22.267Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/factory.ts",
-      "relativePath": "src/core/llm/provider/factory.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: createProvider",
-      "generatedAt": "2026-03-29T01:29:22.454Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/output/writeIndexNote.ts",
-      "relativePath": "src/core/output/writeIndexNote.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: writeIndexNote",
-      "generatedAt": "2026-03-29T01:29:22.587Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/output/writeJsonNote.ts",
-      "relativePath": "src/core/output/writeJsonNote.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: writeJsonNote",
-      "generatedAt": "2026-03-29T01:29:22.603Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/output/writeMarkdownNote.ts",
-      "relativePath": "src/core/output/writeMarkdownNote.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: writeMarkdownNote",
-      "generatedAt": "2026-03-29T01:29:22.619Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/scanner/scanRepository.ts",
-      "relativePath": "src/core/scanner/scanRepository.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: scanRepository",
-      "generatedAt": "2026-03-29T01:29:22.659Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/tests/findRelatedTests.ts",
-      "relativePath": "src/core/tests/findRelatedTests.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports: findRelatedTests",
-      "generatedAt": "2026-03-29T01:29:22.670Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/tests/fixtures/sampleHook.ts",
-      "relativePath": "tests/fixtures/sampleHook.ts",
-      "criticalityScore": 0.41,
-      "model": "static",
-      "purpose": "Exports hooks: useImageSearch",
-      "generatedAt": "2026-03-29T01:29:22.737Z"
-    },
-    {
       "filePath": "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
       "relativePath": "src/cli/commands/generate.ts",
-      "criticalityScore": 0.34,
+      "criticalityScore": 0.35,
       "model": "static",
       "purpose": "Exports: runGenerate",
-      "generatedAt": "2026-03-29T01:29:21.960Z"
+      "generatedAt": "2026-03-29T01:55:37.494Z"
     },
     {
-      "filePath": "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts",
-      "relativePath": "src/core/output/buildBasicNote.ts",
-      "criticalityScore": 0.32,
-      "model": "static",
-      "purpose": "Exports: buildBasicNote",
-      "generatedAt": "2026-03-29T01:29:22.548Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/cli/commands/scan.ts",
-      "relativePath": "src/cli/commands/scan.ts",
+      "filePath": "/home/runner/work/braito/braito/src/core/cache/analysisStore.ts",
+      "relativePath": "src/core/cache/analysisStore.ts",
       "criticalityScore": 0.31,
       "model": "static",
-      "purpose": "Exports: runScan",
-      "generatedAt": "2026-03-29T01:29:21.986Z"
+      "purpose": "Exports: loadAnalysisStore, saveAnalysisStore, AnalysisStore",
+      "generatedAt": "2026-03-29T01:55:37.560Z"
     },
     {
-      "filePath": "/home/runner/work/braito/braito/src/cli/commands/watch.ts",
-      "relativePath": "src/cli/commands/watch.ts",
+      "filePath": "/home/runner/work/braito/braito/src/core/graph/loadBundlerAliases.ts",
+      "relativePath": "src/core/graph/loadBundlerAliases.ts",
       "criticalityScore": 0.31,
       "model": "static",
-      "purpose": "Exports: runWatch",
-      "generatedAt": "2026-03-29T01:29:22.026Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts",
-      "relativePath": "src/core/ast/analyzers/ts/extractComments.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: extractComments, ExtractedComments",
-      "generatedAt": "2026-03-29T01:29:22.088Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractExports.ts",
-      "relativePath": "src/core/ast/analyzers/ts/extractExports.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: extractExports",
-      "generatedAt": "2026-03-29T01:29:22.112Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractHooks.ts",
-      "relativePath": "src/core/ast/analyzers/ts/extractHooks.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: extractHooks",
-      "generatedAt": "2026-03-29T01:29:22.148Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractImports.ts",
-      "relativePath": "src/core/ast/analyzers/ts/extractImports.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: extractImports, ExtractedImports",
-      "generatedAt": "2026-03-29T01:29:22.174Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractSymbols.ts",
-      "relativePath": "src/core/ast/analyzers/ts/extractSymbols.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: extractSymbols",
-      "generatedAt": "2026-03-29T01:29:22.199Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/git/getCoChangedFiles.ts",
-      "relativePath": "src/core/git/getCoChangedFiles.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: getCoChangedFiles, CoChangedFile",
-      "generatedAt": "2026-03-29T01:29:22.323Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/git/getFileHistory.ts",
-      "relativePath": "src/core/git/getFileHistory.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: getFileHistory, FileHistory",
-      "generatedAt": "2026-03-29T01:29:22.336Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/git/getGitSignals.ts",
-      "relativePath": "src/core/git/getGitSignals.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: getGitSignals",
-      "generatedAt": "2026-03-29T01:29:22.350Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
-      "relativePath": "src/core/graph/buildDependencyGraph.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: buildDependencyGraph",
-      "generatedAt": "2026-03-29T01:29:22.363Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/graph/buildReverseDependencyGraph.ts",
-      "relativePath": "src/core/graph/buildReverseDependencyGraph.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: buildReverseDependencyGraph",
-      "generatedAt": "2026-03-29T01:29:22.375Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/graph/resolveImportPath.ts",
-      "relativePath": "src/core/graph/resolveImportPath.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: resolveImportPath",
-      "generatedAt": "2026-03-29T01:29:22.390Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts",
-      "relativePath": "src/core/llm/prompts/buildPrompt.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: buildPrompt, PromptContext",
-      "generatedAt": "2026-03-29T01:29:22.406Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/schemas/aiNoteSchema.ts",
-      "relativePath": "src/core/llm/schemas/aiNoteSchema.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: llmNoteSchema, LLMNotePayload",
-      "generatedAt": "2026-03-29T01:29:22.515Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/synthesizeFileNote.ts",
-      "relativePath": "src/core/llm/synthesizeFileNote.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: synthesizeFileNote",
-      "generatedAt": "2026-03-29T01:29:22.533Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts",
-      "relativePath": "src/core/scanner/discoverFiles.ts",
-      "criticalityScore": 0.31,
-      "model": "static",
-      "purpose": "Exports: discoverFiles",
-      "generatedAt": "2026-03-29T01:29:22.632Z"
+      "purpose": "Exports: loadBundlerAliases, PathAliases",
+      "generatedAt": "2026-03-29T01:55:37.612Z"
     },
     {
       "filePath": "/home/runner/work/braito/braito/src/cli/index.ts",
       "relativePath": "src/cli/index.ts",
-      "criticalityScore": 0.22,
+      "criticalityScore": 0.23,
       "model": "static",
       "purpose": "",
-      "generatedAt": "2026-03-29T01:29:22.056Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/cache/isCacheValid.ts",
-      "relativePath": "src/core/cache/isCacheValid.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: isCacheValid",
-      "generatedAt": "2026-03-29T01:29:22.281Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/config/defaults.ts",
-      "relativePath": "src/core/config/defaults.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: withDefaults, DEFAULT_INCLUDE, DEFAULT_EXCLUDE",
-      "generatedAt": "2026-03-29T01:29:22.295Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts",
-      "relativePath": "src/core/llm/prompts/systemPrompt.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: SYSTEM_PROMPT",
-      "generatedAt": "2026-03-29T01:29:22.422Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts",
-      "relativePath": "src/core/llm/provider/anthropic.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: AnthropicProvider",
-      "generatedAt": "2026-03-29T01:29:22.438Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/ollama.ts",
-      "relativePath": "src/core/llm/provider/ollama.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: OllamaProvider",
-      "generatedAt": "2026-03-29T01:29:22.469Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/openai.ts",
-      "relativePath": "src/core/llm/provider/openai.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: OpenAIProvider",
-      "generatedAt": "2026-03-29T01:29:22.486Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/src/core/scanner/ignoreRules.ts",
-      "relativePath": "src/core/scanner/ignoreRules.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: shouldIgnore",
-      "generatedAt": "2026-03-29T01:29:22.645Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/tests/fixtures/sampleModule.ts",
-      "relativePath": "tests/fixtures/sampleModule.ts",
-      "criticalityScore": 0.21,
-      "model": "static",
-      "purpose": "Exports: loadFile, VERSION, FileLoader",
-      "generatedAt": "2026-03-29T01:29:22.751Z"
-    },
-    {
-      "filePath": "/home/runner/work/braito/braito/ai-notes.config.ts",
-      "relativePath": "ai-notes.config.ts",
-      "criticalityScore": 0.12,
-      "model": "static",
-      "purpose": "Exports: default",
-      "generatedAt": "2026-03-29T01:29:21.906Z"
+      "generatedAt": "2026-03-29T01:55:37.529Z"
     }
   ]
 }

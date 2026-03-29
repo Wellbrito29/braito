@@ -1,9 +1,9 @@
 {
   "ai-notes.config.ts": "dee409eb960f7e42068bb41ab76cf17d011f3058",
-  "src/cli/commands/generate.ts": "4c59c93c42fef4a825e720de1295673293fb896e",
+  "src/cli/commands/generate.ts": "26d546a92ed8c2ba7cff9199a6cee0554f7bdc1f",
   "src/cli/commands/scan.ts": "7d936c06daf07df69cec32df50c90a8559b25819",
   "src/cli/commands/watch.ts": "68d573d4f45c6a2422e32c3dbd217755b7704af5",
-  "src/cli/index.ts": "6118fe2893412b8f701120b53c85ab2b1519d938",
+  "src/cli/index.ts": "218d720f8d458023e02b5f7f39f22ad2560d49a4",
   "src/core/ast/analyzers/ts/extractComments.ts": "dc948d5bf029b138bada6e8d38513feb80c555db",
   "src/core/ast/analyzers/ts/extractExports.ts": "0b427b8cb5be85207b448bf8c3cb58dcb47db95d",
   "src/core/ast/analyzers/ts/extractHooks.ts": "4b88739d982a37b5166c0732bd9f4b996ec670ab",
@@ -44,5 +44,7 @@
   "src/core/types/project.ts": "3930c4fecc3cfa9461f0cd57a30c3175e927be80",
   "src/core/utils/logger.ts": "a92f74dd0bc292424929219037f2a0c1f957b814",
   "tests/fixtures/sampleHook.ts": "bd1b22efd5bf07d9a567bcdf599ba18346971a7c",
-  "tests/fixtures/sampleModule.ts": "b9d7be9f5519f3440d5ba55ef23fcdca4b415620"
+  "tests/fixtures/sampleModule.ts": "b9d7be9f5519f3440d5ba55ef23fcdca4b415620",
+  "src/core/cache/analysisStore.ts": "4f1c1dab1503b47e5acbb38b9123109336234686",
+  "src/core/graph/loadBundlerAliases.ts": "f79edee5e6430a1ad4ce19b2a1c615324b735546"
 }

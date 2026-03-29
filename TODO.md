@@ -24,7 +24,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [ ] **Dynamic import detection** — `extractImports.ts` misses `import('./path')` — add regex-based detection so lazy-loaded dependencies appear in the graph.
 
-- [ ] **Go local import detection fix** — the current heuristic (`includes('./')`) is incorrect for Go; use module-relative path matching based on the package declaration or `go.mod`.
+- [x] **Go local import detection fix** — the current heuristic (`includes('./')`) is incorrect for Go; use module-relative path matching based on the package declaration or `go.mod`.
 
 ---
 

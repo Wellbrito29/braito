@@ -46,7 +46,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [ ] **CLI e2e tests** — integration tests for `generate`, `watch`, `mcp`, and `ui` commands using real temp fixtures; currently only unit tests exist.
 
-- [ ] **`scan --format json`** — add `--format json|table` flag to the `scan` command for machine-readable output and integration with external tools.
+- [x] **`scan --format json`** — add `--format json|table` flag to the `scan` command for machine-readable output and integration with external tools.
 
 - [x] **`parseFile` error resilience** — wrap ts-morph parsing in try/catch; emit a warning and return an empty analysis instead of crashing on files with syntax errors.
 

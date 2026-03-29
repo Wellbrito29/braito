@@ -53,6 +53,9 @@ bun install
 # Discover eligible files
 bun src/cli/index.ts scan --root ./
 
+# Discover eligible files — machine-readable JSON output
+bun src/cli/index.ts scan --root ./ --format json
+
 # Full pipeline — writes .ai-notes/
 bun src/cli/index.ts generate --root ./
 

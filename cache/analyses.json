@@ -1,0 +1,1408 @@
+{
+  "ai-notes.config.ts": {
+    "filePath": "/home/runner/work/braito/braito/ai-notes.config.ts",
+    "imports": [
+      "./src/core/types/project.ts"
+    ],
+    "localImports": [
+      "./src/core/types/project.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "default"
+    ],
+    "symbols": [
+      "config"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/cli/commands/generate.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
+    "imports": [
+      "node:path",
+      "../../core/config/loadConfig.ts",
+      "../../core/scanner/scanRepository.ts",
+      "../../core/ast/parseFile.ts",
+      "../../core/graph/buildDependencyGraph.ts",
+      "../../core/graph/buildReverseDependencyGraph.ts",
+      "../../core/graph/loadBundlerAliases.ts",
+      "../../core/tests/findRelatedTests.ts",
+      "../../core/git/getGitSignals.ts",
+      "../../core/output/buildBasicNote.ts",
+      "../../core/output/writeJsonNote.ts",
+      "../../core/output/writeMarkdownNote.ts",
+      "../../core/output/buildIndex.ts",
+      "../../core/output/writeIndexNote.ts",
+      "../../core/llm/provider/factory.ts",
+      "../../core/llm/synthesizeFileNote.ts",
+      "../../core/cache/computeHash.ts",
+      "../../core/cache/cacheStore.ts",
+      "../../core/cache/analysisStore.ts",
+      "../../core/utils/logger.ts",
+      "../../core/types/ai-note.ts",
+      "../../core/types/file-analysis.ts"
+    ],
+    "localImports": [
+      "../../core/config/loadConfig.ts",
+      "../../core/scanner/scanRepository.ts",
+      "../../core/ast/parseFile.ts",
+      "../../core/graph/buildDependencyGraph.ts",
+      "../../core/graph/buildReverseDependencyGraph.ts",
+      "../../core/graph/loadBundlerAliases.ts",
+      "../../core/tests/findRelatedTests.ts",
+      "../../core/git/getGitSignals.ts",
+      "../../core/output/buildBasicNote.ts",
+      "../../core/output/writeJsonNote.ts",
+      "../../core/output/writeMarkdownNote.ts",
+      "../../core/output/buildIndex.ts",
+      "../../core/output/writeIndexNote.ts",
+      "../../core/llm/provider/factory.ts",
+      "../../core/llm/synthesizeFileNote.ts",
+      "../../core/cache/computeHash.ts",
+      "../../core/cache/cacheStore.ts",
+      "../../core/cache/analysisStore.ts",
+      "../../core/utils/logger.ts",
+      "../../core/types/ai-note.ts",
+      "../../core/types/file-analysis.ts"
+    ],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "runGenerate"
+    ],
+    "symbols": [
+      "runGenerate"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/cli/commands/scan.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/cli/commands/scan.ts",
+    "imports": [
+      "node:path",
+      "../../core/config/loadConfig.ts",
+      "../../core/scanner/scanRepository.ts",
+      "../../core/utils/logger.ts"
+    ],
+    "localImports": [
+      "../../core/config/loadConfig.ts",
+      "../../core/scanner/scanRepository.ts",
+      "../../core/utils/logger.ts"
+    ],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "runScan"
+    ],
+    "symbols": [
+      "runScan"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/cli/commands/watch.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/cli/commands/watch.ts",
+    "imports": [
+      "node:path",
+      "node:fs",
+      "../../core/config/loadConfig.ts",
+      "../../core/scanner/scanRepository.ts",
+      "../../core/ast/parseFile.ts",
+      "../../core/graph/buildDependencyGraph.ts",
+      "../../core/graph/buildReverseDependencyGraph.ts",
+      "../../core/tests/findRelatedTests.ts",
+      "../../core/git/getGitSignals.ts",
+      "../../core/output/buildBasicNote.ts",
+      "../../core/output/writeJsonNote.ts",
+      "../../core/output/writeMarkdownNote.ts",
+      "../../core/llm/provider/factory.ts",
+      "../../core/llm/synthesizeFileNote.ts",
+      "../../core/cache/computeHash.ts",
+      "../../core/cache/cacheStore.ts",
+      "../../core/output/buildIndex.ts",
+      "../../core/output/writeIndexNote.ts",
+      "../../core/utils/logger.ts",
+      "../../core/types/ai-note.ts"
+    ],
+    "localImports": [
+      "../../core/config/loadConfig.ts",
+      "../../core/scanner/scanRepository.ts",
+      "../../core/ast/parseFile.ts",
+      "../../core/graph/buildDependencyGraph.ts",
+      "../../core/graph/buildReverseDependencyGraph.ts",
+      "../../core/tests/findRelatedTests.ts",
+      "../../core/git/getGitSignals.ts",
+      "../../core/output/buildBasicNote.ts",
+      "../../core/output/writeJsonNote.ts",
+      "../../core/output/writeMarkdownNote.ts",
+      "../../core/llm/provider/factory.ts",
+      "../../core/llm/synthesizeFileNote.ts",
+      "../../core/cache/computeHash.ts",
+      "../../core/cache/cacheStore.ts",
+      "../../core/output/buildIndex.ts",
+      "../../core/output/writeIndexNote.ts",
+      "../../core/utils/logger.ts",
+      "../../core/types/ai-note.ts"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs"
+    ],
+    "exports": [
+      "runWatch"
+    ],
+    "symbols": [
+      "runWatch",
+      "processFile"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/cli/index.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/cli/index.ts",
+    "imports": [
+      "node:util",
+      "./commands/scan.ts",
+      "./commands/generate.ts",
+      "./commands/watch.ts"
+    ],
+    "localImports": [
+      "./commands/scan.ts",
+      "./commands/generate.ts",
+      "./commands/watch.ts"
+    ],
+    "externalImports": [
+      "node:util"
+    ],
+    "exports": [],
+    "symbols": [],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzers/ts/extractComments.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts",
+    "imports": [
+      "ts-morph"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "ts-morph"
+    ],
+    "exports": [
+      "extractComments",
+      "ExtractedComments"
+    ],
+    "symbols": [
+      "extractComments"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzers/ts/extractExports.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractExports.ts",
+    "imports": [
+      "ts-morph"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "ts-morph"
+    ],
+    "exports": [
+      "extractExports"
+    ],
+    "symbols": [
+      "extractExports"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzers/ts/extractHooks.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractHooks.ts",
+    "imports": [
+      "ts-morph"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "ts-morph"
+    ],
+    "exports": [
+      "extractHooks"
+    ],
+    "symbols": [
+      "extractHooks"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzers/ts/extractImports.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractImports.ts",
+    "imports": [
+      "ts-morph"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "ts-morph"
+    ],
+    "exports": [
+      "extractImports",
+      "ExtractedImports"
+    ],
+    "symbols": [
+      "extractImports"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzers/ts/extractSymbols.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractSymbols.ts",
+    "imports": [
+      "ts-morph"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "ts-morph"
+    ],
+    "exports": [
+      "extractSymbols"
+    ],
+    "symbols": [
+      "extractSymbols"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/parseFile.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/parseFile.ts",
+    "imports": [
+      "ts-morph",
+      "../types/file-analysis.ts",
+      "./analyzers/ts/extractImports.ts",
+      "./analyzers/ts/extractExports.ts",
+      "./analyzers/ts/extractSymbols.ts",
+      "./analyzers/ts/extractHooks.ts",
+      "./analyzers/ts/extractComments.ts"
+    ],
+    "localImports": [
+      "../types/file-analysis.ts",
+      "./analyzers/ts/extractImports.ts",
+      "./analyzers/ts/extractExports.ts",
+      "./analyzers/ts/extractSymbols.ts",
+      "./analyzers/ts/extractHooks.ts",
+      "./analyzers/ts/extractComments.ts"
+    ],
+    "externalImports": [
+      "ts-morph"
+    ],
+    "exports": [
+      "parseFile"
+    ],
+    "symbols": [
+      "parseFile",
+      "extractEnvVars",
+      "extractApiCalls"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/cache/analysisStore.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/cache/analysisStore.ts",
+    "imports": [
+      "node:path",
+      "node:fs/promises",
+      "../types/file-analysis.ts"
+    ],
+    "localImports": [
+      "../types/file-analysis.ts"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs/promises"
+    ],
+    "exports": [
+      "loadAnalysisStore",
+      "saveAnalysisStore",
+      "AnalysisStore"
+    ],
+    "symbols": [
+      "loadAnalysisStore",
+      "saveAnalysisStore",
+      "getStorePath"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/cache/cacheStore.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/cache/cacheStore.ts",
+    "imports": [
+      "node:path",
+      "node:fs/promises"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "node:path",
+      "node:fs/promises"
+    ],
+    "exports": [
+      "loadCache",
+      "saveCache",
+      "HashStore"
+    ],
+    "symbols": [
+      "loadCache",
+      "saveCache",
+      "getCachePath"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/cache/computeHash.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/cache/computeHash.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "computeHash"
+    ],
+    "symbols": [
+      "computeHash"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/cache/isCacheValid.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/cache/isCacheValid.ts",
+    "imports": [
+      "./cacheStore.ts",
+      "./computeHash.ts"
+    ],
+    "localImports": [
+      "./cacheStore.ts",
+      "./computeHash.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "isCacheValid"
+    ],
+    "symbols": [
+      "isCacheValid"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/config/defaults.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/config/defaults.ts",
+    "imports": [
+      "../types/project.ts"
+    ],
+    "localImports": [
+      "../types/project.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "withDefaults",
+      "DEFAULT_INCLUDE",
+      "DEFAULT_EXCLUDE"
+    ],
+    "symbols": [
+      "withDefaults"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/config/loadConfig.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/config/loadConfig.ts",
+    "imports": [
+      "node:path",
+      "../types/project.ts",
+      "./defaults.ts"
+    ],
+    "localImports": [
+      "../types/project.ts",
+      "./defaults.ts"
+    ],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "loadConfig"
+    ],
+    "symbols": [
+      "loadConfig"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/git/getCoChangedFiles.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/git/getCoChangedFiles.ts",
+    "imports": [
+      "node:path"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "getCoChangedFiles",
+      "CoChangedFile"
+    ],
+    "symbols": [
+      "getCoChangedFiles"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/git/getFileHistory.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/git/getFileHistory.ts",
+    "imports": [
+      "node:path"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "getFileHistory",
+      "FileHistory"
+    ],
+    "symbols": [
+      "getFileHistory",
+      "empty"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/git/getGitSignals.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/git/getGitSignals.ts",
+    "imports": [
+      "../types/file-analysis.ts",
+      "./getFileHistory.ts",
+      "./getCoChangedFiles.ts"
+    ],
+    "localImports": [
+      "../types/file-analysis.ts",
+      "./getFileHistory.ts",
+      "./getCoChangedFiles.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "getGitSignals"
+    ],
+    "symbols": [
+      "getGitSignals",
+      "isGitRepo",
+      "empty"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/graph/buildDependencyGraph.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
+    "imports": [
+      "../types/file-analysis.ts",
+      "./resolveImportPath.ts"
+    ],
+    "localImports": [
+      "../types/file-analysis.ts",
+      "./resolveImportPath.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "buildDependencyGraph"
+    ],
+    "symbols": [
+      "buildDependencyGraph"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/graph/buildReverseDependencyGraph.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/graph/buildReverseDependencyGraph.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "buildReverseDependencyGraph"
+    ],
+    "symbols": [
+      "buildReverseDependencyGraph"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/graph/loadBundlerAliases.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/graph/loadBundlerAliases.ts",
+    "imports": [
+      "node:path",
+      "node:fs"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "node:path",
+      "node:fs"
+    ],
+    "exports": [
+      "loadBundlerAliases",
+      "PathAliases"
+    ],
+    "symbols": [
+      "loadBundlerAliases",
+      "loadTsconfigPaths",
+      "extractBundlerAliases",
+      "findBlock",
+      "normalizeValue",
+      "toAliasKey",
+      "toAliasValue",
+      "parseObjectAliases",
+      "parseArrayAliases"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/graph/resolveImportPath.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/graph/resolveImportPath.ts",
+    "imports": [
+      "node:path",
+      "node:fs"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "node:path",
+      "node:fs"
+    ],
+    "exports": [
+      "resolveImportPath"
+    ],
+    "symbols": [
+      "resolveImportPath",
+      "resolveWithExtensions"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/prompts/buildPrompt.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts",
+    "imports": [
+      "node:fs",
+      "../../types/file-analysis.ts",
+      "../../types/ai-note.ts"
+    ],
+    "localImports": [
+      "../../types/file-analysis.ts",
+      "../../types/ai-note.ts"
+    ],
+    "externalImports": [
+      "node:fs"
+    ],
+    "exports": [
+      "buildPrompt",
+      "PromptContext"
+    ],
+    "symbols": [
+      "buildPrompt",
+      "readSourceTruncated"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/prompts/systemPrompt.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "SYSTEM_PROMPT"
+    ],
+    "symbols": [],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/provider/anthropic.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts",
+    "imports": [
+      "./types.ts"
+    ],
+    "localImports": [
+      "./types.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "AnthropicProvider"
+    ],
+    "symbols": [
+      "AnthropicProvider"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/provider/factory.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/factory.ts",
+    "imports": [
+      "./types.ts",
+      "../../types/project.ts",
+      "./ollama.ts",
+      "./anthropic.ts",
+      "./openai.ts"
+    ],
+    "localImports": [
+      "./types.ts",
+      "../../types/project.ts",
+      "./ollama.ts",
+      "./anthropic.ts",
+      "./openai.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "createProvider"
+    ],
+    "symbols": [
+      "createProvider"
+    ],
+    "hooks": [],
+    "envVars": [
+      "ANTHROPIC_API_KEY",
+      "OPENAI_API_KEY"
+    ],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/provider/ollama.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/ollama.ts",
+    "imports": [
+      "./types.ts"
+    ],
+    "localImports": [
+      "./types.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "OllamaProvider"
+    ],
+    "symbols": [
+      "OllamaProvider"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [
+      "${this.baseUrl}/api/chat"
+    ],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/provider/openai.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/openai.ts",
+    "imports": [
+      "./types.ts"
+    ],
+    "localImports": [
+      "./types.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "OpenAIProvider"
+    ],
+    "symbols": [
+      "OpenAIProvider"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/provider/types.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/types.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "LLMRequest",
+      "LLMResponse",
+      "LLMProvider"
+    ],
+    "symbols": [],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/schemas/aiNoteSchema.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/schemas/aiNoteSchema.ts",
+    "imports": [
+      "zod"
+    ],
+    "localImports": [],
+    "externalImports": [
+      "zod"
+    ],
+    "exports": [
+      "llmNoteSchema",
+      "LLMNotePayload"
+    ],
+    "symbols": [],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/llm/synthesizeFileNote.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/llm/synthesizeFileNote.ts",
+    "imports": [
+      "../types/ai-note.ts",
+      "./provider/types.ts",
+      "./prompts/buildPrompt.ts",
+      "./prompts/systemPrompt.ts",
+      "./schemas/aiNoteSchema.ts",
+      "../utils/logger.ts"
+    ],
+    "localImports": [
+      "../types/ai-note.ts",
+      "./provider/types.ts",
+      "./prompts/buildPrompt.ts",
+      "./prompts/systemPrompt.ts",
+      "./schemas/aiNoteSchema.ts",
+      "../utils/logger.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "synthesizeFileNote"
+    ],
+    "symbols": [
+      "synthesizeFileNote",
+      "merge",
+      "parseJSON"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/output/buildBasicNote.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts",
+    "imports": [
+      "../types/file-analysis.ts",
+      "../types/ai-note.ts"
+    ],
+    "localImports": [
+      "../types/file-analysis.ts",
+      "../types/ai-note.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "buildBasicNote"
+    ],
+    "symbols": [
+      "buildBasicNote",
+      "computeCriticality"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/output/buildIndex.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/output/buildIndex.ts",
+    "imports": [
+      "node:path",
+      "../types/ai-note.ts"
+    ],
+    "localImports": [
+      "../types/ai-note.ts"
+    ],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "buildIndex",
+      "IndexEntry",
+      "NoteIndex"
+    ],
+    "symbols": [
+      "buildIndex"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/output/writeIndexNote.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/output/writeIndexNote.ts",
+    "imports": [
+      "node:path",
+      "node:fs/promises",
+      "./buildIndex.ts"
+    ],
+    "localImports": [
+      "./buildIndex.ts"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs/promises"
+    ],
+    "exports": [
+      "writeIndexNote"
+    ],
+    "symbols": [
+      "writeIndexNote",
+      "renderIndexMarkdown"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/output/writeJsonNote.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/output/writeJsonNote.ts",
+    "imports": [
+      "node:path",
+      "node:fs/promises",
+      "../types/ai-note.ts"
+    ],
+    "localImports": [
+      "../types/ai-note.ts"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs/promises"
+    ],
+    "exports": [
+      "writeJsonNote"
+    ],
+    "symbols": [
+      "writeJsonNote"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/output/writeMarkdownNote.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/output/writeMarkdownNote.ts",
+    "imports": [
+      "node:path",
+      "node:fs/promises",
+      "../types/ai-note.ts"
+    ],
+    "localImports": [
+      "../types/ai-note.ts"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs/promises"
+    ],
+    "exports": [
+      "writeMarkdownNote"
+    ],
+    "symbols": [
+      "writeMarkdownNote",
+      "renderMarkdown",
+      "renderSection"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/scanner/discoverFiles.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts",
+    "imports": [
+      "node:path",
+      "../types/project.ts",
+      "./ignoreRules.ts"
+    ],
+    "localImports": [
+      "../types/project.ts",
+      "./ignoreRules.ts"
+    ],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "discoverFiles"
+    ],
+    "symbols": [
+      "discoverFiles"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/scanner/ignoreRules.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/scanner/ignoreRules.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "shouldIgnore"
+    ],
+    "symbols": [
+      "shouldIgnore",
+      "matchGlob"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/scanner/scanRepository.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/scanner/scanRepository.ts",
+    "imports": [
+      "../types/project.ts",
+      "./discoverFiles.ts"
+    ],
+    "localImports": [
+      "../types/project.ts",
+      "./discoverFiles.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "scanRepository"
+    ],
+    "symbols": [
+      "scanRepository"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/tests/findRelatedTests.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/tests/findRelatedTests.ts",
+    "imports": [
+      "node:path",
+      "../types/project.ts"
+    ],
+    "localImports": [
+      "../types/project.ts"
+    ],
+    "externalImports": [
+      "node:path"
+    ],
+    "exports": [
+      "findRelatedTests"
+    ],
+    "symbols": [
+      "findRelatedTests"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/types/ai-note.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/types/ai-note.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "EvidenceItem",
+      "StructuredListField",
+      "AiFileNote"
+    ],
+    "symbols": [],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/types/file-analysis.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/types/file-analysis.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "StaticFileAnalysis",
+      "GraphSignals",
+      "TestSignals",
+      "GitSignals"
+    ],
+    "symbols": [],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/types/project.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/types/project.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "DiscoveredFile",
+      "LLMProviderName",
+      "LLMConfig",
+      "AiNotesConfig"
+    ],
+    "symbols": [],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/utils/logger.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/utils/logger.ts",
+    "imports": [],
+    "localImports": [],
+    "externalImports": [],
+    "exports": [
+      "logger"
+    ],
+    "symbols": [
+      "logger"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "tests/fixtures/sampleHook.ts": {
+    "filePath": "/home/runner/work/braito/braito/tests/fixtures/sampleHook.ts",
+    "imports": [
+      "react",
+      "./searchApi"
+    ],
+    "localImports": [
+      "./searchApi"
+    ],
+    "externalImports": [
+      "react"
+    ],
+    "exports": [
+      "useImageSearch"
+    ],
+    "symbols": [
+      "useImageSearch"
+    ],
+    "hooks": [
+      "useImageSearch"
+    ],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [
+        "TODO: remove legacy fallback"
+      ],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  },
+  "tests/fixtures/sampleModule.ts": {
+    "filePath": "/home/runner/work/braito/braito/tests/fixtures/sampleModule.ts",
+    "imports": [
+      "node:path",
+      "node:fs",
+      "../config/parseConfig"
+    ],
+    "localImports": [
+      "../config/parseConfig"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs"
+    ],
+    "exports": [
+      "loadFile",
+      "VERSION",
+      "FileLoader"
+    ],
+    "symbols": [
+      "loadFile",
+      "FileLoader"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": []
+    },
+    "hasSideEffects": false
+  }
+}

@@ -20,6 +20,7 @@ All notable changes to braito will be documented here.
 
 ### Fixed
 - **Go local import detection** — replaced the incorrect `includes('./')` heuristic with `go.mod`-based module path matching; `getGoModuleName` walks up the directory tree to find the nearest `go.mod` and classifies imports starting with the module prefix as local; falls back to `./`/`../` heuristics when no `go.mod` is found
+- **`parseFile` error resilience** — wrapped ts-morph parsing in try/catch in `parseFile`; on any error a warning is logged via `logger.warn` and an empty `StaticFileAnalysis` is returned instead of crashing the pipeline
 - **Alias resolution in watch mode** — `watch.ts` now calls `loadBundlerAliases(root)` and passes aliases to `buildDependencyGraph`, matching the behavior of `generate.ts`; bundler aliases (Vite, Webpack, Metro) are now resolved correctly in watch mode
 - **Incremental graph rebuild in watch mode** — `watch.ts` now calls `updateDependencyGraph` (new export) on each file change instead of rebuilding the full graph; only the changed file's dependency entry is updated, then the reverse graph is rebuilt from the patched dep graph
 - **Graph test using real temp files** — `buildDependencyGraph.test.ts` now creates actual temp files so `resolveImportPath` can resolve them via `fs.existsSync`; added coverage for `updateDependencyGraph`

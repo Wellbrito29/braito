@@ -6,25 +6,25 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 ## Short-term
 
-- [ ] **Alias resolution** — `resolveImportPath.ts` reads `tsconfig.paths` but does not handle bundler aliases (Vite, Webpack, Metro). Needed for accurate graphs in monorepos with custom path mappings.
+- [x] **Alias resolution** — `resolveImportPath.ts` reads `tsconfig.paths` but does not handle bundler aliases (Vite, Webpack, Metro). Needed for accurate graphs in monorepos with custom path mappings.
 
-- [ ] **Incremental graph rebuild** — full dependency graph is rebuilt on every run even when using cache. In watch mode this is fine, but for large repos a partial rebuild (only affected files + their consumers) would be faster.
+- [x] **Incremental graph rebuild** — full dependency graph is rebuilt on every run even when using cache. In watch mode this is fine, but for large repos a partial rebuild (only affected files + their consumers) would be faster.
 
-- [ ] **`--filter` flag** — allow `generate --filter packages/search/**` to scope the pipeline to a subdirectory or domain without changing config.
+- [x] **`--filter` flag** — allow `generate --filter packages/search/**` to scope the pipeline to a subdirectory or domain without changing config.
 
-- [ ] **Confidence calibration** — heuristic `criticalityScore` thresholds were set conservatively. After running against real monorepos, tune weights based on observed false positives/negatives.
+- [x] **Confidence calibration** — heuristic `criticalityScore` thresholds were set conservatively. After running against real monorepos, tune weights based on observed false positives/negatives.
 
 ---
 
 ## Medium-term
 
-- [ ] **Heuristic pre-fill for `invariants` and `importantDecisions`** — these fields are currently only filled by LLM. A pattern matching pass (comments, ADR files, changelog) would improve coverage even without LLM.
+- [x] **Heuristic pre-fill for `invariants` and `importantDecisions`** — these fields are currently only filled by LLM. A pattern matching pass (comments, ADR files, changelog) would improve coverage even without LLM.
 
-- [ ] **Domain grouping in `index.md`** — group files by folder/package instead of a flat ranked list. Useful for monorepos where each package has its own criticality context.
+- [x] **Domain grouping in `index.md`** — group files by folder/package instead of a flat ranked list. Useful for monorepos where each package has its own criticality context.
 
-- [ ] **Stale note detection** — flag notes whose `generatedAt` is older than N days or whose source file has changed since last synthesis, prompting re-synthesis.
+- [x] **Stale note detection** — flag notes whose `generatedAt` is older than N days or whose source file has changed since last synthesis, prompting re-synthesis.
 
-- [ ] **Test coverage hints** — integrate with coverage reports (lcov, c8) to surface actual uncovered files in `impactValidation`, not just heuristic test discovery.
+- [x] **Test coverage hints** — integrate with coverage reports (lcov, c8) to surface actual uncovered files in `impactValidation`, not just heuristic test discovery.
 
 ---
 

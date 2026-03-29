@@ -125,3 +125,11 @@ Do not edit `.ai-notes/` or `cache/` manually.
 - Add the entry under `[Unreleased]` with the appropriate category (`Added`, `Changed`, `Fixed`, `Removed`)
 - When a TODO item is completed, check it off in `TODO.md` and add the corresponding entry to `CHANGELOG.md`
 - Use the format: `- **Feature name** — brief description of what was done`
+
+## Git Conventions
+
+**Never include "claude" in commit messages or branch names.**
+
+- Do not sign commits with "claude", "Claude", or any AI assistant identifier
+- Do not prefix branch names with `claude/` — use descriptive names based on the feature or fix (e.g. `feat/alias-resolution`, `fix/incremental-graph`)
+- Commit messages must reflect the work done, not who or what did it

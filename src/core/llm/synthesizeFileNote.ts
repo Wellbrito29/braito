@@ -9,16 +9,23 @@ export async function synthesizeFileNote(
   ctx: PromptContext,
   provider: LLMProvider,
   temperature: number = 0.2,
+  timeoutMs: number = 30_000,
 ): Promise<AiFileNote> {
   const staticNote = ctx.staticNote
 
   try {
     const userPrompt = buildPrompt(ctx)
-    const response = await provider.complete({
-      system: SYSTEM_PROMPT,
-      user: userPrompt,
-      temperature,
-    })
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`LLM synthesis timed out after ${timeoutMs}ms`)), timeoutMs)
+    )
+    const response = await Promise.race([
+      provider.complete({
+        system: SYSTEM_PROMPT,
+        user: userPrompt,
+        temperature,
+      }),
+      timeoutPromise,
+    ])
 
     const parsed = parseJSON(response.content)
     const validated = llmNoteSchema.safeParse(parsed)

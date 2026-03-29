@@ -33,6 +33,7 @@ export async function runGenerate(args: {
   const config = await loadConfig(root)
 
   logger.info(`Generating notes for ${root}`)
+  logger.debug(`Config: llm=${config.llm?.provider ?? 'none'}, output=${config.output}, staleThreshold=${config.staleThresholdDays}d`)
 
   // 1. Scan
   const files = await scanRepository(config)
@@ -62,7 +63,9 @@ export async function runGenerate(args: {
       // File unchanged and note is current — reuse cached AST analysis
       analyses.push(cachedAnalysis)
       analysisHits++
+      logger.debug(`Cache hit: ${file.relativePath}`)
     } else {
+      logger.debug(`Parsing: ${file.relativePath}`)
       const analysis = parseFile(file.path)
       analyses.push(analysis)
       analysisStore.set(file.relativePath, analysis)
@@ -78,8 +81,10 @@ export async function runGenerate(args: {
   //    Aliases are loaded from tsconfig.json paths + bundler configs (Vite, Webpack, Metro).
   logger.info('Building dependency graph...')
   const aliases = loadBundlerAliases(root)
+  logger.debug(`Bundler aliases loaded: ${Object.keys(aliases).length} entries`)
   const depGraph = buildDependencyGraph(analyses, root, aliases)
   const revGraph = buildReverseDependencyGraph(depGraph)
+  logger.debug(`Dependency graph: ${depGraph.size} nodes`)
 
   // 6. Load coverage report (optional — lcov.info or coverage-summary.json)
   const coverageMap = loadCoverage(root)
@@ -134,8 +139,10 @@ export async function runGenerate(args: {
     const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
     let note = buildBasicNote(analysis, graph, tests, gitSignals)
+    logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
 
     if (provider && note.criticalityScore >= llmThreshold) {
+      logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)})`)
       note = await synthesizeFileNote(
         { analysis, graph, tests, git: gitSignals, staticNote: note },
         provider,

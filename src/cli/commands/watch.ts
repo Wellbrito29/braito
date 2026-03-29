@@ -31,10 +31,13 @@ export async function runWatch(args: { root?: string }): Promise<void> {
 
   // Initial full generate to build graphs and cache
   const files = await scanRepository(config)
+  logger.debug(`Found ${files.length} files to watch`)
   const analyses = files.map((f) => parseFile(f.path))
   const aliases = loadBundlerAliases(root)
+  logger.debug(`Bundler aliases: ${Object.keys(aliases).length} entries`)
   const depGraph = buildDependencyGraph(analyses, root, aliases)
   let revGraph = buildReverseDependencyGraph(depGraph)
+  logger.debug(`Dependency graph: ${depGraph.size} nodes`)
 
   const llmConfig = config.llm
   const provider = llmConfig ? createProvider(llmConfig) : null
@@ -80,6 +83,7 @@ export async function runWatch(args: { root?: string }): Promise<void> {
       const changedAnalysis = parseFile(absolutePath)
       updateDependencyGraph(depGraph, changedAnalysis, root, aliases)
       revGraph = buildReverseDependencyGraph(depGraph)
+      logger.debug(`Graph updated incrementally for: ${filename}`)
 
       const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature)
       if (note) {

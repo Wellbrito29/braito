@@ -5,6 +5,7 @@ All notable changes to braito will be documented here.
 ## [Unreleased]
 
 ### Added
+- **Logger upgrade** — replaced simple logger with a structured `Logger` class supporting `debug`, `info`, `warn`, `error`, `silent` levels; `--debug` flag enables debug-level output with timestamps; `--verbose` / `-v` enables debug without timestamps; `--silent` suppresses all output except errors; `logger.debug()` calls added throughout `generate`, `scan`, and `watch` commands for per-file cache hits, graph stats, LLM decisions, and alias counts; 16 tests added (`tests/utils/logger.test.ts`)
 - **`--filter` flag** — `generate --filter <glob>` scopes note generation to a subdirectory without changing config; full graph is still built from all files for accurate dependency signals (`src/cli/commands/generate.ts`)
 - **Heuristic pre-fill for `invariants` and `importantDecisions`** — `extractComments` now captures `INVARIANT/CONTRACT/ASSERT` and `NOTE/DECISION/WHY/REASON` comment patterns; `buildBasicNote` uses them plus structural signals (validation libs, env vars, hooks rules, decision-flavoured commit messages) to populate both fields without LLM
 - **Domain grouping in `index.md`** — `buildIndex` now derives a `domain` per entry (first dir segment, or `packages/<name>` for monorepo roots); `renderIndexMarkdown` renders one section per domain sorted by max criticality, each with file count and avg score

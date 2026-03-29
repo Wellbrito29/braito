@@ -15,6 +15,7 @@ export type LLMConfig = {
   llmThreshold?: number
   temperature?: number
   timeoutMs?: number
+  concurrency?: number
 }
 
 export type AiNotesConfig = {

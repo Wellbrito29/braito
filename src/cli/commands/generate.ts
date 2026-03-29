@@ -19,6 +19,7 @@ import { synthesizeFileNote } from '../../core/llm/synthesizeFileNote.ts'
 import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisStore.ts'
+import { concurrentMap } from '../../core/utils/concurrentMap.ts'
 import { logger } from '../../core/utils/logger.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
 import type { StaticFileAnalysis } from '../../core/types/file-analysis.ts'
@@ -117,9 +118,11 @@ export async function runGenerate(args: {
   const llmThreshold = llmConfig?.llmThreshold ?? DEFAULT_LLM_THRESHOLD
   const temperature = llmConfig?.temperature ?? 0.2
   const timeoutMs = llmConfig?.timeoutMs ?? 30_000
+  // Use concurrency cap from config when LLM is active; fall back to 1 (sequential) otherwise
+  const concurrency = provider ? (llmConfig?.concurrency ?? 5) : 1
 
   if (provider) {
-    logger.info(`LLM synthesis enabled (provider: ${llmConfig!.provider}, threshold: ${llmThreshold})`)
+    logger.info(`LLM synthesis enabled (provider: ${llmConfig!.provider}, threshold: ${llmThreshold}, concurrency: ${concurrency})`)
   }
 
   // 8. Generate and write notes
@@ -129,47 +132,60 @@ export async function runGenerate(args: {
   let synthesized = 0
   const notes: AiFileNote[] = []
 
-  for (const analysis of filteredAnalyses) {
-    const file = files.find((f) => f.path === analysis.filePath)!
-    const currentHash = fileHashes.get(file.relativePath)!
+  // Use concurrentMap so multiple files are processed in parallel up to `concurrency` limit.
+  // Results may be null when a file is skipped (hash unchanged).
+  const noteResults = await concurrentMap(
+    filteredAnalyses,
+    async (analysis): Promise<{ note: AiFileNote; relativePath: string; hash: string } | null> => {
+      const file = files.find((f) => f.path === analysis.filePath)!
+      const currentHash = fileHashes.get(file.relativePath)!
 
-    // Skip if the note is already up to date for this file
-    if (!args.force && noteHashStore.get(file.relativePath) === currentHash) {
+      // Skip if the note is already up to date for this file
+      if (!args.force && noteHashStore.get(file.relativePath) === currentHash) {
+        return null
+      }
+
+      const relatedTests = findRelatedTests(analysis.filePath, files)
+      const gitSignals = getGitSignals(analysis.filePath, root)
+
+      const graph = {
+        filePath: analysis.filePath,
+        directDependencies: depGraph.get(analysis.filePath) ?? [],
+        reverseDependencies: revGraph.get(analysis.filePath) ?? [],
+      }
+      const coveragePct = coverageMap?.get(file.relativePath)
+      const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
+
+      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
+      logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
+
+      if (provider && note.criticalityScore >= llmThreshold) {
+        logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)})`)
+        note = await synthesizeFileNote(
+          { analysis, graph, tests, git: gitSignals, staticNote: note },
+          provider,
+          temperature,
+          timeoutMs,
+        )
+        synthesized++
+      }
+
+      await writeJsonNote(note, root, config.output)
+      await writeMarkdownNote(note, root, config.output)
+
+      return { note, relativePath: file.relativePath, hash: currentHash }
+    },
+    concurrency,
+  )
+
+  for (const result of noteResults) {
+    if (result === null) {
       skipped++
-      continue
+    } else {
+      noteHashStore.set(result.relativePath, result.hash)
+      notes.push(result.note)
+      written++
     }
-
-    const relatedTests = findRelatedTests(analysis.filePath, files)
-    const gitSignals = getGitSignals(analysis.filePath, root)
-
-    const graph = {
-      filePath: analysis.filePath,
-      directDependencies: depGraph.get(analysis.filePath) ?? [],
-      reverseDependencies: revGraph.get(analysis.filePath) ?? [],
-    }
-    const coveragePct = coverageMap?.get(file.relativePath)
-    const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
-
-    let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
-    logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
-
-    if (provider && note.criticalityScore >= llmThreshold) {
-      logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)})`)
-      note = await synthesizeFileNote(
-        { analysis, graph, tests, git: gitSignals, staticNote: note },
-        provider,
-        temperature,
-        timeoutMs,
-      )
-      synthesized++
-    }
-
-    await writeJsonNote(note, root, config.output)
-    await writeMarkdownNote(note, root, config.output)
-
-    noteHashStore.set(file.relativePath, currentHash)
-    notes.push(note)
-    written++
   }
 
   // 9. Save note cache

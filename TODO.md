@@ -40,7 +40,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **LLM retry with backoff** — add exponential backoff (max 3 retries) for transient LLM errors (network timeout, 429 rate limit) in all providers; distinguish transient from permanent failures.
 
-- [ ] **Concurrent file processing** — process files in parallel batches in `generate`; respect LLM rate limits with a concurrency cap (e.g. 5 simultaneous synthesis calls).
+- [x] **Concurrent file processing** — process files in parallel batches in `generate`; respect LLM rate limits with a concurrency cap (e.g. 5 simultaneous synthesis calls).
 
 - [x] **Cycle detection in dependency graph** — detect and warn about circular imports during graph construction; flag involved files in their notes.
 

@@ -6,6 +6,7 @@ import { buildDependencyGraph } from '../../core/graph/buildDependencyGraph.ts'
 import { buildReverseDependencyGraph } from '../../core/graph/buildReverseDependencyGraph.ts'
 import { loadBundlerAliases } from '../../core/graph/loadBundlerAliases.ts'
 import { findRelatedTests } from '../../core/tests/findRelatedTests.ts'
+import { loadCoverage } from '../../core/tests/loadCoverage.ts'
 import { getGitSignals } from '../../core/git/getGitSignals.ts'
 import { buildBasicNote } from '../../core/output/buildBasicNote.ts'
 import { writeJsonNote } from '../../core/output/writeJsonNote.ts'
@@ -80,7 +81,11 @@ export async function runGenerate(args: {
   const depGraph = buildDependencyGraph(analyses, root, aliases)
   const revGraph = buildReverseDependencyGraph(depGraph)
 
-  // 6. Apply --filter if specified
+  // 6. Load coverage report (optional — lcov.info or coverage-summary.json)
+  const coverageMap = loadCoverage(root)
+  if (coverageMap) logger.info(`Coverage report loaded (${coverageMap.size} files)`)
+
+  // 7. Apply --filter if specified
   //    The full graph is built from ALL files for accurate dependency signals.
   //    Only the note-writing loop is scoped to the filtered set.
   let filteredAnalyses = analyses
@@ -125,7 +130,8 @@ export async function runGenerate(args: {
       directDependencies: depGraph.get(analysis.filePath) ?? [],
       reverseDependencies: revGraph.get(analysis.filePath) ?? [],
     }
-    const tests = { filePath: analysis.filePath, relatedTests }
+    const coveragePct = coverageMap?.get(file.relativePath)
+    const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
     let note = buildBasicNote(analysis, graph, tests, gitSignals)
 
@@ -150,9 +156,13 @@ export async function runGenerate(args: {
   await saveCache(root, noteHashStore)
 
   // 10. Build and write index
-  await writeIndexNote(buildIndex(notes, root), root, config.output)
+  const index = buildIndex(notes, root, config.staleThresholdDays)
+  await writeIndexNote(index, root, config.output)
 
   logger.success(`Generated ${written} notes in ${config.output}/`)
   if (skipped > 0) logger.info(`Skipped ${skipped} unchanged files (use --force to reprocess)`)
   if (provider) logger.info(`LLM synthesized: ${synthesized} files`)
+  if (index.staleFiles > 0) {
+    logger.warn(`${index.staleFiles} note(s) are older than ${config.staleThresholdDays} days — run with --force to refresh`)
+  }
 }

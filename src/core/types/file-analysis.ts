@@ -12,6 +12,8 @@ export type StaticFileAnalysis = {
     todo: string[]
     fixme: string[]
     hack: string[]
+    invariant: string[]
+    decision: string[]
   }
   hasSideEffects: boolean
 }
@@ -25,6 +27,7 @@ export type GraphSignals = {
 export type TestSignals = {
   filePath: string
   relatedTests: string[]
+  coveragePct?: number  // 0–1 from lcov/c8 report; undefined if no report available
 }
 
 export type GitSignals = {

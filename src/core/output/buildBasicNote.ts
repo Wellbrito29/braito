@@ -1,5 +1,6 @@
 import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../types/file-analysis.ts'
 import type { AiFileNote, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
+import { SCHEMA_VERSION } from '../types/schema-version.ts'
 
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
 const VALIDATION_LIBS = ['zod', 'yup', 'joi', 'superstruct', 'valibot', 'arktype']
@@ -148,6 +149,7 @@ export function buildBasicNote(
   }
 
   return {
+    schemaVersion: SCHEMA_VERSION,
     filePath: analysis.filePath,
     purpose: {
       observed: purposeObserved,

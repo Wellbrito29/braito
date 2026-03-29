@@ -1,4 +1,5 @@
 import path from 'node:path'
+import fs from 'node:fs/promises'
 import { loadConfig } from '../../core/config/loadConfig.ts'
 import { scanRepository } from '../../core/scanner/scanRepository.ts'
 import { parseFile } from '../../core/ast/parseFile.ts'
@@ -14,6 +15,7 @@ import { writeJsonNote } from '../../core/output/writeJsonNote.ts'
 import { writeMarkdownNote } from '../../core/output/writeMarkdownNote.ts'
 import { buildIndex } from '../../core/output/buildIndex.ts'
 import { writeIndexNote } from '../../core/output/writeIndexNote.ts'
+import { diffNotes, renderDiff } from '../../core/output/diffNotes.ts'
 import { createProvider } from '../../core/llm/provider/factory.ts'
 import { synthesizeFileNote } from '../../core/llm/synthesizeFileNote.ts'
 import { computeHash } from '../../core/cache/computeHash.ts'
@@ -22,6 +24,7 @@ import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisS
 import { concurrentMap } from '../../core/utils/concurrentMap.ts'
 import { logger } from '../../core/utils/logger.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
+import type { NoteDiff } from '../../core/output/diffNotes.ts'
 import type { StaticFileAnalysis } from '../../core/types/file-analysis.ts'
 
 const DEFAULT_LLM_THRESHOLD = 0.4
@@ -30,6 +33,7 @@ export async function runGenerate(args: {
   root?: string
   force?: boolean
   filter?: string
+  diff?: boolean
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -131,18 +135,31 @@ export async function runGenerate(args: {
   let skipped = 0
   let synthesized = 0
   const notes: AiFileNote[] = []
+  const diffs: NoteDiff[] = []
 
   // Use concurrentMap so multiple files are processed in parallel up to `concurrency` limit.
   // Results may be null when a file is skipped (hash unchanged).
   const noteResults = await concurrentMap(
     filteredAnalyses,
-    async (analysis): Promise<{ note: AiFileNote; relativePath: string; hash: string } | null> => {
+    async (analysis): Promise<{ note: AiFileNote; relativePath: string; hash: string; diff?: NoteDiff } | null> => {
       const file = files.find((f) => f.path === analysis.filePath)!
       const currentHash = fileHashes.get(file.relativePath)!
 
       // Skip if the note is already up to date for this file
       if (!args.force && noteHashStore.get(file.relativePath) === currentHash) {
         return null
+      }
+
+      // Read existing note before overwriting (for diff mode)
+      let oldNote: AiFileNote | null = null
+      if (args.diff) {
+        const existingNotePath = path.resolve(root, config.output, file.relativePath + '.json')
+        try {
+          const raw = await fs.readFile(existingNotePath, 'utf-8')
+          oldNote = JSON.parse(raw) as AiFileNote
+        } catch {
+          // No existing note — treat as new file, no diff to compute
+        }
       }
 
       const relatedTests = findRelatedTests(analysis.filePath, files)
@@ -170,10 +187,12 @@ export async function runGenerate(args: {
         synthesized++
       }
 
+      const diff = (args.diff && oldNote) ? diffNotes(oldNote, note) : undefined
+
       await writeJsonNote(note, root, config.output)
       await writeMarkdownNote(note, root, config.output)
 
-      return { note, relativePath: file.relativePath, hash: currentHash }
+      return { note, relativePath: file.relativePath, hash: currentHash, diff }
     },
     concurrency,
   )
@@ -184,6 +203,7 @@ export async function runGenerate(args: {
     } else {
       noteHashStore.set(result.relativePath, result.hash)
       notes.push(result.note)
+      if (result.diff) diffs.push(result.diff)
       written++
     }
   }
@@ -200,5 +220,10 @@ export async function runGenerate(args: {
   if (provider) logger.info(`LLM synthesized: ${synthesized} files`)
   if (index.staleFiles > 0) {
     logger.warn(`${index.staleFiles} note(s) are older than ${config.staleThresholdDays} days — run with --force to refresh`)
+  }
+
+  if (args.diff) {
+    console.log('\n--- Diff Report ---')
+    console.log(renderDiff(diffs))
   }
 }

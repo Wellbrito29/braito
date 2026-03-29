@@ -6,3 +6,4 @@ cache/hashes.json
 coverage/
 *.env
 .env*
+.claude/

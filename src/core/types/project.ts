@@ -14,6 +14,7 @@ export type LLMConfig = {
   apiKey?: string
   llmThreshold?: number
   temperature?: number
+  timeoutMs?: number
 }
 
 export type AiNotesConfig = {

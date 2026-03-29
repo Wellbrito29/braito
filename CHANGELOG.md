@@ -5,6 +5,7 @@ All notable changes to braito will be documented here.
 ## [Unreleased]
 
 ### Added
+- **LLM synthesis timeout** — `synthesizeFileNote` accepts a `timeoutMs` parameter (default 30 000 ms); `Promise.race` races the provider call against a timeout reject, falling back to the static note automatically via the existing catch block; configurable via `llm.timeoutMs` in `ai-notes.config.ts`; `LLMConfig` type and `llmConfigSchema` updated accordingly
 - **Config validation** — `loadConfig` now validates `ai-notes.config.ts` with a Zod schema (`src/core/config/configSchema.ts`); invalid values (unknown provider, out-of-range threshold/temperature, empty output dir, non-positive staleThresholdDays) emit a clear error with field paths instead of silently falling back to defaults; 15 tests added (`tests/config/configSchema.test.ts`)
 - **Temperature bug fix** — confirmed `provider/anthropic.ts` and `provider/openai.ts` correctly pass `request.temperature` through the `LLMRequest` type; marked resolved
 - **Logger upgrade** — replaced simple logger with a structured `Logger` class supporting `debug`, `info`, `warn`, `error`, `silent` levels; `--debug` flag enables debug-level output with timestamps; `--verbose` / `-v` enables debug without timestamps; `--silent` suppresses all output except errors; `logger.debug()` calls added throughout `generate`, `scan`, and `watch` commands for per-file cache hits, graph stats, LLM decisions, and alias counts; 16 tests added (`tests/utils/logger.test.ts`)

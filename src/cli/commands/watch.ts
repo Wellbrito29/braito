@@ -43,13 +43,14 @@ export async function runWatch(args: { root?: string }): Promise<void> {
   const provider = llmConfig ? createProvider(llmConfig) : null
   const llmThreshold = llmConfig?.llmThreshold ?? DEFAULT_LLM_THRESHOLD
   const temperature = llmConfig?.temperature ?? 0.2
+  const timeoutMs = llmConfig?.timeoutMs ?? 30_000
 
   const hashStore = await loadCache(root)
   const noteMap = new Map<string, AiFileNote>()
 
   // Generate initial notes
   for (const analysis of analyses) {
-    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature)
+    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature, timeoutMs)
     if (note) {
       noteMap.set(analysis.filePath, note)
       const relPath = path.relative(root, analysis.filePath)
@@ -85,7 +86,7 @@ export async function runWatch(args: { root?: string }): Promise<void> {
       revGraph = buildReverseDependencyGraph(depGraph)
       logger.debug(`Graph updated incrementally for: ${filename}`)
 
-      const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature)
+      const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature, timeoutMs)
       if (note) {
         noteMap.set(absolutePath, note)
         hashStore.set(filename, await computeHash(absolutePath))
@@ -113,6 +114,7 @@ async function processFile(
   provider: ReturnType<typeof createProvider> | null,
   llmThreshold: number,
   temperature: number,
+  timeoutMs: number,
 ): Promise<AiFileNote | null> {
   try {
     const analysis = parseFile(filePath)
@@ -133,6 +135,7 @@ async function processFile(
         { analysis, graph, tests, git: gitSignals, staticNote: note },
         provider,
         temperature,
+        timeoutMs,
       )
     }
 

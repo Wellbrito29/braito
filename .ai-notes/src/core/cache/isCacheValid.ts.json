@@ -1,0 +1,116 @@
+{
+  "filePath": "/home/runner/work/braito/braito/src/core/cache/isCacheValid.ts",
+  "purpose": {
+    "observed": [
+      "Exports: isCacheValid"
+    ],
+    "inferred": [],
+    "confidence": 0.6,
+    "evidence": [
+      {
+        "type": "code",
+        "detail": "Exported symbols: isCacheValid"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumed by: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      }
+    ]
+  },
+  "invariants": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "sensitiveDependencies": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/cli/commands/generate.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.85,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      }
+    ]
+  },
+  "importantDecisions": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "knownPitfalls": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "impactValidation": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
+      "/home/runner/work/braito/braito/.github/workflows/ai-notes.yml",
+      "/home/runner/work/braito/braito/src/cli/commands/watch.ts",
+      "/home/runner/work/braito/braito/src/cli/index.ts",
+      "/home/runner/work/braito/braito/src/core/cache/cacheStore.ts",
+      "/home/runner/work/braito/braito/src/core/cache/computeHash.ts",
+      "/home/runner/work/braito/braito/src/core/output/buildIndex.ts",
+      "/home/runner/work/braito/braito/src/core/output/writeIndexNote.ts",
+      "/home/runner/work/braito/braito/tests/cache/cacheStore.test.ts",
+      "/home/runner/work/braito/braito/tests/output/buildIndex.test.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.8,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/.github/workflows/ai-notes.yml"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/watch.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/index.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/cacheStore.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/computeHash.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/output/buildIndex.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/cache/cacheStore.test.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/output/buildIndex.test.ts"
+      }
+    ]
+  },
+  "criticalityScore": 0.21,
+  "generatedAt": "2026-03-29T01:29:22.281Z",
+  "model": "static"
+}

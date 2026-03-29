@@ -20,7 +20,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Config validation** — validate `ai-notes.config.ts` with Zod on load; emit clear errors for unknown keys or invalid values instead of silently falling back to defaults.
 
-- [ ] **LLM synthesis timeout** — add a configurable per-file timeout (default 30s) to `synthesizeFileNote`; fall back to static note on timeout instead of hanging indefinitely.
+- [x] **LLM synthesis timeout** — add a configurable per-file timeout (default 30s) to `synthesizeFileNote`; fall back to static note on timeout instead of hanging indefinitely.
 
 - [ ] **Dynamic import detection** — `extractImports.ts` misses `import('./path')` — add regex-based detection so lazy-loaded dependencies appear in the graph.
 

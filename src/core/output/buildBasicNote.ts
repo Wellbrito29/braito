@@ -138,25 +138,30 @@ function computeCriticality(
 ): number {
   let score = 0
 
-  // More consumers = more critical
+  // More consumers = more critical (max +0.4 at 4+ consumers)
   score += Math.min(graph.reverseDependencies.length * 0.1, 0.4)
 
-  // Hooks are generally critical
-  if (analysis.hooks.length > 0) score += 0.15
+  // Hooks are load-bearing — always critical
+  if (analysis.hooks.length > 0) score += 0.2
 
-  // External deps (API, env) increase criticality
+  // External deps and env vars increase blast radius
   if (analysis.externalImports.length > 0) score += 0.1
   if (analysis.envVars.length > 0) score += 0.1
 
-  // Known pitfalls increase criticality
+  // Outbound API calls — runtime failure risk
+  if (analysis.apiCalls.length > 0) score += 0.1
+
+  // Known pitfalls in comments
   if (analysis.comments.todo.length + analysis.comments.fixme.length + analysis.comments.hack.length > 0) {
     score += 0.05
   }
 
-  // No tests = higher risk
-  if (tests.relatedTests.length === 0) score += 0.1
+  // Untested files: higher penalty when the file has consumers (untested + widely used is riskiest)
+  if (tests.relatedTests.length === 0) {
+    score += graph.reverseDependencies.length > 0 ? 0.15 : 0.05
+  }
 
-  // High churn = more critical (capped at 0.15)
+  // High churn = more critical (capped at +0.15 at 15+ commits)
   score += Math.min(git.churnScore * 0.01, 0.15)
 
   // Multiple authors = higher coordination risk

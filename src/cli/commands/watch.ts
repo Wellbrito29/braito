@@ -3,8 +3,9 @@ import fs from 'node:fs'
 import { loadConfig } from '../../core/config/loadConfig.ts'
 import { scanRepository } from '../../core/scanner/scanRepository.ts'
 import { parseFile } from '../../core/ast/parseFile.ts'
-import { buildDependencyGraph } from '../../core/graph/buildDependencyGraph.ts'
+import { buildDependencyGraph, updateDependencyGraph } from '../../core/graph/buildDependencyGraph.ts'
 import { buildReverseDependencyGraph } from '../../core/graph/buildReverseDependencyGraph.ts'
+import { loadBundlerAliases } from '../../core/graph/loadBundlerAliases.ts'
 import { findRelatedTests } from '../../core/tests/findRelatedTests.ts'
 import { getGitSignals } from '../../core/git/getGitSignals.ts'
 import { buildBasicNote } from '../../core/output/buildBasicNote.ts'
@@ -31,8 +32,9 @@ export async function runWatch(args: { root?: string }): Promise<void> {
   // Initial full generate to build graphs and cache
   const files = await scanRepository(config)
   const analyses = files.map((f) => parseFile(f.path))
-  const depGraph = buildDependencyGraph(analyses, root)
-  const revGraph = buildReverseDependencyGraph(depGraph)
+  const aliases = loadBundlerAliases(root)
+  const depGraph = buildDependencyGraph(analyses, root, aliases)
+  let revGraph = buildReverseDependencyGraph(depGraph)
 
   const llmConfig = config.llm
   const provider = llmConfig ? createProvider(llmConfig) : null
@@ -72,6 +74,12 @@ export async function runWatch(args: { root?: string }): Promise<void> {
       const absolutePath = path.resolve(root, filename)
 
       logger.info(`Changed: ${filename}`)
+
+      // Incrementally update the dependency graph for the changed file only,
+      // then rebuild the reverse graph (O(edges), not O(files × parse)).
+      const changedAnalysis = parseFile(absolutePath)
+      updateDependencyGraph(depGraph, changedAnalysis, root, aliases)
+      revGraph = buildReverseDependencyGraph(depGraph)
 
       const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature)
       if (note) {

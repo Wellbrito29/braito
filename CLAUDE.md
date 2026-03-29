@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **braito** (AI File Notes) is a TypeScript CLI tool that analyzes codebases and generates operational knowledge sidecars (`.json` + `.md`) per file. It targets dense TypeScript/JavaScript monorepos and teams using AI for code review, onboarding, and maintenance.
 
-**All 4 phases are implemented.** The tool is fully operational.
+**All phases are implemented, including Phase 5.** The tool is fully operational.
 
 ## CLI Commands
 
@@ -15,7 +15,10 @@ bun install                                        # install dependencies
 bun src/cli/index.ts scan --root ./                # discover and list eligible files
 bun src/cli/index.ts generate --root ./            # full pipeline — writes .ai-notes/
 bun src/cli/index.ts generate --root ./ --force    # bypass cache, reprocess all files
+bun src/cli/index.ts generate --root ./ --filter src/core/**  # scope to subdirectory
 bun src/cli/index.ts watch --root ./               # watch mode — regenerates on file change
+bun src/cli/index.ts mcp --root ./                 # MCP server (JSON-RPC 2.0 over stdio)
+bun src/cli/index.ts ui --root ./                  # local web UI at http://localhost:7842
 bun test                                           # run all test suites
 ```
 
@@ -34,21 +37,21 @@ repo → scanner → static analyzer → graph engine → git intelligence
 
 | Layer | Path | Responsibility |
 |---|---|---|
-| CLI | `src/cli/` | Command orchestration — `scan`, `generate`, `watch` |
+| CLI | `src/cli/` | Command orchestration — `scan`, `generate`, `watch`, `mcp`, `ui` |
 | Core | `src/core/` | All business logic |
 | Output | `src/core/output/` | JSON/Markdown serialization, sidecar writing, index building |
-| Cache | `src/core/cache/` | SHA-1 hash per file, skip unchanged files |
+| Cache | `src/core/cache/` | SHA-1 hash per file, skip unchanged files, stale detection |
 
 ### Core modules
 
 - **`core/scanner/`** — file discovery with `Bun.Glob`, include/exclude/ignore rules
-- **`core/ast/`** — `ts-morph` based; extractors for imports, exports, symbols, hooks, comments (TODO/FIXME/HACK), env vars, API calls
-- **`core/graph/`** — direct + reverse dependency graphs; `resolveImportPath` handles relative paths and `tsconfig.paths` aliases
+- **`core/ast/`** — `ts-morph` for TS/JS; `LanguageAnalyzer` interface + registry for multi-language; Python and Go analyzers included; extractors for imports, exports, symbols, hooks, comments (TODO/FIXME/HACK/INVARIANT/DECISION), env vars, API calls
+- **`core/graph/`** — direct + reverse dependency graphs; `resolveImportPath` handles relative paths, `tsconfig.paths` aliases, and bundler aliases (Vite, Webpack, Metro); `updateDependencyGraph` for incremental watch-mode rebuilds
 - **`core/git/`** — churn score, recent commit messages, co-changed files, author count via `git` CLI + `Bun.spawnSync`
-- **`core/tests/`** — heuristic test discovery by name, `__tests__` folder proximity
-- **`core/cache/`** — SHA-1 hash per file, `cache/hashes.json`, skip unchanged files between runs
+- **`core/tests/`** — heuristic test discovery; `loadCoverage` reads `lcov.info` or `coverage-summary.json` for real line coverage
+- **`core/cache/`** — SHA-1 hash per file, `cache/hashes.json`, skip unchanged files; `isNoteStale` flags notes older than `staleThresholdDays` (default 30)
 - **`core/llm/`** — provider abstraction (`ollama`, `anthropic`, `openai`), prompt builder, Zod schema validation, merge strategy
-- **`core/output/`** — `buildBasicNote`, `writeJsonNote`, `writeMarkdownNote`, `buildIndex`, `writeIndexNote`
+- **`core/output/`** — `buildBasicNote` (with heuristic invariants/decisions pre-fill), `writeJsonNote`, `writeMarkdownNote`, `buildIndex` (domain-grouped), `writeIndexNote`
 
 ## Domain Model
 
@@ -101,11 +104,32 @@ LLM synthesis only runs for files where `criticalityScore >= llmThreshold`. Fall
 
 - `.ai-notes/<relative-path>.json` — structured note per file
 - `.ai-notes/<relative-path>.md` — human-readable sidecar
-- `.ai-notes/index.json` — all files ranked by criticality
-- `.ai-notes/index.md` — Markdown table with links
+- `.ai-notes/index.json` — all files ranked by criticality, with domain and stale flags
+- `.ai-notes/index.md` — grouped by domain, avg score per group, stale marker ⚠
 - `cache/hashes.json` — SHA-1 per file for incremental runs
 
 Do not edit `.ai-notes/` or `cache/` manually.
+
+## Multi-language Support
+
+Python (`.py`) and Go (`.go`) are supported via regex-based analyzers. Opt in via `ai-notes.config.ts`:
+
+```ts
+import { MULTI_LANGUAGE_INCLUDE } from './src/core/config/defaults.ts'
+export default { include: MULTI_LANGUAGE_INCLUDE }
+```
+
+To add a new language, implement `LanguageAnalyzer` (`src/core/ast/types.ts`) and register it in `analyzerRegistry.ts`.
+
+## MCP Server
+
+Exposes braito notes as tools for AI assistants (Cursor, Claude Code):
+
+```bash
+bun src/cli/index.ts mcp --root ./
+```
+
+Tools: `get_file_note`, `search_by_criticality`, `get_index`.
 
 ## CI
 
@@ -125,6 +149,13 @@ Do not edit `.ai-notes/` or `cache/` manually.
 - Add the entry under `[Unreleased]` with the appropriate category (`Added`, `Changed`, `Fixed`, `Removed`)
 - When a TODO item is completed, check it off in `TODO.md` and add the corresponding entry to `CHANGELOG.md`
 - Use the format: `- **Feature name** — brief description of what was done`
+
+## README Rule
+
+**When a new command, feature, or configuration option is added, update `README.md` to reflect it.**
+
+- Keep the CLI commands section, architecture table, and configuration examples in sync with the actual implementation
+- Do not let the README describe a subset of what the tool can do
 
 ## Git Conventions
 

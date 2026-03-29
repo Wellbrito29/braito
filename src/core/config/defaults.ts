@@ -2,6 +2,9 @@ import type { AiNotesConfig } from '../types/project.ts'
 
 export const DEFAULT_INCLUDE = ['**/*.ts', '**/*.tsx']
 
+/** Drop-in include patterns to opt into multi-language support in ai-notes.config.ts */
+export const MULTI_LANGUAGE_INCLUDE = [...DEFAULT_INCLUDE, '**/*.py', '**/*.go']
+
 export const DEFAULT_EXCLUDE = [
   'node_modules/**',
   'dist/**',

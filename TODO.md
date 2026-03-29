@@ -46,7 +46,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Progress indicator** — TTY progress bar for analyze and write-notes phases in the `generate` command; uses carriage return to update in place; suppressed in non-TTY (CI) environments.
 
-- [ ] **CLI e2e tests** — integration tests for `generate`, `watch`, `mcp`, and `ui` commands using real temp fixtures; currently only unit tests exist.
+- [x] **CLI e2e tests** — integration tests for `generate`, `watch`, `mcp`, and `ui` commands using real temp fixtures; currently only unit tests exist.
 
 - [x] **`scan --format json`** — add `--format json|table` flag to the `scan` command for machine-readable output and integration with external tools.
 

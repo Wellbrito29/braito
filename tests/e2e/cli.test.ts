@@ -129,38 +129,30 @@ describe('generate command', () => {
   })
 
   it('skips unchanged files on re-run (skipped > 0)', async () => {
-    const logs: string[] = []
-    const originalInfo = process.stdout.write.bind(process.stdout)
-    // Capture logger output by spying on stderr (logger writes there)
-    const stderrWrite = process.stderr.write.bind(process.stderr)
+    // logger uses console.log for info/success output
     const captured: string[] = []
-    process.stderr.write = (chunk: string | Uint8Array, ...args: unknown[]) => {
-      if (typeof chunk === 'string') captured.push(chunk)
-      return stderrWrite(chunk, ...(args as Parameters<typeof stderrWrite>).slice(1))
-    }
+    const originalLog = console.log
+    console.log = (...args: unknown[]) => { captured.push(args.join(' ')); originalLog(...args) }
     try {
       await runGenerate({ root: tmpDir })
     } finally {
-      process.stderr.write = stderrWrite
+      console.log = originalLog
     }
-    const combined = captured.join('')
+    const combined = captured.join('\n')
     // Should mention skipped files since nothing changed
     expect(combined).toMatch(/[Ss]kipped \d+ unchanged/)
   })
 
   it('reprocesses all files with --force', async () => {
     const captured: string[] = []
-    const stderrWrite = process.stderr.write.bind(process.stderr)
-    process.stderr.write = (chunk: string | Uint8Array, ...args: unknown[]) => {
-      if (typeof chunk === 'string') captured.push(chunk)
-      return stderrWrite(chunk, ...(args as Parameters<typeof stderrWrite>).slice(1))
-    }
+    const originalLog = console.log
+    console.log = (...args: unknown[]) => { captured.push(args.join(' ')); originalLog(...args) }
     try {
       await runGenerate({ root: tmpDir, force: true })
     } finally {
-      process.stderr.write = stderrWrite
+      console.log = originalLog
     }
-    const combined = captured.join('')
+    const combined = captured.join('\n')
     // Should say "Generated N notes" and not mention skipped
     expect(combined).toMatch(/Generated \d+ notes/)
     expect(combined).not.toMatch(/[Ss]kipped \d+ unchanged/)

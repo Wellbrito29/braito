@@ -22,7 +22,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **LLM synthesis timeout** — add a configurable per-file timeout (default 30s) to `synthesizeFileNote`; fall back to static note on timeout instead of hanging indefinitely.
 
-- [ ] **Dynamic import detection** — `extractImports.ts` misses `import('./path')` — add regex-based detection so lazy-loaded dependencies appear in the graph.
+- [x] **Dynamic import detection** — `extractImports.ts` misses `import('./path')` — add regex-based detection so lazy-loaded dependencies appear in the graph.
 
 - [x] **Go local import detection fix** — the current heuristic (`includes('./')`) is incorrect for Go; use module-relative path matching based on the package declaration or `go.mod`.
 

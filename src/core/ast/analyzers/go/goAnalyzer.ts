@@ -1,5 +1,33 @@
+import path from 'node:path'
+import fs from 'node:fs'
 import type { LanguageAnalyzer } from '../../types.ts'
 import type { StaticFileAnalysis } from '../../../types/file-analysis.ts'
+
+/**
+ * Walk up the directory tree from filePath to find the nearest go.mod file.
+ * Returns the module name declared in "module <name>" or null if not found.
+ */
+export function getGoModuleName(filePath: string): string | null {
+  let dir = path.dirname(path.resolve(filePath))
+  const root = path.parse(dir).root
+
+  while (dir !== root) {
+    const goModPath = path.join(dir, 'go.mod')
+    if (fs.existsSync(goModPath)) {
+      try {
+        const content = fs.readFileSync(goModPath, 'utf8')
+        const match = content.match(/^module\s+(\S+)/m)
+        if (match) return match[1]
+      } catch {
+        // ignore read errors
+      }
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return null
+}
 
 export const goAnalyzer: LanguageAnalyzer = {
   extensions: ['.go'],
@@ -7,8 +35,8 @@ export const goAnalyzer: LanguageAnalyzer = {
     return {
       filePath,
       imports: extractImports(content),
-      localImports: extractLocalImports(content),
-      externalImports: extractExternalImports(content),
+      localImports: extractLocalImports(filePath, content),
+      externalImports: extractExternalImports(filePath, content),
       exports: extractExports(content),
       symbols: extractSymbols(content),
       hooks: [],
@@ -32,14 +60,25 @@ function extractImports(content: string): string[] {
   return [...new Set(imports)]
 }
 
-function extractLocalImports(content: string): string[] {
-  // Go local imports typically contain the module path prefix (e.g. "github.com/user/repo/internal/...")
-  // Heuristic: imports with relative-looking paths (containing '.' but not a domain)
-  return extractImports(content).filter((i) => i.includes('./') || i.startsWith('.'))
+function extractLocalImports(filePath: string, content: string): string[] {
+  // Go local imports use module-relative paths (e.g. "github.com/org/repo/pkg/util").
+  // Look up go.mod to get the module name and match against it.
+  // Fall back to ./ and ../ heuristics if go.mod is not found.
+  const moduleName = getGoModuleName(filePath)
+  const allImports = extractImports(content)
+  if (moduleName) {
+    return allImports.filter((imp) => imp.startsWith(moduleName + '/') || imp === moduleName)
+  }
+  return allImports.filter((imp) => imp.startsWith('./') || imp.startsWith('../'))
 }
 
-function extractExternalImports(content: string): string[] {
-  return extractImports(content).filter((i) => !i.startsWith('.'))
+function extractExternalImports(filePath: string, content: string): string[] {
+  const moduleName = getGoModuleName(filePath)
+  const allImports = extractImports(content)
+  if (moduleName) {
+    return allImports.filter((imp) => !imp.startsWith(moduleName + '/') && imp !== moduleName)
+  }
+  return allImports.filter((imp) => !imp.startsWith('./') && !imp.startsWith('../'))
 }
 
 function extractExports(content: string): string[] {

@@ -13,7 +13,7 @@ function makeAnalysis(overrides: Partial<StaticFileAnalysis> = {}): StaticFileAn
     hooks: ['useSearch'],
     envVars: [],
     apiCalls: [],
-    comments: { todo: [], fixme: [], hack: [] },
+    comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
     hasSideEffects: false,
     ...overrides,
   }
@@ -60,7 +60,9 @@ describe('buildBasicNote', () => {
   })
 
   it('captures TODO comments in knownPitfalls', () => {
-    const analysis = makeAnalysis({ comments: { todo: ['TODO: fix this'], fixme: [], hack: [] } })
+    const analysis = makeAnalysis({
+      comments: { todo: ['TODO: fix this'], fixme: [], hack: [], invariant: [], decision: [] },
+    })
     const note = buildBasicNote(analysis, graph, tests, emptyGit)
     expect(note.knownPitfalls.observed).toContain('TODO: fix this')
   })
@@ -108,5 +110,74 @@ describe('buildBasicNote', () => {
   it('has a valid ISO generatedAt date', () => {
     const note = buildBasicNote(makeAnalysis(), graph, tests, emptyGit)
     expect(() => new Date(note.generatedAt).toISOString()).not.toThrow()
+  })
+
+  // invariants heuristics
+  it('captures INVARIANT comments in invariants.observed', () => {
+    const analysis = makeAnalysis({
+      comments: { todo: [], fixme: [], hack: [], invariant: ['INVARIANT: must be sorted'], decision: [] },
+    })
+    const note = buildBasicNote(analysis, graph, tests, emptyGit)
+    expect(note.invariants.observed).toContain('INVARIANT: must be sorted')
+    expect(note.invariants.evidence.some((e) => e.type === 'comment')).toBe(true)
+  })
+
+  it('detects validation library import as invariant', () => {
+    const analysis = makeAnalysis({ externalImports: ['zod'] })
+    const note = buildBasicNote(analysis, graph, tests, emptyGit)
+    expect(note.invariants.observed.some((o) => o.includes('zod'))).toBe(true)
+  })
+
+  it('adds required env vars to invariants', () => {
+    const analysis = makeAnalysis({ envVars: ['API_KEY', 'BASE_URL'] })
+    const note = buildBasicNote(analysis, graph, tests, emptyGit)
+    expect(note.invariants.observed.some((o) => o.includes('API_KEY'))).toBe(true)
+  })
+
+  it('adds hooks rule to invariants when hooks are present', () => {
+    const note = buildBasicNote(makeAnalysis(), graph, tests, emptyGit)
+    expect(note.invariants.observed.some((o) => o.includes('hooks rules'))).toBe(true)
+  })
+
+  // importantDecisions heuristics
+  it('captures DECISION comments in importantDecisions.observed', () => {
+    const analysis = makeAnalysis({
+      comments: {
+        todo: [], fixme: [], hack: [], invariant: [],
+        decision: ['NOTE: chose zod instead of yup for better TS inference'],
+      },
+    })
+    const note = buildBasicNote(analysis, graph, tests, emptyGit)
+    expect(note.importantDecisions.observed.some((o) => o.includes('chose zod'))).toBe(true)
+    expect(note.importantDecisions.evidence.some((e) => e.type === 'comment')).toBe(true)
+  })
+
+  it('captures decision-flavoured commit messages in importantDecisions', () => {
+    const git: GitSignals = {
+      ...emptyGit,
+      recentCommitMessages: ['switched from axios to fetch because of bundle size', 'fix: typo'],
+    }
+    const note = buildBasicNote(makeAnalysis(), graph, tests, git)
+    expect(note.importantDecisions.observed.some((o) => o.includes('switched'))).toBe(true)
+    expect(note.importantDecisions.evidence.some((e) => e.type === 'git')).toBe(true)
+  })
+
+  // coverage hints
+  it('surfaces coverage percentage in impactValidation when provided', () => {
+    const testsWithCoverage: TestSignals = { ...tests, coveragePct: 0.85 }
+    const note = buildBasicNote(makeAnalysis(), graph, testsWithCoverage, emptyGit)
+    expect(note.impactValidation.observed.some((o) => o.includes('85.0%'))).toBe(true)
+    expect(note.impactValidation.evidence.some((e) => e.type === 'test' && e.detail.includes('Coverage'))).toBe(true)
+  })
+
+  it('flags low coverage with a risk warning', () => {
+    const testsWithLowCoverage: TestSignals = { ...tests, coveragePct: 0.3 }
+    const note = buildBasicNote(makeAnalysis(), graph, testsWithLowCoverage, emptyGit)
+    expect(note.impactValidation.observed.some((o) => o.includes('Low line coverage'))).toBe(true)
+  })
+
+  it('does not add coverage to impactValidation when not provided', () => {
+    const note = buildBasicNote(makeAnalysis(), graph, tests, emptyGit)
+    expect(note.impactValidation.observed.every((o) => !o.includes('coverage'))).toBe(true)
   })
 })

@@ -14,7 +14,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Confidence calibration** — heuristic `criticalityScore` thresholds were set conservatively. After running against real monorepos, tune weights based on observed false positives/negatives.
 
-- [ ] **Logger upgrade** ⭐ — replace the current simple logger with a structured logger supporting log levels (`debug`, `info`, `warn`, `error`), optional timestamps, and a `--debug` / `--verbose` CLI flag; improves diagnosability across all commands.
+- [x] **Logger upgrade** ⭐ — replace the current simple logger with a structured logger supporting log levels (`debug`, `info`, `warn`, `error`), optional timestamps, and a `--debug` / `--verbose` CLI flag; improves diagnosability across all commands.
 
 - [ ] **Temperature bug fix** — `provider/anthropic.ts` and `provider/openai.ts` ignore the user's `temperature` config; fix both providers to respect `llmConfig.temperature`.
 

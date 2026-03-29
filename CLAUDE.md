@@ -150,6 +150,13 @@ Tools: `get_file_note`, `search_by_criticality`, `get_index`.
 - When a TODO item is completed, check it off in `TODO.md` and add the corresponding entry to `CHANGELOG.md`
 - Use the format: `- **Feature name** — brief description of what was done`
 
+## README Rule
+
+**When a new command, feature, or configuration option is added, update `README.md` to reflect it.**
+
+- Keep the CLI commands section, architecture table, and configuration examples in sync with the actual implementation
+- Do not let the README describe a subset of what the tool can do
+
 ## Git Conventions
 
 **Never include "claude" in commit messages or branch names.**

@@ -42,7 +42,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [ ] **Concurrent file processing** — process files in parallel batches in `generate`; respect LLM rate limits with a concurrency cap (e.g. 5 simultaneous synthesis calls).
 
-- [ ] **Cycle detection in dependency graph** — detect and warn about circular imports during graph construction; flag involved files in their notes.
+- [x] **Cycle detection in dependency graph** — detect and warn about circular imports during graph construction; flag involved files in their notes.
 
 - [ ] **CLI e2e tests** — integration tests for `generate`, `watch`, `mcp`, and `ui` commands using real temp fixtures; currently only unit tests exist.
 

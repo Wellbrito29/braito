@@ -5,6 +5,7 @@ import { parseFile } from '../../core/ast/parseFile.ts'
 import { buildDependencyGraph } from '../../core/graph/buildDependencyGraph.ts'
 import { buildReverseDependencyGraph } from '../../core/graph/buildReverseDependencyGraph.ts'
 import { loadBundlerAliases } from '../../core/graph/loadBundlerAliases.ts'
+import { detectCycles, filesInCycles } from '../../core/graph/detectCycles.ts'
 import { findRelatedTests } from '../../core/tests/findRelatedTests.ts'
 import { loadCoverage } from '../../core/tests/loadCoverage.ts'
 import { getGitSignals } from '../../core/git/getGitSignals.ts'
@@ -86,6 +87,16 @@ export async function runGenerate(args: {
   const revGraph = buildReverseDependencyGraph(depGraph)
   logger.debug(`Dependency graph: ${depGraph.size} nodes`)
 
+  // Detect circular imports and warn
+  const cycles = detectCycles(depGraph)
+  const cycleFiles = filesInCycles(cycles)
+  if (cycles.length > 0) {
+    logger.warn(`Detected ${cycles.length} circular import cycle(s):`)
+    for (const cycle of cycles) {
+      logger.warn(`  ${cycle.join(' → ')} → ${cycle[0]}`)
+    }
+  }
+
   // 6. Load coverage report (optional — lcov.info or coverage-summary.json)
   const coverageMap = loadCoverage(root)
   if (coverageMap) logger.info(`Coverage report loaded (${coverageMap.size} files)`)
@@ -139,7 +150,7 @@ export async function runGenerate(args: {
     const coveragePct = coverageMap?.get(file.relativePath)
     const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
-    let note = buildBasicNote(analysis, graph, tests, gitSignals)
+    let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
     logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
 
     if (provider && note.criticalityScore >= llmThreshold) {

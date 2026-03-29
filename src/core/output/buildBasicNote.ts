@@ -11,6 +11,7 @@ export function buildBasicNote(
   graph: GraphSignals,
   tests: TestSignals,
   git: GitSignals,
+  cycleFiles?: Set<string>,
 ): AiFileNote {
   const purposeObserved: string[] = []
   const purposeEvidence: EvidenceItem[] = []
@@ -76,6 +77,11 @@ export function buildBasicNote(
     for (const f of highFreqCoChanged) {
       pitfallsEvidence.push({ type: 'git', detail: `Co-changed ${f.count}x with ${f.path}` })
     }
+  }
+
+  if (cycleFiles?.has(analysis.filePath)) {
+    pitfallsObserved.push('Participates in a circular import cycle')
+    pitfallsEvidence.push({ type: 'graph', detail: 'File is part of a circular dependency cycle' })
   }
 
   // impactValidation: consumers + tests + co-changed files + coverage

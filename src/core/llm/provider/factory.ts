@@ -1,0 +1,30 @@
+import type { LLMProvider } from './types.ts'
+import type { LLMConfig } from '../../types/project.ts'
+import { OllamaProvider } from './ollama.ts'
+import { AnthropicProvider } from './anthropic.ts'
+import { OpenAIProvider } from './openai.ts'
+
+export function createProvider(config: LLMConfig): LLMProvider {
+  switch (config.provider) {
+    case 'ollama':
+      return new OllamaProvider({
+        baseUrl: config.baseUrl,
+        model: config.model,
+      })
+
+    case 'anthropic': {
+      const apiKey = config.apiKey ?? process.env.ANTHROPIC_API_KEY
+      if (!apiKey) throw new Error('Anthropic provider requires apiKey or ANTHROPIC_API_KEY env var')
+      return new AnthropicProvider({ apiKey, model: config.model })
+    }
+
+    case 'openai': {
+      const apiKey = config.apiKey ?? process.env.OPENAI_API_KEY
+      if (!apiKey) throw new Error('OpenAI provider requires apiKey or OPENAI_API_KEY env var')
+      return new OpenAIProvider({ apiKey, model: config.model })
+    }
+
+    default:
+      throw new Error(`Unknown LLM provider: ${(config as LLMConfig).provider}`)
+  }
+}

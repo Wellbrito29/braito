@@ -26,3 +26,11 @@ export type TestSignals = {
   filePath: string
   relatedTests: string[]
 }
+
+export type GitSignals = {
+  filePath: string
+  churnScore: number
+  recentCommitMessages: string[]
+  coChangedFiles: Array<{ path: string; count: number }>
+  authorCount: number
+}

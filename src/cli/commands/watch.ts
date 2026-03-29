@@ -114,6 +114,7 @@ async function processFile(
   provider: ReturnType<typeof createProvider> | null,
   llmThreshold: number,
   temperature: number,
+  timeoutMs: number,
 ): Promise<AiFileNote | null> {
   try {
     const analysis = parseFile(filePath)
@@ -134,6 +135,7 @@ async function processFile(
         { analysis, graph, tests, git: gitSignals, staticNote: note },
         provider,
         temperature,
+        timeoutMs,
       )
     }
 

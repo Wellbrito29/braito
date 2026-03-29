@@ -17,6 +17,7 @@ export const llmConfigSchema = z.object({
     .min(0, 'llm.temperature must be >= 0')
     .max(2, 'llm.temperature must be <= 2')
     .optional(),
+  timeoutMs: z.number().int().positive().optional(),
 })
 
 export const aiNotesConfigSchema = z.object({

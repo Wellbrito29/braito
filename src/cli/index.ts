@@ -11,6 +11,7 @@ const { values } = parseArgs({
   options: {
     root: { type: 'string', short: 'r' },
     force: { type: 'boolean', short: 'f' },
+    filter: { type: 'string' },
   },
   strict: false,
 })
@@ -21,7 +22,7 @@ switch (command) {
     break
 
   case 'generate':
-    await runGenerate({ root: values.root, force: values.force })
+    await runGenerate({ root: values.root, force: values.force, filter: values.filter })
     break
 
   case 'watch':
@@ -41,8 +42,9 @@ Commands:
   watch     Watch for changes and regenerate notes incrementally
 
 Options:
-  --root, -r <path>   Root directory to analyze (default: cwd)
-  --force, -f         Bypass cache and reprocess all files (generate only)
+  --root, -r <path>      Root directory to analyze (default: cwd)
+  --force, -f            Bypass cache and reprocess all files (generate only)
+  --filter <glob>        Scope generation to files matching a glob pattern (generate only)
 `)
     process.exit(command ? 1 : 0)
 }

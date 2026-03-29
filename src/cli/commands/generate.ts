@@ -4,6 +4,7 @@ import { scanRepository } from '../../core/scanner/scanRepository.ts'
 import { parseFile } from '../../core/ast/parseFile.ts'
 import { buildDependencyGraph } from '../../core/graph/buildDependencyGraph.ts'
 import { buildReverseDependencyGraph } from '../../core/graph/buildReverseDependencyGraph.ts'
+import { loadBundlerAliases } from '../../core/graph/loadBundlerAliases.ts'
 import { findRelatedTests } from '../../core/tests/findRelatedTests.ts'
 import { getGitSignals } from '../../core/git/getGitSignals.ts'
 import { buildBasicNote } from '../../core/output/buildBasicNote.ts'
@@ -15,13 +16,18 @@ import { createProvider } from '../../core/llm/provider/factory.ts'
 import { synthesizeFileNote } from '../../core/llm/synthesizeFileNote.ts'
 import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
-import { isCacheValid } from '../../core/cache/isCacheValid.ts'
+import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisStore.ts'
 import { logger } from '../../core/utils/logger.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
+import type { StaticFileAnalysis } from '../../core/types/file-analysis.ts'
 
 const DEFAULT_LLM_THRESHOLD = 0.4
 
-export async function runGenerate(args: { root?: string; force?: boolean }): Promise<void> {
+export async function runGenerate(args: {
+  root?: string
+  force?: boolean
+  filter?: string
+}): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
 
@@ -31,16 +37,60 @@ export async function runGenerate(args: { root?: string; force?: boolean }): Pro
   const files = await scanRepository(config)
   logger.info(`Found ${files.length} files`)
 
-  // 2. Parse all files
-  logger.info('Analyzing files...')
-  const analyses = files.map((f) => parseFile(f.path))
+  // 2. Load caches
+  const noteHashStore = args.force ? new Map() : await loadCache(root)
+  const analysisStore = args.force ? new Map() : await loadAnalysisStore(root)
+  if (args.force) logger.info('Cache bypassed (--force)')
 
-  // 3. Build graphs
+  // 3. Pre-compute hashes and parse files incrementally
+  //    Files whose hash matches the stored note hash reuse their cached StaticFileAnalysis,
+  //    skipping the expensive ts-morph parse step.
+  logger.info('Analyzing files...')
+  const fileHashes = new Map<string, string>()
+  const analyses: StaticFileAnalysis[] = []
+  let analysisHits = 0
+
+  for (const file of files) {
+    const hash = await computeHash(file.path)
+    fileHashes.set(file.relativePath, hash)
+
+    const cachedAnalysis = analysisStore.get(file.relativePath)
+    const noteHash = noteHashStore.get(file.relativePath)
+
+    if (!args.force && cachedAnalysis && noteHash === hash) {
+      // File unchanged and note is current — reuse cached AST analysis
+      analyses.push(cachedAnalysis)
+      analysisHits++
+    } else {
+      const analysis = parseFile(file.path)
+      analyses.push(analysis)
+      analysisStore.set(file.relativePath, analysis)
+    }
+  }
+
+  if (analysisHits > 0) logger.info(`Reused ${analysisHits} cached analyses (skipped ts-morph parse)`)
+
+  // 4. Persist updated analysis cache
+  await saveAnalysisStore(root, analysisStore)
+
+  // 5. Build dependency graphs
+  //    Aliases are loaded from tsconfig.json paths + bundler configs (Vite, Webpack, Metro).
   logger.info('Building dependency graph...')
-  const depGraph = buildDependencyGraph(analyses, root)
+  const aliases = loadBundlerAliases(root)
+  const depGraph = buildDependencyGraph(analyses, root, aliases)
   const revGraph = buildReverseDependencyGraph(depGraph)
 
-  // 4. Setup LLM provider (if configured)
+  // 6. Apply --filter if specified
+  //    The full graph is built from ALL files for accurate dependency signals.
+  //    Only the note-writing loop is scoped to the filtered set.
+  let filteredAnalyses = analyses
+  if (args.filter) {
+    const glob = new Bun.Glob(args.filter)
+    filteredAnalyses = analyses.filter((a) => glob.match(path.relative(root, a.filePath)))
+    logger.info(`Filter '${args.filter}' → ${filteredAnalyses.length} / ${analyses.length} files`)
+  }
+
+  // 7. Setup LLM provider (if configured)
   const llmConfig = config.llm
   const provider = llmConfig ? createProvider(llmConfig) : null
   const llmThreshold = llmConfig?.llmThreshold ?? DEFAULT_LLM_THRESHOLD
@@ -50,22 +100,19 @@ export async function runGenerate(args: { root?: string; force?: boolean }): Pro
     logger.info(`LLM synthesis enabled (provider: ${llmConfig!.provider}, threshold: ${llmThreshold})`)
   }
 
-  // 5. Load cache
-  const hashStore = args.force ? new Map() : await loadCache(root)
-  if (args.force) logger.info('Cache bypassed (--force)')
-
-  // 6. Generate and write notes
+  // 8. Generate and write notes
   logger.info('Writing notes...')
   let written = 0
   let skipped = 0
   let synthesized = 0
   const notes: AiFileNote[] = []
 
-  for (const analysis of analyses) {
+  for (const analysis of filteredAnalyses) {
     const file = files.find((f) => f.path === analysis.filePath)!
+    const currentHash = fileHashes.get(file.relativePath)!
 
-    // Check cache
-    if (!args.force && await isCacheValid(analysis.filePath, file.relativePath, hashStore)) {
+    // Skip if the note is already up to date for this file
+    if (!args.force && noteHashStore.get(file.relativePath) === currentHash) {
       skipped++
       continue
     }
@@ -94,18 +141,15 @@ export async function runGenerate(args: { root?: string; force?: boolean }): Pro
     await writeJsonNote(note, root, config.output)
     await writeMarkdownNote(note, root, config.output)
 
-    // Update cache
-    const hash = await computeHash(analysis.filePath)
-    hashStore.set(file.relativePath, hash)
-
+    noteHashStore.set(file.relativePath, currentHash)
     notes.push(note)
     written++
   }
 
-  // 7. Save cache
-  await saveCache(root, hashStore)
+  // 9. Save note cache
+  await saveCache(root, noteHashStore)
 
-  // 8. Build and write index
+  // 10. Build and write index
   await writeIndexNote(buildIndex(notes, root), root, config.output)
 
   logger.success(`Generated ${written} notes in ${config.output}/`)

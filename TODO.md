@@ -48,7 +48,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [ ] **`scan --format json`** — add `--format json|table` flag to the `scan` command for machine-readable output and integration with external tools.
 
-- [ ] **`parseFile` error resilience** — wrap ts-morph parsing in try/catch; emit a warning and return an empty analysis instead of crashing on files with syntax errors.
+- [x] **`parseFile` error resilience** — wrap ts-morph parsing in try/catch; emit a warning and return an empty analysis instead of crashing on files with syntax errors.
 
 ---
 

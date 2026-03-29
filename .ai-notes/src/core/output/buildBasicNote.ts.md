@@ -1,6 +1,6 @@
 # src/core/output/buildBasicNote.ts
 
-**Criticality:** 0.32 | **Generated:** 2026-03-29 | **Model:** static
+**Criticality:** 0.39 | **Generated:** 2026-03-29 | **Model:** static
 
 ## Purpose
 
@@ -25,13 +25,20 @@
 
 ## Known Pitfalls
 
-- Co-changes frequently with: /home/runner/work/braito/braito/src/cli/commands/generate.ts, /home/runner/work/braito/braito/src/core/types/file-analysis.ts, /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts
+- Co-changes frequently with: /home/runner/work/braito/braito/src/cli/commands/generate.ts, /home/runner/work/braito/braito/src/core/types/file-analysis.ts, /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts, /home/runner/work/braito/braito/CHANGELOG.md, /home/runner/work/braito/braito/TODO.md, /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts, /home/runner/work/braito/braito/src/core/config/defaults.ts, /home/runner/work/braito/braito/src/core/types/project.ts, /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts, /home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts
 
 | Type | Detail |
 |------|--------|
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts |
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
-| git | Co-changed 2x with /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
+| git | Co-changed 3x with /home/runner/work/braito/braito/src/cli/commands/generate.ts |
+| git | Co-changed 3x with /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
+| git | Co-changed 3x with /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/CHANGELOG.md |
+| git | Co-changed 2x with /home/runner/work/braito/braito/TODO.md |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/config/defaults.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/types/project.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts |
 
 ## Impact Validation
 
@@ -39,25 +46,25 @@
 - /home/runner/work/braito/braito/src/cli/commands/watch.ts
 - /home/runner/work/braito/braito/src/core/types/file-analysis.ts
 - /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts
-- /home/runner/work/braito/braito/src/core/git/getCoChangedFiles.ts
-- /home/runner/work/braito/braito/src/core/git/getFileHistory.ts
-- /home/runner/work/braito/braito/src/core/git/getGitSignals.ts
-- /home/runner/work/braito/braito/tests/git/getCoChangedFiles.test.ts
-- /home/runner/work/braito/braito/tests/git/getFileHistory.test.ts
-- /home/runner/work/braito/braito/tests/git/getGitSignals.test.ts
-- /home/runner/work/braito/braito/CLAUDE.md
+- /home/runner/work/braito/braito/CHANGELOG.md
+- /home/runner/work/braito/braito/TODO.md
+- /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts
+- /home/runner/work/braito/braito/src/core/config/defaults.ts
+- /home/runner/work/braito/braito/src/core/types/project.ts
+- /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts
+- /home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts
 
 | Type | Detail |
 |------|--------|
 | graph | Consumer: /home/runner/work/braito/braito/src/cli/commands/generate.ts |
 | graph | Consumer: /home/runner/work/braito/braito/src/cli/commands/watch.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/git/getCoChangedFiles.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/git/getFileHistory.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/git/getGitSignals.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/tests/git/getCoChangedFiles.test.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/tests/git/getFileHistory.test.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/tests/git/getGitSignals.test.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/CLAUDE.md |
+| git | Co-changed 3x: /home/runner/work/braito/braito/src/cli/commands/generate.ts |
+| git | Co-changed 3x: /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
+| git | Co-changed 3x: /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/CHANGELOG.md |
+| git | Co-changed 2x: /home/runner/work/braito/braito/TODO.md |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/config/defaults.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/types/project.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts |

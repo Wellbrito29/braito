@@ -1,39 +1,138 @@
 {
-  "generatedAt": "2026-03-29T01:55:37.617Z",
-  "totalFiles": 4,
+  "generatedAt": "2026-03-29T18:27:22.353Z",
+  "totalFiles": 13,
   "synthesizedFiles": 0,
+  "staleFiles": 0,
   "entries": [
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/types/file-analysis.ts",
+      "relativePath": "src/core/types/file-analysis.ts",
+      "domain": "src",
+      "criticalityScore": 0.58,
+      "model": "static",
+      "purpose": "Exports: StaticFileAnalysis, GraphSignals, TestSignals, GitSignals",
+      "generatedAt": "2026-03-29T18:27:22.333Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/types/project.ts",
+      "relativePath": "src/core/types/project.ts",
+      "domain": "src",
+      "criticalityScore": 0.58,
+      "model": "static",
+      "purpose": "Exports: DiscoveredFile, LLMProviderName, LLMConfig, AiNotesConfig",
+      "generatedAt": "2026-03-29T18:27:22.349Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/output/buildIndex.ts",
+      "relativePath": "src/core/output/buildIndex.ts",
+      "domain": "src",
+      "criticalityScore": 0.57,
+      "model": "static",
+      "purpose": "Exports: buildIndex, IndexEntry, NoteIndex",
+      "generatedAt": "2026-03-29T18:27:22.246Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/output/writeIndexNote.ts",
+      "relativePath": "src/core/output/writeIndexNote.ts",
+      "domain": "src",
+      "criticalityScore": 0.47,
+      "model": "static",
+      "purpose": "Exports: writeIndexNote",
+      "generatedAt": "2026-03-29T18:27:22.278Z",
+      "stale": false
+    },
     {
       "filePath": "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
       "relativePath": "src/cli/commands/generate.ts",
-      "criticalityScore": 0.35,
+      "domain": "src",
+      "criticalityScore": 0.41,
       "model": "static",
       "purpose": "Exports: runGenerate",
-      "generatedAt": "2026-03-29T01:55:37.494Z"
+      "generatedAt": "2026-03-29T18:27:22.090Z",
+      "stale": false
     },
     {
-      "filePath": "/home/runner/work/braito/braito/src/core/cache/analysisStore.ts",
-      "relativePath": "src/core/cache/analysisStore.ts",
-      "criticalityScore": 0.31,
+      "filePath": "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts",
+      "relativePath": "src/core/output/buildBasicNote.ts",
+      "domain": "src",
+      "criticalityScore": 0.39,
       "model": "static",
-      "purpose": "Exports: loadAnalysisStore, saveAnalysisStore, AnalysisStore",
-      "generatedAt": "2026-03-29T01:55:37.560Z"
+      "purpose": "Exports: buildBasicNote",
+      "generatedAt": "2026-03-29T18:27:22.214Z",
+      "stale": false
     },
     {
-      "filePath": "/home/runner/work/braito/braito/src/core/graph/loadBundlerAliases.ts",
-      "relativePath": "src/core/graph/loadBundlerAliases.ts",
-      "criticalityScore": 0.31,
+      "filePath": "/home/runner/work/braito/braito/src/cli/commands/watch.ts",
+      "relativePath": "src/cli/commands/watch.ts",
+      "domain": "src",
+      "criticalityScore": 0.37,
       "model": "static",
-      "purpose": "Exports: loadBundlerAliases, PathAliases",
-      "generatedAt": "2026-03-29T01:55:37.612Z"
+      "purpose": "Exports: runWatch",
+      "generatedAt": "2026-03-29T18:27:22.129Z",
+      "stale": false
     },
     {
-      "filePath": "/home/runner/work/braito/braito/src/cli/index.ts",
-      "relativePath": "src/cli/index.ts",
-      "criticalityScore": 0.23,
+      "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts",
+      "relativePath": "src/core/ast/analyzers/ts/extractComments.ts",
+      "domain": "src",
+      "criticalityScore": 0.37,
       "model": "static",
-      "purpose": "",
-      "generatedAt": "2026-03-29T01:55:37.529Z"
+      "purpose": "Exports: extractComments, ExtractedComments",
+      "generatedAt": "2026-03-29T18:27:22.149Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/config/defaults.ts",
+      "relativePath": "src/core/config/defaults.ts",
+      "domain": "src",
+      "criticalityScore": 0.37,
+      "model": "static",
+      "purpose": "Exports: withDefaults, DEFAULT_INCLUDE, DEFAULT_EXCLUDE, DEFAULT_STALE_THRESHOLD_DAYS",
+      "generatedAt": "2026-03-29T18:27:22.176Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
+      "relativePath": "src/core/graph/buildDependencyGraph.ts",
+      "domain": "src",
+      "criticalityScore": 0.37,
+      "model": "static",
+      "purpose": "Exports: buildDependencyGraph, updateDependencyGraph",
+      "generatedAt": "2026-03-29T18:27:22.191Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/tests/loadCoverage.ts",
+      "relativePath": "src/core/tests/loadCoverage.ts",
+      "domain": "src",
+      "criticalityScore": 0.36,
+      "model": "static",
+      "purpose": "Exports: loadCoverage",
+      "generatedAt": "2026-03-29T18:27:22.302Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/cache/isNoteStale.ts",
+      "relativePath": "src/core/cache/isNoteStale.ts",
+      "domain": "src",
+      "criticalityScore": 0.26,
+      "model": "static",
+      "purpose": "Exports: isNoteStale",
+      "generatedAt": "2026-03-29T18:27:22.164Z",
+      "stale": false
+    },
+    {
+      "filePath": "/home/runner/work/braito/braito/src/core/tests/parseLcov.ts",
+      "relativePath": "src/core/tests/parseLcov.ts",
+      "domain": "src",
+      "criticalityScore": 0.26,
+      "model": "static",
+      "purpose": "Exports: parseLcov",
+      "generatedAt": "2026-03-29T18:27:22.319Z",
+      "stale": false
     }
   ]
 }

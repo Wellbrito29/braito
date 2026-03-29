@@ -7,14 +7,14 @@ import { loadConfig } from '../../core/config/loadConfig.ts'
 // Exposes braito's .ai-notes/ sidecars as tools for AI assistants (Cursor, Claude)
 // ---------------------------------------------------------------------------
 
-type JsonRpcRequest = {
+export type JsonRpcRequest = {
   jsonrpc: '2.0'
   id: number | string | null
   method: string
   params?: unknown
 }
 
-type JsonRpcResponse = {
+export type JsonRpcResponse = {
   jsonrpc: '2.0'
   id: number | string | null
   result?: unknown
@@ -64,19 +64,24 @@ function send(msg: JsonRpcResponse): void {
   process.stdout.write(JSON.stringify(msg) + '\n')
 }
 
-function sendError(id: number | string | null, code: number, message: string): void {
-  send({ jsonrpc: '2.0', id, error: { code, message } })
+function errorResponse(id: number | string | null, code: number, message: string): JsonRpcResponse {
+  return { jsonrpc: '2.0', id, error: { code, message } }
 }
 
-async function handleRequest(
+/**
+ * Handle a JSON-RPC request and return the response object.
+ * Returns null for notification methods that require no response.
+ * This function is exported for direct testing without subprocess overhead.
+ */
+export async function handleRequest(
   req: JsonRpcRequest,
   root: string,
   outputDir: string,
-): Promise<void> {
+): Promise<JsonRpcResponse | null> {
   const { id, method, params } = req
 
   if (method === 'initialize') {
-    send({
+    return {
       jsonrpc: '2.0',
       id,
       result: {
@@ -84,18 +89,16 @@ async function handleRequest(
         capabilities: { tools: {} },
         serverInfo: { name: 'braito', version: '1.0.0' },
       },
-    })
-    return
+    }
   }
 
   if (method === 'notifications/initialized' || method === 'initialized') {
     // No response needed for notifications
-    return
+    return null
   }
 
   if (method === 'tools/list') {
-    send({ jsonrpc: '2.0', id, result: { tools: TOOLS } })
-    return
+    return { jsonrpc: '2.0', id, result: { tools: TOOLS } }
   }
 
   if (method === 'tools/call') {
@@ -105,16 +108,14 @@ async function handleRequest(
       const filePath = args.file_path as string
       const notePath = path.resolve(root, outputDir, filePath + '.json')
       if (!fs.existsSync(notePath)) {
-        sendError(id, -32602, `No note found for '${filePath}'. Run 'generate' first.`)
-        return
+        return errorResponse(id, -32602, `No note found for '${filePath}'. Run 'generate' first.`)
       }
       try {
         const note = JSON.parse(fs.readFileSync(notePath, 'utf-8'))
-        send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(note, null, 2) }] } })
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(note, null, 2) }] } }
       } catch {
-        sendError(id, -32603, 'Failed to read note file.')
+        return errorResponse(id, -32603, 'Failed to read note file.')
       }
-      return
     }
 
     if (name === 'search_by_criticality') {
@@ -122,41 +123,36 @@ async function handleRequest(
       const limit = (args.limit as number | undefined) ?? 20
       const indexPath = path.resolve(root, outputDir, 'index.json')
       if (!fs.existsSync(indexPath)) {
-        sendError(id, -32602, "Index not found. Run 'generate' first.")
-        return
+        return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
       }
       try {
         const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
         const results = index.entries
           .filter((e: { criticalityScore: number }) => e.criticalityScore >= threshold)
           .slice(0, limit)
-        send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(results, null, 2) }] } })
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(results, null, 2) }] } }
       } catch {
-        sendError(id, -32603, 'Failed to read index.')
+        return errorResponse(id, -32603, 'Failed to read index.')
       }
-      return
     }
 
     if (name === 'get_index') {
       const indexPath = path.resolve(root, outputDir, 'index.json')
       if (!fs.existsSync(indexPath)) {
-        sendError(id, -32602, "Index not found. Run 'generate' first.")
-        return
+        return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
       }
       try {
         const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
-        send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(index, null, 2) }] } })
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(index, null, 2) }] } }
       } catch {
-        sendError(id, -32603, 'Failed to read index.')
+        return errorResponse(id, -32603, 'Failed to read index.')
       }
-      return
     }
 
-    sendError(id, -32601, `Unknown tool: ${name}`)
-    return
+    return errorResponse(id, -32601, `Unknown tool: ${name}`)
   }
 
-  sendError(id, -32601, `Method not found: ${method}`)
+  return errorResponse(id, -32601, `Method not found: ${method}`)
 }
 
 export async function runMcp(args: { root?: string }): Promise<void> {
@@ -180,9 +176,12 @@ export async function runMcp(args: { root?: string }): Promise<void> {
       if (!trimmed) continue
       try {
         const req = JSON.parse(trimmed) as JsonRpcRequest
-        await handleRequest(req, root, outputDir)
+        const response = await handleRequest(req, root, outputDir)
+        if (response !== null) {
+          send(response)
+        }
       } catch {
-        sendError(null, -32700, 'Parse error')
+        send(errorResponse(null, -32700, 'Parse error'))
       }
     }
   })

@@ -38,7 +38,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Test coverage hints** — integrate with coverage reports (lcov, c8) to surface actual uncovered files in `impactValidation`, not just heuristic test discovery.
 
-- [ ] **LLM retry with backoff** — add exponential backoff (max 3 retries) for transient LLM errors (network timeout, 429 rate limit) in all providers; distinguish transient from permanent failures.
+- [x] **LLM retry with backoff** — add exponential backoff (max 3 retries) for transient LLM errors (network timeout, 429 rate limit) in all providers; distinguish transient from permanent failures.
 
 - [ ] **Concurrent file processing** — process files in parallel batches in `generate`; respect LLM rate limits with a concurrency cap (e.g. 5 simultaneous synthesis calls).
 

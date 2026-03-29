@@ -6,6 +6,7 @@ import { parseFile } from '../../core/ast/parseFile.ts'
 import { buildDependencyGraph, updateDependencyGraph } from '../../core/graph/buildDependencyGraph.ts'
 import { buildReverseDependencyGraph } from '../../core/graph/buildReverseDependencyGraph.ts'
 import { loadBundlerAliases } from '../../core/graph/loadBundlerAliases.ts'
+import { detectCycles, filesInCycles } from '../../core/graph/detectCycles.ts'
 import { findRelatedTests } from '../../core/tests/findRelatedTests.ts'
 import { getGitSignals } from '../../core/git/getGitSignals.ts'
 import { buildBasicNote } from '../../core/output/buildBasicNote.ts'
@@ -38,6 +39,7 @@ export async function runWatch(args: { root?: string }): Promise<void> {
   const depGraph = buildDependencyGraph(analyses, root, aliases)
   let revGraph = buildReverseDependencyGraph(depGraph)
   logger.debug(`Dependency graph: ${depGraph.size} nodes`)
+  let cycleFiles = filesInCycles(detectCycles(depGraph))
 
   const llmConfig = config.llm
   const provider = llmConfig ? createProvider(llmConfig) : null
@@ -50,7 +52,7 @@ export async function runWatch(args: { root?: string }): Promise<void> {
 
   // Generate initial notes
   for (const analysis of analyses) {
-    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature, timeoutMs)
+    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs)
     if (note) {
       noteMap.set(analysis.filePath, note)
       const relPath = path.relative(root, analysis.filePath)
@@ -84,9 +86,10 @@ export async function runWatch(args: { root?: string }): Promise<void> {
       const changedAnalysis = parseFile(absolutePath)
       updateDependencyGraph(depGraph, changedAnalysis, root, aliases)
       revGraph = buildReverseDependencyGraph(depGraph)
+      cycleFiles = filesInCycles(detectCycles(depGraph))
       logger.debug(`Graph updated incrementally for: ${filename}`)
 
-      const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, provider, llmThreshold, temperature, timeoutMs)
+      const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs)
       if (note) {
         noteMap.set(absolutePath, note)
         hashStore.set(filename, await computeHash(absolutePath))
@@ -111,6 +114,7 @@ async function processFile(
   files: Awaited<ReturnType<typeof scanRepository>>,
   depGraph: Map<string, string[]>,
   revGraph: Map<string, string[]>,
+  cycleFiles: Set<string>,
   provider: ReturnType<typeof createProvider> | null,
   llmThreshold: number,
   temperature: number,
@@ -128,7 +132,7 @@ async function processFile(
     }
     const tests = { filePath, relatedTests }
 
-    let note = buildBasicNote(analysis, graph, tests, gitSignals)
+    let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
 
     if (provider && note.criticalityScore >= llmThreshold) {
       note = await synthesizeFileNote(

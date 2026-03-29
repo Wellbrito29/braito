@@ -1,3 +1,5 @@
+import path from 'node:path'
+import fs from 'node:fs'
 import { Project } from 'ts-morph'
 import type { StaticFileAnalysis } from '../types/file-analysis.ts'
 import { extractImports } from './analyzers/ts/extractImports.ts'
@@ -5,10 +7,28 @@ import { extractExports } from './analyzers/ts/extractExports.ts'
 import { extractSymbols } from './analyzers/ts/extractSymbols.ts'
 import { extractHooks } from './analyzers/ts/extractHooks.ts'
 import { extractComments } from './analyzers/ts/extractComments.ts'
+import { getAnalyzer } from './analyzerRegistry.ts'
 
 const project = new Project({ skipAddingFilesFromTsConfig: true, useInMemoryFileSystem: false })
 
+const TS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.mjs'])
+
 export function parseFile(filePath: string): StaticFileAnalysis {
+  const ext = path.extname(filePath)
+
+  // Delegate to language-specific analyzer if available
+  const analyzer = getAnalyzer(ext)
+  if (analyzer) {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return analyzer.analyze(filePath, content)
+  }
+
+  // Default: TypeScript/JavaScript via ts-morph
+  if (!TS_EXTENSIONS.has(ext)) {
+    // Unknown extension — return empty analysis rather than crashing
+    return emptyAnalysis(filePath)
+  }
+
   let sourceFile = project.getSourceFile(filePath)
   if (!sourceFile) {
     sourceFile = project.addSourceFileAtPath(filePath)
@@ -40,6 +60,22 @@ export function parseFile(filePath: string): StaticFileAnalysis {
   }
 }
 
+function emptyAnalysis(filePath: string): StaticFileAnalysis {
+  return {
+    filePath,
+    imports: [],
+    localImports: [],
+    externalImports: [],
+    exports: [],
+    symbols: [],
+    hooks: [],
+    envVars: [],
+    apiCalls: [],
+    comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
+    hasSideEffects: false,
+  }
+}
+
 function extractEnvVars(text: string): string[] {
   const matches = text.matchAll(/process\.env\.([A-Z_][A-Z0-9_]*)/g)
   return [...new Set([...matches].map((m) => m[1]))]
@@ -49,3 +85,4 @@ function extractApiCalls(text: string): string[] {
   const matches = text.matchAll(/(?:fetch|axios|got|request)\s*\(\s*['"`]([^'"`]+)['"`]/g)
   return [...new Set([...matches].map((m) => m[1]))]
 }
+

@@ -35,6 +35,7 @@ export async function runGenerate(args: {
   force?: boolean
   filter?: string
   diff?: boolean
+  dryRun?: boolean
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -83,8 +84,8 @@ export async function runGenerate(args: {
 
   if (analysisHits > 0) logger.info(`Reused ${analysisHits} cached analyses (skipped ts-morph parse)`)
 
-  // 4. Persist updated analysis cache
-  await saveAnalysisStore(root, analysisStore)
+  // 4. Persist updated analysis cache (skip in dry-run — no files should be written)
+  if (!args.dryRun) await saveAnalysisStore(root, analysisStore)
 
   // 5. Build dependency graphs
   //    Aliases are loaded from tsconfig.json paths + bundler configs (Vite, Webpack, Metro).
@@ -133,12 +134,16 @@ export async function runGenerate(args: {
   }
 
   // 8. Generate and write notes
-  logger.info('Writing notes...')
+  if (!args.dryRun) logger.info('Writing notes...')
   let written = 0
   let skipped = 0
   let synthesized = 0
   const notes: AiFileNote[] = []
   const diffs: NoteDiff[] = []
+
+  // Dry-run tracking
+  type DryRunEntry = { relativePath: string; score: number; useLlm: boolean; wouldSkip: boolean }
+  const dryRunEntries: DryRunEntry[] = []
 
   // Use concurrentMap so multiple files are processed in parallel up to `concurrency` limit.
   // Results may be null when a file is skipped (hash unchanged).
@@ -151,6 +156,9 @@ export async function runGenerate(args: {
 
       // Skip if the note is already up to date for this file
       if (!args.force && noteHashStore.get(file.relativePath) === currentHash) {
+        if (args.dryRun) {
+          dryRunEntries.push({ relativePath: file.relativePath, score: 0, useLlm: false, wouldSkip: true })
+        }
         return null
       }
 
@@ -180,11 +188,18 @@ export async function runGenerate(args: {
       let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
       logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
 
-      if (provider && note.criticalityScore >= llmThreshold) {
+      const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)
+
+      if (args.dryRun) {
+        dryRunEntries.push({ relativePath: file.relativePath, score: note.criticalityScore, useLlm: wouldUseLlm, wouldSkip: false })
+        return { note, relativePath: file.relativePath, hash: currentHash }
+      }
+
+      if (wouldUseLlm) {
         logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)})`)
         note = await synthesizeFileNote(
           { analysis, graph, tests, git: gitSignals, staticNote: note },
-          provider,
+          provider!,
           temperature,
           timeoutMs,
         )
@@ -207,11 +222,33 @@ export async function runGenerate(args: {
     if (result === null) {
       skipped++
     } else {
-      noteHashStore.set(result.relativePath, result.hash)
+      if (!args.dryRun) {
+        noteHashStore.set(result.relativePath, result.hash)
+      }
       notes.push(result.note)
       if (result.diff) diffs.push(result.diff)
       written++
     }
+  }
+
+  // Dry-run: print summary and exit without writing anything
+  if (args.dryRun) {
+    logger.info('Dry run — no files will be written\n')
+    const maxLen = dryRunEntries.reduce((m, e) => Math.max(m, e.relativePath.length), 0)
+    for (const entry of dryRunEntries) {
+      if (entry.wouldSkip) {
+        logger.info(`  Would skip:   ${entry.relativePath}  (unchanged)`)
+      } else {
+        const synthesis = entry.useLlm ? 'LLM' : 'static'
+        const padded = entry.relativePath.padEnd(maxLen)
+        logger.info(`  Would write:  ${padded}  (score: ${entry.score.toFixed(2)}, ${synthesis})`)
+      }
+    }
+    const wouldWrite = dryRunEntries.filter((e) => !e.wouldSkip).length
+    const wouldSkip = dryRunEntries.filter((e) => e.wouldSkip).length
+    const wouldUseLlm = dryRunEntries.filter((e) => e.useLlm).length
+    logger.info(`\n  Summary: ${wouldWrite} would be written, ${wouldSkip} skipped, ${wouldUseLlm} would use LLM synthesis`)
+    return
   }
 
   // 9. Save note cache

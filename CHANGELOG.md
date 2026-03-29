@@ -10,6 +10,9 @@ All notable changes to braito will be documented here.
 - **Domain grouping in `index.md`** — `buildIndex` now derives a `domain` per entry (first dir segment, or `packages/<name>` for monorepo roots); `renderIndexMarkdown` renders one section per domain sorted by max criticality, each with file count and avg score
 - **Stale note detection** — `isNoteStale` utility checks `generatedAt` age against a configurable `staleThresholdDays` (default 30); `NoteIndex` gains `staleFiles` count; `index.md` marks stale entries with ⚠; `generate` logs a warning when stale notes are found; threshold configurable via `ai-notes.config.ts`
 - **Test coverage hints** — `parseLcov` and `loadCoverage` load `coverage/lcov.info` or `coverage/coverage-summary.json`; `TestSignals` gains `coveragePct?: number`; `buildBasicNote` surfaces coverage in `impactValidation.observed` with a risk warning for files below 50%
+- **Multi-language support** — `LanguageAnalyzer` interface + registry; Python (`.py`) and Go (`.go`) analyzers via regex extraction; `parseFile` dispatches by extension; `MULTI_LANGUAGE_INCLUDE` export for opt-in in config
+- **MCP server** — `bun src/cli/index.ts mcp` starts a JSON-RPC 2.0 server over stdio; exposes `get_file_note`, `search_by_criticality`, `get_index` tools; compatible with Cursor, Claude Code, and any MCP-capable client
+- **Interactive UI** — `bun src/cli/index.ts ui` serves a local web interface at port 7842; browse notes grouped by domain, filter by score, search by filename, view all fields per file
 
 ### Fixed
 - **Alias resolution in watch mode** — `watch.ts` now calls `loadBundlerAliases(root)` and passes aliases to `buildDependencyGraph`, matching the behavior of `generate.ts`; bundler aliases (Vite, Webpack, Metro) are now resolved correctly in watch mode

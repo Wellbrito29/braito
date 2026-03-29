@@ -30,8 +30,8 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 ## Long-term / Phase 5
 
-- [ ] **Multi-language support** — AST layer is modular per language (`core/ast/analyzers/`). Adding Python (via tree-sitter) or Go follows the same extractor pattern.
+- [x] **Multi-language support** — AST layer is modular per language (`core/ast/analyzers/`). Adding Python (via tree-sitter) or Go follows the same extractor pattern.
 
-- [ ] **MCP server** — expose braito as a Model Context Protocol server so AI assistants (Cursor, Claude) can query notes about specific files on demand during code review.
+- [x] **MCP server** — expose braito as a Model Context Protocol server so AI assistants (Cursor, Claude) can query notes about specific files on demand during code review.
 
-- [ ] **Interactive UI** — `bun src/cli/index.ts ui` command serving a local web interface to browse the index, filter by domain/score, and trigger re-synthesis.
+- [x] **Interactive UI** — `bun src/cli/index.ts ui` command serving a local web interface to browse the index, filter by domain/score, and trigger re-synthesis.

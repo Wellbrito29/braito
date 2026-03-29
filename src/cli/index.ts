@@ -3,6 +3,8 @@ import { parseArgs } from 'node:util'
 import { runScan } from './commands/scan.ts'
 import { runGenerate } from './commands/generate.ts'
 import { runWatch } from './commands/watch.ts'
+import { runMcp } from './commands/mcp.ts'
+import { runUi } from './commands/ui.ts'
 
 const [, , command, ...rest] = process.argv
 
@@ -29,6 +31,16 @@ switch (command) {
     await runWatch({ root: values.root })
     break
 
+  case 'mcp':
+    await runMcp({ root: values.root })
+    break
+
+  case 'ui': {
+    const portStr = (values as Record<string, unknown>).port as string | undefined
+    await runUi({ root: values.root, port: portStr ? parseInt(portStr) : undefined })
+    break
+  }
+
   default:
     console.log(`
 braito — AI File Notes
@@ -40,6 +52,8 @@ Commands:
   scan      Discover and list eligible files
   generate  Analyze files and write .ai-notes/ sidecars
   watch     Watch for changes and regenerate notes incrementally
+  mcp       Start the MCP server (JSON-RPC 2.0 over stdio)
+  ui        Start the local web UI to browse notes
 
 Options:
   --root, -r <path>      Root directory to analyze (default: cwd)

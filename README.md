@@ -1,93 +1,158 @@
-# AI File Notes
+<p align="center">
+  <img src="docs/assets/braito.png" alt="Braito — Operational context for codebases" width="600" />
+</p>
 
-Documentação base para um projeto que analisa um repositório e gera notas operacionais por arquivo, com foco em codebases densas, monorepos e times que usam IA para acelerar entendimento e manutenção.
+<p align="center">
+  <strong>Operational context for codebases.</strong><br/>
+  Braito analyzes TypeScript/JavaScript repos and generates structured knowledge sidecars per file — powered by static analysis, git intelligence, and optional LLM synthesis.
+</p>
 
-## Objetivo
+<p align="center">
+  <img alt="Built with Bun" src="https://img.shields.io/badge/built%20with-Bun-f9f1e1?logo=bun&logoColor=black" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript&logoColor=white" />
+  <img alt="Status" src="https://img.shields.io/badge/status-operational-brightgreen" />
+</p>
 
-Construir uma ferramenta que:
+---
 
-- varre o repositório
-- identifica arquivos relevantes
-- extrai sinais estáticos do código
-- cruza dependências, testes e histórico do Git
-- monta contexto por arquivo
-- usa um LLM para sintetizar conhecimento operacional
-- publica notas em Markdown e JSON em `.ai-notes/`
+## What it does
 
-## O que a ferramenta gera
+Braito scans your codebase and generates a `.ai-notes/` directory with one `.json` + `.md` sidecar per file. Each note contains:
 
-Para cada arquivo crítico ou relevante, a ferramenta tenta produzir:
+| Field | Description |
+|---|---|
+| `purpose` | What the file does |
+| `invariants` | Contracts and assumptions that must hold |
+| `sensitiveDependencies` | Risky imports, env vars, external APIs |
+| `importantDecisions` | Non-obvious architectural choices |
+| `knownPitfalls` | Common failure modes |
+| `impactValidation` | Where to verify before shipping |
+| `criticalityScore` | 0–1 heuristic — drives LLM prioritization |
 
-- propósito do arquivo
-- invariantes
-- dependências sensíveis
-- decisões importantes
-- armadilhas conhecidas
-- onde validar impacto
+Every field separates **`observed`** (static analysis, git, tests) from **`inferred`** (LLM synthesis). No hallucination hiding in the facts.
 
-## Princípios do projeto
+---
 
-1. **Não depender só de LLM**: a base deve vir de análise estática, grafo de dependências, testes e Git.
-2. **Contexto reduzido por arquivo**: nunca mandar o repositório inteiro para o modelo.
-3. **Separar observado de inferido**: reduzir alucinação e aumentar confiança.
-4. **Publicar sidecar primeiro**: evitar poluir a codebase com comentários inline no início.
-5. **Priorizar arquivos críticos**: hooks centrais, adapters, gateways, telas críticas, reducers, serviços e pontos com alto churn.
+## Pipeline
 
-## Estrutura sugerida desta documentação
+```
+repo → scanner → AST analyzer → graph engine → git intelligence
+     → [cache check] → static note → [LLM synthesis] → .ai-notes/
+```
 
-- `docs/PROJECT_DESCRIPTION.md`
-- `docs/ARCHITECTURE.md`
-- `docs/FILE_STRUCTURE.md`
-- `docs/DOMAIN_MODEL_AND_SCHEMA.md`
-- `docs/LLM_STRATEGY.md`
-- `docs/IMPLEMENTATION_PLAN.md`
-- `docs/RECOMMENDATIONS.md`
-- `docs/ROADMAP.md`
+**Key constraint:** LLM is only invoked when `criticalityScore >= llmThreshold` (default `0.4`). The rest of the pipeline is fully deterministic and auditable.
 
-## Fluxo resumido
+---
 
-1. scanner encontra arquivos
-2. analyzer extrai AST e sinais objetivos
-3. graph monta dependências diretas e reversas
-4. git intelligence cruza churn, commits e co-change
-5. test intelligence encontra testes relacionados
-6. context builder empacota evidências por arquivo
-7. llm synthesizer gera a nota estruturada
-8. publisher grava `.json` e `.md`
+## Quickstart
 
-## Saída esperada
+```bash
+# Install dependencies
+bun install
 
-Exemplo simplificado:
+# Discover eligible files
+bun src/cli/index.ts scan --root ./
 
-```json
-{
-  "filePath": "packages/search/src/useImageSearch.ts",
-  "purpose": {
-    "observed": ["Exporta um hook chamado useImageSearch"],
-    "inferred": ["Orquestra o fluxo de busca por imagem"],
-    "confidence": 0.89,
-    "evidence": [
-      { "type": "code", "detail": "export function useImageSearch" }
-    ]
-  }
+# Full pipeline — writes .ai-notes/
+bun src/cli/index.ts generate --root ./
+
+# Bypass cache, reprocess everything
+bun src/cli/index.ts generate --root ./ --force
+
+# Watch mode — regenerates on file change
+bun src/cli/index.ts watch --root ./
+
+# Run tests
+bun test
+```
+
+---
+
+## Configuration
+
+Create an `ai-notes.config.ts` at the root of your project:
+
+```ts
+// Ollama — local, no API key needed
+export default {
+  llm: { provider: 'ollama', model: 'llama3', llmThreshold: 0.4, temperature: 0.2 }
+}
+
+// Anthropic
+export default {
+  llm: { provider: 'anthropic', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
+  // or set ANTHROPIC_API_KEY env var
+}
+
+// OpenAI
+export default {
+  llm: { provider: 'openai', model: 'gpt-4o', llmThreshold: 0.4 }
+  // or set OPENAI_API_KEY env var
 }
 ```
 
-## Onde isso brilha
+Providers are swappable without changing the pipeline.
 
-- monorepos TypeScript
-- React / React Native / Node
-- projetos com muita regra implícita
-- módulos compartilhados
-- times que usam IA para code review, suporte e onboarding
+---
 
-## Primeiro passo prático
+## Generated output
 
-Começar pelo MVP sem exagero:
+```
+.ai-notes/
+  src/
+    core/
+      scanner/discoverFiles.ts.json   ← structured note
+      scanner/discoverFiles.ts.md     ← human-readable sidecar
+  index.json                          ← all files ranked by criticalityScore
+  index.md                            ← Markdown table with links
 
-- scanner
-- análise de imports/exports
-- grafo de dependências
-- testes relacionados
-- JSON sidecar
-- só depois adicionar Git intelligence e LLM
+cache/
+  hashes.json                         ← SHA-1 per file for incremental runs
+```
+
+Do not edit `.ai-notes/` or `cache/` manually — they are regenerated.
+
+---
+
+## Architecture
+
+| Layer | Path | Responsibility |
+|---|---|---|
+| CLI | `src/cli/` | Command orchestration — `scan`, `generate`, `watch` |
+| Scanner | `src/core/scanner/` | File discovery via `Bun.Glob`, include/exclude/ignore rules |
+| AST | `src/core/ast/` | `ts-morph` extractors — imports, exports, symbols, hooks, comments, env vars, API calls |
+| Graph | `src/core/graph/` | Direct + reverse dependency graphs, `tsconfig.paths` alias resolution |
+| Git | `src/core/git/` | Churn score, recent commits, co-changed files, author count |
+| Tests | `src/core/tests/` | Heuristic test discovery by name and `__tests__` proximity |
+| Cache | `src/core/cache/` | SHA-1 per file — skips unchanged files between runs |
+| LLM | `src/core/llm/` | Provider abstraction, prompt builder, Zod schema validation, merge strategy |
+| Output | `src/core/output/` | JSON/Markdown serialization, sidecar writing, index building |
+
+---
+
+## CI integration
+
+`.github/workflows/ai-notes.yml` triggers on push to `main`/`master` when source files change.
+
+Requires:
+- `fetch-depth: 0` — full git history for accurate churn signals
+- `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` as repository secrets (if using cloud providers)
+
+---
+
+## Where it shines
+
+- TypeScript monorepos
+- React, React Native, Node.js projects
+- Codebases with lots of implicit rules
+- Teams using AI for code review, onboarding, and maintenance
+
+---
+
+## Principles
+
+1. **Static analysis first** — the majority of the pipeline is deterministic. LLM enriches, not replaces.
+2. **Reduced context per file** — never send the entire repo to the model.
+3. **Observed vs inferred** — always separated, always explicit.
+4. **Sidecar, not inline** — notes live in `.ai-notes/`, not as code comments.
+5. **Criticality-driven** — high-churn, high-consumer, and hook-heavy files are prioritized.

@@ -62,6 +62,15 @@ bun src/cli/index.ts generate --root ./ --force
 # Scope to a subdirectory
 bun src/cli/index.ts generate --root ./ --filter src/core/**
 
+# Debug mode — verbose output with per-file details and timestamps
+bun src/cli/index.ts generate --root ./ --debug
+
+# Verbose — same as debug but without timestamps
+bun src/cli/index.ts generate --root ./ --verbose
+
+# Silent — suppress all output except errors
+bun src/cli/index.ts generate --root ./ --silent
+
 # Watch mode — regenerates on file change
 bun src/cli/index.ts watch --root ./
 

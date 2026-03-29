@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { parseArgs } from 'node:util'
+import { logger } from '../core/utils/logger.ts'
 import { runScan } from './commands/scan.ts'
 import { runGenerate } from './commands/generate.ts'
 import { runWatch } from './commands/watch.ts'
@@ -11,12 +12,25 @@ const [, , command, ...rest] = process.argv
 const { values } = parseArgs({
   args: rest,
   options: {
-    root: { type: 'string', short: 'r' },
-    force: { type: 'boolean', short: 'f' },
-    filter: { type: 'string' },
+    root:    { type: 'string',  short: 'r' },
+    force:   { type: 'boolean', short: 'f' },
+    filter:  { type: 'string' },
+    debug:   { type: 'boolean' },
+    silent:  { type: 'boolean' },
+    verbose: { type: 'boolean', short: 'v' },
   },
   strict: false,
 })
+
+// Configure log level from flags (debug > verbose > silent > default)
+if (values.debug) {
+  logger.setLevel('debug')
+  logger.enableTimestamps()
+} else if (values.verbose) {
+  logger.setLevel('debug')
+} else if (values.silent) {
+  logger.setLevel('error')
+}
 
 switch (command) {
   case 'scan':
@@ -59,6 +73,9 @@ Options:
   --root, -r <path>      Root directory to analyze (default: cwd)
   --force, -f            Bypass cache and reprocess all files (generate only)
   --filter <glob>        Scope generation to files matching a glob pattern (generate only)
+  --debug                Enable debug-level logging with timestamps
+  --verbose, -v          Enable verbose logging (same as --debug, no timestamps)
+  --silent               Suppress all output except errors
 `)
     process.exit(command ? 1 : 0)
 }

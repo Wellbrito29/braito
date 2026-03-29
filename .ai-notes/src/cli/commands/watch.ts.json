@@ -53,23 +53,42 @@
     "evidence": []
   },
   "knownPitfalls": {
-    "observed": [],
+    "observed": [
+      "Co-changes frequently with: /home/runner/work/braito/braito/CHANGELOG.md, /home/runner/work/braito/braito/TODO.md, /home/runner/work/braito/braito/src/cli/commands/generate.ts, /home/runner/work/braito/braito/src/cli/index.ts"
+    ],
     "inferred": [],
-    "confidence": 0,
-    "evidence": []
+    "confidence": 0.9,
+    "evidence": [
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/CHANGELOG.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/TODO.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/cli/index.ts"
+      }
+    ]
   },
   "impactValidation": {
     "observed": [
       "/home/runner/work/braito/braito/src/cli/index.ts",
       "/home/runner/work/braito/braito/CHANGELOG.md",
       "/home/runner/work/braito/braito/TODO.md",
-      "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
-      "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts",
-      "/home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts",
-      "/home/runner/work/braito/braito/.github/workflows/ai-notes.yml",
       "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
-      "/home/runner/work/braito/braito/src/core/cache/cacheStore.ts",
-      "/home/runner/work/braito/braito/src/core/cache/computeHash.ts"
+      "/home/runner/work/braito/braito/README.md",
+      "/home/runner/work/braito/braito/src/cli/commands/scan.ts",
+      "/home/runner/work/braito/braito/src/core/utils/logger.ts",
+      "/home/runner/work/braito/braito/tests/utils/logger.test.ts",
+      "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
+      "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
     ],
     "inferred": [],
     "confidence": 0.8,
@@ -80,11 +99,35 @@
       },
       {
         "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/CHANGELOG.md"
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/CHANGELOG.md"
       },
       {
         "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/TODO.md"
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/TODO.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/cli/index.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/README.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/scan.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/utils/logger.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/utils/logger.test.ts"
       },
       {
         "type": "git",
@@ -93,34 +136,10 @@
       {
         "type": "git",
         "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/.github/workflows/ai-notes.yml"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/index.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/cacheStore.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/computeHash.ts"
       }
     ]
   },
-  "criticalityScore": 0.37,
-  "generatedAt": "2026-03-29T18:27:22.129Z",
+  "criticalityScore": 0.38,
+  "generatedAt": "2026-03-29T19:56:52.009Z",
   "model": "static"
 }

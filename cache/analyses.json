@@ -129,7 +129,9 @@
     "comments": {
       "todo": [],
       "fixme": [],
-      "hack": []
+      "hack": [],
+      "invariant": [],
+      "decision": []
     },
     "hasSideEffects": false
   },
@@ -206,6 +208,7 @@
     "filePath": "/home/runner/work/braito/braito/src/cli/index.ts",
     "imports": [
       "node:util",
+      "../core/utils/logger.ts",
       "./commands/scan.ts",
       "./commands/generate.ts",
       "./commands/watch.ts",
@@ -213,6 +216,7 @@
       "./commands/ui.ts"
     ],
     "localImports": [
+      "../core/utils/logger.ts",
       "./commands/scan.ts",
       "./commands/generate.ts",
       "./commands/watch.ts",
@@ -1379,10 +1383,15 @@
     "localImports": [],
     "externalImports": [],
     "exports": [
+      "LogLevel",
       "logger"
     ],
     "symbols": [
-      "logger"
+      "colorize",
+      "timestamp",
+      "Logger",
+      "LEVELS",
+      "COLORS"
     ],
     "hooks": [],
     "envVars": [],
@@ -1390,7 +1399,9 @@
     "comments": {
       "todo": [],
       "fixme": [],
-      "hack": []
+      "hack": [],
+      "invariant": [],
+      "decision": []
     },
     "hasSideEffects": false
   },

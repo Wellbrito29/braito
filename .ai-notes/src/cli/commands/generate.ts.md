@@ -1,6 +1,6 @@
 # src/cli/commands/generate.ts
 
-**Criticality:** 0.41 | **Generated:** 2026-03-29 | **Model:** static
+**Criticality:** 0.42 | **Generated:** 2026-03-29 | **Model:** static
 
 ## Purpose
 
@@ -38,20 +38,20 @@
 
 ## Known Pitfalls
 
-- Co-changes frequently with: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts, /home/runner/work/braito/braito/src/core/types/file-analysis.ts, /home/runner/work/braito/braito/src/core/types/project.ts, /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts, /home/runner/work/braito/braito/src/cli/index.ts, /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts, /home/runner/work/braito/braito/src/core/config/defaults.ts, /home/runner/work/braito/braito/src/core/output/buildIndex.ts, /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts, /home/runner/work/braito/braito/tests/output/buildIndex.test.ts
+- Co-changes frequently with: /home/runner/work/braito/braito/src/cli/index.ts, /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts, /home/runner/work/braito/braito/src/core/types/file-analysis.ts, /home/runner/work/braito/braito/src/core/types/project.ts, /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts, /home/runner/work/braito/braito/CHANGELOG.md, /home/runner/work/braito/braito/TODO.md, /home/runner/work/braito/braito/src/cli/commands/scan.ts, /home/runner/work/braito/braito/src/cli/commands/watch.ts, /home/runner/work/braito/braito/src/core/utils/logger.ts
 
 | Type | Detail |
 |------|--------|
+| git | Co-changed 4x with /home/runner/work/braito/braito/src/cli/index.ts |
 | git | Co-changed 3x with /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts |
 | git | Co-changed 3x with /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
 | git | Co-changed 3x with /home/runner/work/braito/braito/src/core/types/project.ts |
 | git | Co-changed 3x with /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
-| git | Co-changed 3x with /home/runner/work/braito/braito/src/cli/index.ts |
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts |
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/config/defaults.ts |
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/output/buildIndex.ts |
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts |
-| git | Co-changed 2x with /home/runner/work/braito/braito/tests/output/buildIndex.test.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/CHANGELOG.md |
+| git | Co-changed 2x with /home/runner/work/braito/braito/TODO.md |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/scan.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/watch.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/utils/logger.ts |
 
 ## Impact Validation
 
@@ -60,22 +60,22 @@
 - /home/runner/work/braito/braito/src/core/types/file-analysis.ts
 - /home/runner/work/braito/braito/src/core/types/project.ts
 - /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts
-- /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts
-- /home/runner/work/braito/braito/src/core/config/defaults.ts
-- /home/runner/work/braito/braito/src/core/output/buildIndex.ts
-- /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts
-- /home/runner/work/braito/braito/tests/output/buildIndex.test.ts
+- /home/runner/work/braito/braito/CHANGELOG.md
+- /home/runner/work/braito/braito/TODO.md
+- /home/runner/work/braito/braito/src/cli/commands/scan.ts
+- /home/runner/work/braito/braito/src/cli/commands/watch.ts
+- /home/runner/work/braito/braito/src/core/utils/logger.ts
 
 | Type | Detail |
 |------|--------|
 | graph | Consumer: /home/runner/work/braito/braito/src/cli/index.ts |
+| git | Co-changed 4x: /home/runner/work/braito/braito/src/cli/index.ts |
 | git | Co-changed 3x: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts |
 | git | Co-changed 3x: /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
 | git | Co-changed 3x: /home/runner/work/braito/braito/src/core/types/project.ts |
 | git | Co-changed 3x: /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
-| git | Co-changed 3x: /home/runner/work/braito/braito/src/cli/index.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/config/defaults.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/output/buildIndex.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts |
-| git | Co-changed 2x: /home/runner/work/braito/braito/tests/output/buildIndex.test.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/CHANGELOG.md |
+| git | Co-changed 2x: /home/runner/work/braito/braito/TODO.md |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/scan.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/watch.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/utils/logger.ts |

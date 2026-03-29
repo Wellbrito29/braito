@@ -113,32 +113,15 @@ Do not edit `.ai-notes/` or `cache/` manually.
 
 ---
 
-## Next Steps
+## Project Tracking
 
-### Short-term improvements
+- **`TODO.md`** — pending next steps, grouped by short/medium/long-term
+- **`CHANGELOG.md`** — record of all completed work
 
-**Alias resolution** — `resolveImportPath.ts` currently reads `tsconfig.paths` but does not handle bundler aliases (Vite, Webpack, Metro). Needed for accurate graphs in monorepos with custom path mappings.
+## Changelog Rule
 
-**Incremental graph rebuild** — currently the full dependency graph is rebuilt on every run even when using cache. In watch mode this is fine, but for large repos a partial rebuild (only affected files + their consumers) would be faster.
+**Every time a feature, fix, or improvement is completed, update `CHANGELOG.md` immediately.**
 
-**`--filter` flag** — allow `generate --filter packages/search/**` to scope the pipeline to a subdirectory or domain without changing config.
-
-**Confidence calibration** — the heuristic `criticalityScore` thresholds were set conservatively. After running against real monorepos, these weights should be tuned based on observed false positives/negatives.
-
-### Medium-term features
-
-**Markdown output for `invariants` and `importantDecisions`** — these fields are currently only filled by LLM. A heuristic pre-fill pass (pattern matching in comments, ADR files, changelog) would improve coverage even without LLM.
-
-**Domain grouping** — group files by folder/package in `index.md`, not just a flat ranked list. Useful for monorepos where each package has its own criticality context.
-
-**Stale note detection** — flag notes whose `generatedAt` is older than N days or whose source file has changed since last synthesis, prompting re-synthesis.
-
-**Test coverage hints** — integrate with coverage reports (lcov, c8) to surface actual uncovered files in `impactValidation`, not just heuristic test discovery.
-
-### Long-term / Phase 5 candidates
-
-**Multi-language support** — the AST layer was designed to be modular per language (`core/ast/analyzers/`). Adding Python (via tree-sitter) or Go support follows the same extractor pattern.
-
-**MCP server** — expose braito as a Model Context Protocol server so AI assistants (Cursor, Claude) can query notes about specific files on demand during code review.
-
-**Interactive UI** — a `bun src/cli/index.ts ui` command serving a local web interface to browse the index, filter by domain/score, and trigger re-synthesis.
+- Add the entry under `[Unreleased]` with the appropriate category (`Added`, `Changed`, `Fixed`, `Removed`)
+- When a TODO item is completed, check it off in `TODO.md` and add the corresponding entry to `CHANGELOG.md`
+- Use the format: `- **Feature name** — brief description of what was done`

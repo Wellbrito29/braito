@@ -73,6 +73,8 @@ bun src/cli/index.ts generate --root ./ --verbose
 
 # Silent — suppress all output except errors
 bun src/cli/index.ts generate --root ./ --silent
+# Show field-level diff between old and new notes (useful for PR review)
+bun src/cli/index.ts generate --root ./ --diff
 
 # Watch mode — regenerates on file change
 bun src/cli/index.ts watch --root ./

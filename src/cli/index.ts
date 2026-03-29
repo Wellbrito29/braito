@@ -16,6 +16,7 @@ const { values } = parseArgs({
     force:   { type: 'boolean', short: 'f' },
     filter:  { type: 'string' },
     format:  { type: 'string' },
+    diff:    { type: 'boolean' },
     debug:   { type: 'boolean' },
     silent:  { type: 'boolean' },
     verbose: { type: 'boolean', short: 'v' },
@@ -41,7 +42,7 @@ switch (command) {
   }
 
   case 'generate':
-    await runGenerate({ root: values.root, force: values.force, filter: values.filter })
+    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff })
     break
 
   case 'watch':
@@ -76,11 +77,11 @@ Options:
   --root, -r <path>      Root directory to analyze (default: cwd)
   --force, -f            Bypass cache and reprocess all files (generate only)
   --filter <glob>        Scope generation to files matching a glob pattern (generate only)
-<<<<<<< HEAD
   --debug                Enable debug-level logging with timestamps
   --verbose, -v          Enable verbose logging (same as --debug, no timestamps)
   --silent               Suppress all output except errors
   --format <fmt>         Output format for scan: "table" (default) or "json" (scan only)
+  --diff                 Show field-level diff between old and new notes (generate only)
 `)
     process.exit(command ? 1 : 0)
 }

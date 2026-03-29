@@ -62,6 +62,6 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Schema versioning** — add `schemaVersion` field to `AiFileNote` and `NoteIndex`; enables safe migration when the schema evolves without breaking old notes.
 
-- [ ] **Diff mode** — `generate --diff` compares old vs. new notes and shows what changed per field; useful for PR review workflows.
+- [x] **Diff mode** — `generate --diff` compares old vs. new notes and shows what changed per field; useful for PR review workflows.
 
 - [ ] **VS Code extension** — native extension that surfaces criticality scores in the file explorer, shows inline note summaries on hover, and integrates with the MCP server.

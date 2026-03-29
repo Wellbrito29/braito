@@ -15,6 +15,7 @@ const { values } = parseArgs({
     root:    { type: 'string',  short: 'r' },
     force:   { type: 'boolean', short: 'f' },
     filter:  { type: 'string' },
+    format:  { type: 'string' },
     debug:   { type: 'boolean' },
     silent:  { type: 'boolean' },
     verbose: { type: 'boolean', short: 'v' },
@@ -33,9 +34,11 @@ if (values.debug) {
 }
 
 switch (command) {
-  case 'scan':
-    await runScan({ root: values.root })
+  case 'scan': {
+    const fmt = values.format as 'table' | 'json' | undefined
+    await runScan({ root: values.root, format: fmt })
     break
+  }
 
   case 'generate':
     await runGenerate({ root: values.root, force: values.force, filter: values.filter })
@@ -73,9 +76,11 @@ Options:
   --root, -r <path>      Root directory to analyze (default: cwd)
   --force, -f            Bypass cache and reprocess all files (generate only)
   --filter <glob>        Scope generation to files matching a glob pattern (generate only)
+<<<<<<< HEAD
   --debug                Enable debug-level logging with timestamps
   --verbose, -v          Enable verbose logging (same as --debug, no timestamps)
   --silent               Suppress all output except errors
+  --format <fmt>         Output format for scan: "table" (default) or "json" (scan only)
 `)
     process.exit(command ? 1 : 0)
 }

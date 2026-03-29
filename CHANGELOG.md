@@ -4,6 +4,17 @@ All notable changes to braito will be documented here.
 
 ## [Unreleased]
 
+### Added
+- **`--filter` flag** — `generate --filter <glob>` scopes note generation to a subdirectory without changing config; full graph is still built from all files for accurate dependency signals (`src/cli/commands/generate.ts`)
+
+### Fixed
+- **Alias resolution in watch mode** — `watch.ts` now calls `loadBundlerAliases(root)` and passes aliases to `buildDependencyGraph`, matching the behavior of `generate.ts`; bundler aliases (Vite, Webpack, Metro) are now resolved correctly in watch mode
+- **Incremental graph rebuild in watch mode** — `watch.ts` now calls `updateDependencyGraph` (new export) on each file change instead of rebuilding the full graph; only the changed file's dependency entry is updated, then the reverse graph is rebuilt from the patched dep graph
+- **Graph test using real temp files** — `buildDependencyGraph.test.ts` now creates actual temp files so `resolveImportPath` can resolve them via `fs.existsSync`; added coverage for `updateDependencyGraph`
+
+### Changed
+- **Confidence calibration** — reweighted `computeCriticality` in `buildBasicNote.ts`: hooks raised from `+0.15` to `+0.2`; untested files with consumers now penalized `+0.15` instead of flat `+0.1`; `apiCalls.length > 0` now adds `+0.1` (was not factored in despite being extracted by AST); untested files with no consumers reduced to `+0.05` to avoid over-inflating leaf files
+
 ## [1.0.0] — 2026-03-29
 
 ### Added

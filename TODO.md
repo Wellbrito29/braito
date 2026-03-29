@@ -6,13 +6,13 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 ## Short-term
 
-- [ ] **Alias resolution** — `resolveImportPath.ts` reads `tsconfig.paths` but does not handle bundler aliases (Vite, Webpack, Metro). Needed for accurate graphs in monorepos with custom path mappings.
+- [x] **Alias resolution** — `resolveImportPath.ts` reads `tsconfig.paths` but does not handle bundler aliases (Vite, Webpack, Metro). Needed for accurate graphs in monorepos with custom path mappings.
 
-- [ ] **Incremental graph rebuild** — full dependency graph is rebuilt on every run even when using cache. In watch mode this is fine, but for large repos a partial rebuild (only affected files + their consumers) would be faster.
+- [x] **Incremental graph rebuild** — full dependency graph is rebuilt on every run even when using cache. In watch mode this is fine, but for large repos a partial rebuild (only affected files + their consumers) would be faster.
 
-- [ ] **`--filter` flag** — allow `generate --filter packages/search/**` to scope the pipeline to a subdirectory or domain without changing config.
+- [x] **`--filter` flag** — allow `generate --filter packages/search/**` to scope the pipeline to a subdirectory or domain without changing config.
 
-- [ ] **Confidence calibration** — heuristic `criticalityScore` thresholds were set conservatively. After running against real monorepos, tune weights based on observed false positives/negatives.
+- [x] **Confidence calibration** — heuristic `criticalityScore` thresholds were set conservatively. After running against real monorepos, tune weights based on observed false positives/negatives.
 
 ---
 

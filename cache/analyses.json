@@ -208,12 +208,16 @@
       "node:util",
       "./commands/scan.ts",
       "./commands/generate.ts",
-      "./commands/watch.ts"
+      "./commands/watch.ts",
+      "./commands/mcp.ts",
+      "./commands/ui.ts"
     ],
     "localImports": [
       "./commands/scan.ts",
       "./commands/generate.ts",
-      "./commands/watch.ts"
+      "./commands/watch.ts",
+      "./commands/mcp.ts",
+      "./commands/ui.ts"
     ],
     "externalImports": [
       "node:util"
@@ -226,7 +230,9 @@
     "comments": {
       "todo": [],
       "fixme": [],
-      "hack": []
+      "hack": [],
+      "invariant": [],
+      "decision": []
     },
     "hasSideEffects": false
   },
@@ -362,13 +368,16 @@
   "src/core/ast/parseFile.ts": {
     "filePath": "/home/runner/work/braito/braito/src/core/ast/parseFile.ts",
     "imports": [
+      "node:path",
+      "node:fs",
       "ts-morph",
       "../types/file-analysis.ts",
       "./analyzers/ts/extractImports.ts",
       "./analyzers/ts/extractExports.ts",
       "./analyzers/ts/extractSymbols.ts",
       "./analyzers/ts/extractHooks.ts",
-      "./analyzers/ts/extractComments.ts"
+      "./analyzers/ts/extractComments.ts",
+      "./analyzerRegistry.ts"
     ],
     "localImports": [
       "../types/file-analysis.ts",
@@ -376,9 +385,12 @@
       "./analyzers/ts/extractExports.ts",
       "./analyzers/ts/extractSymbols.ts",
       "./analyzers/ts/extractHooks.ts",
-      "./analyzers/ts/extractComments.ts"
+      "./analyzers/ts/extractComments.ts",
+      "./analyzerRegistry.ts"
     ],
     "externalImports": [
+      "node:path",
+      "node:fs",
       "ts-morph"
     ],
     "exports": [
@@ -386,6 +398,7 @@
     ],
     "symbols": [
       "parseFile",
+      "emptyAnalysis",
       "extractEnvVars",
       "extractApiCalls"
     ],
@@ -395,7 +408,9 @@
     "comments": {
       "todo": [],
       "fixme": [],
-      "hack": []
+      "hack": [],
+      "invariant": [],
+      "decision": []
     },
     "hasSideEffects": false
   },
@@ -524,6 +539,7 @@
     "exports": [
       "withDefaults",
       "DEFAULT_INCLUDE",
+      "MULTI_LANGUAGE_INCLUDE",
       "DEFAULT_EXCLUDE",
       "DEFAULT_STALE_THRESHOLD_DAYS"
     ],
@@ -1510,6 +1526,215 @@
     "symbols": [
       "parseLcov"
     ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": [],
+      "invariant": [],
+      "decision": []
+    },
+    "hasSideEffects": false
+  },
+  "src/cli/commands/mcp.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/cli/commands/mcp.ts",
+    "imports": [
+      "node:path",
+      "node:fs",
+      "../../core/config/loadConfig.ts"
+    ],
+    "localImports": [
+      "../../core/config/loadConfig.ts"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs"
+    ],
+    "exports": [
+      "runMcp"
+    ],
+    "symbols": [
+      "send",
+      "sendError",
+      "handleRequest",
+      "runMcp"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": [],
+      "invariant": [],
+      "decision": []
+    },
+    "hasSideEffects": false
+  },
+  "src/cli/commands/ui.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/cli/commands/ui.ts",
+    "imports": [
+      "node:path",
+      "node:fs",
+      "../../core/config/loadConfig.ts",
+      "../../core/utils/logger.ts"
+    ],
+    "localImports": [
+      "../../core/config/loadConfig.ts",
+      "../../core/utils/logger.ts"
+    ],
+    "externalImports": [
+      "node:path",
+      "node:fs"
+    ],
+    "exports": [
+      "runUi"
+    ],
+    "symbols": [
+      "runUi",
+      "serveJson",
+      "renderHtml"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [
+      "/api/index",
+      "/api/note?path="
+    ],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": [],
+      "invariant": [],
+      "decision": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzerRegistry.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzerRegistry.ts",
+    "imports": [
+      "./types.ts",
+      "./analyzers/python/pythonAnalyzer.ts",
+      "./analyzers/go/goAnalyzer.ts"
+    ],
+    "localImports": [
+      "./types.ts",
+      "./analyzers/python/pythonAnalyzer.ts",
+      "./analyzers/go/goAnalyzer.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "getAnalyzer",
+      "supportedExtensions"
+    ],
+    "symbols": [
+      "register",
+      "getAnalyzer",
+      "supportedExtensions"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": [],
+      "invariant": [],
+      "decision": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzers/go/goAnalyzer.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/go/goAnalyzer.ts",
+    "imports": [
+      "../../types.ts",
+      "../../../types/file-analysis.ts"
+    ],
+    "localImports": [
+      "../../types.ts",
+      "../../../types/file-analysis.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "goAnalyzer"
+    ],
+    "symbols": [
+      "extractImports",
+      "extractLocalImports",
+      "extractExternalImports",
+      "extractExports",
+      "extractSymbols",
+      "extractEnvVars",
+      "extractApiCalls",
+      "extractComments",
+      "hasSideEffects",
+      "goAnalyzer"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": [],
+      "invariant": [],
+      "decision": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/analyzers/python/pythonAnalyzer.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzers/python/pythonAnalyzer.ts",
+    "imports": [
+      "../../types.ts",
+      "../../../types/file-analysis.ts"
+    ],
+    "localImports": [
+      "../../types.ts",
+      "../../../types/file-analysis.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "pythonAnalyzer"
+    ],
+    "symbols": [
+      "extractImports",
+      "extractLocalImports",
+      "extractExternalImports",
+      "extractExports",
+      "extractSymbols",
+      "extractEnvVars",
+      "extractApiCalls",
+      "extractComments",
+      "hasSideEffects",
+      "pythonAnalyzer"
+    ],
+    "hooks": [],
+    "envVars": [],
+    "apiCalls": [],
+    "comments": {
+      "todo": [],
+      "fixme": [],
+      "hack": [],
+      "invariant": [],
+      "decision": []
+    },
+    "hasSideEffects": false
+  },
+  "src/core/ast/types.ts": {
+    "filePath": "/home/runner/work/braito/braito/src/core/ast/types.ts",
+    "imports": [
+      "../types/file-analysis.ts"
+    ],
+    "localImports": [
+      "../types/file-analysis.ts"
+    ],
+    "externalImports": [],
+    "exports": [
+      "LanguageAnalyzer"
+    ],
+    "symbols": [],
     "hooks": [],
     "envVars": [],
     "apiCalls": [],

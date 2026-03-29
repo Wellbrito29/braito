@@ -1,0 +1,116 @@
+{
+  "filePath": "/home/runner/work/braito/braito/src/core/ast/analyzerRegistry.ts",
+  "purpose": {
+    "observed": [
+      "Exports: getAnalyzer, supportedExtensions"
+    ],
+    "inferred": [],
+    "confidence": 0.6,
+    "evidence": [
+      {
+        "type": "code",
+        "detail": "Exported symbols: getAnalyzer, supportedExtensions"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumed by: /home/runner/work/braito/braito/src/core/ast/parseFile.ts"
+      }
+    ]
+  },
+  "invariants": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "sensitiveDependencies": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/core/ast/parseFile.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.85,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/ast/parseFile.ts"
+      }
+    ]
+  },
+  "importantDecisions": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "knownPitfalls": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "impactValidation": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/core/ast/parseFile.ts",
+      "/home/runner/work/braito/braito/CHANGELOG.md",
+      "/home/runner/work/braito/braito/TODO.md",
+      "/home/runner/work/braito/braito/src/cli/commands/mcp.ts",
+      "/home/runner/work/braito/braito/src/cli/commands/ui.ts",
+      "/home/runner/work/braito/braito/src/cli/index.ts",
+      "/home/runner/work/braito/braito/src/core/ast/analyzers/go/goAnalyzer.ts",
+      "/home/runner/work/braito/braito/src/core/ast/analyzers/python/pythonAnalyzer.ts",
+      "/home/runner/work/braito/braito/src/core/ast/types.ts",
+      "/home/runner/work/braito/braito/src/core/config/defaults.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.8,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/ast/parseFile.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/CHANGELOG.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/TODO.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/mcp.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/ui.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/index.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/ast/analyzers/go/goAnalyzer.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/ast/analyzers/python/pythonAnalyzer.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/ast/parseFile.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/ast/types.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/config/defaults.ts"
+      }
+    ]
+  },
+  "criticalityScore": 0.26,
+  "generatedAt": "2026-03-29T19:43:53.559Z",
+  "model": "static"
+}

@@ -1,0 +1,126 @@
+{
+  "filePath": "/home/runner/work/braito/braito/src/core/llm/provider/factory.ts",
+  "purpose": {
+    "observed": [
+      "Exports: createProvider"
+    ],
+    "inferred": [],
+    "confidence": 0.6,
+    "evidence": [
+      {
+        "type": "code",
+        "detail": "Exported symbols: createProvider"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumed by: /home/runner/work/braito/braito/src/cli/commands/generate.ts, /home/runner/work/braito/braito/src/cli/commands/watch.ts"
+      }
+    ]
+  },
+  "invariants": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "sensitiveDependencies": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
+      "/home/runner/work/braito/braito/src/cli/commands/watch.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.85,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/cli/commands/watch.ts"
+      }
+    ]
+  },
+  "importantDecisions": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "knownPitfalls": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "impactValidation": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
+      "/home/runner/work/braito/braito/src/cli/commands/watch.ts",
+      "/home/runner/work/braito/braito/ai-notes.config.ts",
+      "/home/runner/work/braito/braito/package.json",
+      "/home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts",
+      "/home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/ollama.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/openai.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/types.ts",
+      "/home/runner/work/braito/braito/src/core/llm/schemas/aiNoteSchema.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.8,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/cli/commands/watch.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/ai-notes.config.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/package.json"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/ollama.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/openai.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/types.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/schemas/aiNoteSchema.ts"
+      }
+    ]
+  },
+  "criticalityScore": 0.41,
+  "generatedAt": "2026-03-29T01:29:22.454Z",
+  "model": "static"
+}

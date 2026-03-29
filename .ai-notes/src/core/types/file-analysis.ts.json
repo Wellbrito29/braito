@@ -1,0 +1,170 @@
+{
+  "filePath": "/home/runner/work/braito/braito/src/core/types/file-analysis.ts",
+  "purpose": {
+    "observed": [
+      "Exports: StaticFileAnalysis, GraphSignals, TestSignals, GitSignals"
+    ],
+    "inferred": [],
+    "confidence": 0.6,
+    "evidence": [
+      {
+        "type": "code",
+        "detail": "Exported symbols: StaticFileAnalysis, GraphSignals, TestSignals, GitSignals"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumed by: /home/runner/work/braito/braito/src/core/ast/parseFile.ts, /home/runner/work/braito/braito/src/core/git/getGitSignals.ts, /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts"
+      }
+    ]
+  },
+  "invariants": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "sensitiveDependencies": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/core/ast/parseFile.ts",
+      "/home/runner/work/braito/braito/src/core/git/getGitSignals.ts",
+      "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
+      "/home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts",
+      "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.85,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/ast/parseFile.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/git/getGitSignals.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+      }
+    ]
+  },
+  "importantDecisions": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "knownPitfalls": {
+    "observed": [
+      "Co-changes frequently with: /home/runner/work/braito/braito/src/cli/commands/generate.ts, /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts, /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.9,
+    "evidence": [
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts"
+      }
+    ]
+  },
+  "impactValidation": {
+    "observed": [
+      "/home/runner/work/braito/braito/src/core/ast/parseFile.ts",
+      "/home/runner/work/braito/braito/src/core/git/getGitSignals.ts",
+      "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
+      "/home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts",
+      "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts",
+      "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
+      "/home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts",
+      "/home/runner/work/braito/braito/src/core/git/getCoChangedFiles.ts",
+      "/home/runner/work/braito/braito/src/core/git/getFileHistory.ts",
+      "/home/runner/work/braito/braito/tests/git/getCoChangedFiles.test.ts",
+      "/home/runner/work/braito/braito/tests/git/getFileHistory.test.ts",
+      "/home/runner/work/braito/braito/tests/git/getGitSignals.test.ts",
+      "/home/runner/work/braito/braito/CLAUDE.md"
+    ],
+    "inferred": [],
+    "confidence": 0.8,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/ast/parseFile.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/git/getGitSignals.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/git/getCoChangedFiles.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/git/getFileHistory.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/git/getGitSignals.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/git/getCoChangedFiles.test.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/git/getFileHistory.test.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/git/getGitSignals.test.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/CLAUDE.md"
+      }
+    ]
+  },
+  "criticalityScore": 0.52,
+  "generatedAt": "2026-03-29T01:29:22.696Z",
+  "model": "static"
+}

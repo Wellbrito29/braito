@@ -1,0 +1,180 @@
+{
+  "filePath": "/home/runner/work/braito/braito/src/core/types/project.ts",
+  "purpose": {
+    "observed": [
+      "Exports: DiscoveredFile, LLMProviderName, LLMConfig, AiNotesConfig"
+    ],
+    "inferred": [],
+    "confidence": 0.6,
+    "evidence": [
+      {
+        "type": "code",
+        "detail": "Exported symbols: DiscoveredFile, LLMProviderName, LLMConfig, AiNotesConfig"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumed by: /home/runner/work/braito/braito/ai-notes.config.ts, /home/runner/work/braito/braito/src/core/config/defaults.ts, /home/runner/work/braito/braito/src/core/config/loadConfig.ts"
+      }
+    ]
+  },
+  "invariants": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "sensitiveDependencies": {
+    "observed": [
+      "/home/runner/work/braito/braito/ai-notes.config.ts",
+      "/home/runner/work/braito/braito/src/core/config/defaults.ts",
+      "/home/runner/work/braito/braito/src/core/config/loadConfig.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/factory.ts",
+      "/home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.85,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/ai-notes.config.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/config/defaults.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/config/loadConfig.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/llm/provider/factory.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Reverse dep: /home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts"
+      }
+    ]
+  },
+  "importantDecisions": {
+    "observed": [],
+    "inferred": [],
+    "confidence": 0,
+    "evidence": []
+  },
+  "knownPitfalls": {
+    "observed": [
+      "Co-changes frequently with: /home/runner/work/braito/braito/ai-notes.config.ts, /home/runner/work/braito/braito/package.json, /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.9,
+    "evidence": [
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/ai-notes.config.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/package.json"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      }
+    ]
+  },
+  "impactValidation": {
+    "observed": [
+      "/home/runner/work/braito/braito/ai-notes.config.ts",
+      "/home/runner/work/braito/braito/src/core/config/defaults.ts",
+      "/home/runner/work/braito/braito/src/core/config/loadConfig.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/factory.ts",
+      "/home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts",
+      "/home/runner/work/braito/braito/src/core/scanner/scanRepository.ts",
+      "/home/runner/work/braito/braito/src/core/tests/findRelatedTests.ts",
+      "/home/runner/work/braito/braito/package.json",
+      "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
+      "/home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts",
+      "/home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/ollama.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/openai.ts",
+      "/home/runner/work/braito/braito/src/core/llm/provider/types.ts"
+    ],
+    "inferred": [],
+    "confidence": 0.8,
+    "evidence": [
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/ai-notes.config.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/config/defaults.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/config/loadConfig.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/llm/provider/factory.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/scanner/scanRepository.ts"
+      },
+      {
+        "type": "graph",
+        "detail": "Consumer: /home/runner/work/braito/braito/src/core/tests/findRelatedTests.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/ai-notes.config.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/package.json"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/factory.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/ollama.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/openai.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/types.ts"
+      }
+    ]
+  },
+  "criticalityScore": 0.52,
+  "generatedAt": "2026-03-29T01:29:22.713Z",
+  "model": "static"
+}

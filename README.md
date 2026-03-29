@@ -220,6 +220,22 @@ Browse notes grouped by domain, filter by criticality score, search by filename,
 
 ---
 
+## VS Code Extension
+
+The `vscode-extension/` directory contains a native VS Code extension that surfaces braito notes directly in the editor.
+
+**Features:**
+
+- **File decorations** — `⚡` badge on high-criticality files (`score >= 0.7`), `⚠` badge on stale notes in the Explorer
+- **Hover provider** — hovering over an import statement shows the purpose and criticality score of the imported file
+- **Command: `braito: Show Note for Current File`** — opens a webview panel with the full `.md` sidecar beside the editor
+
+**Requirements:** run `braito generate` first to populate `.ai-notes/`. The extension activates automatically when the workspace contains a `.ai-notes/` directory.
+
+See [`vscode-extension/README.md`](vscode-extension/README.md) for installation and usage details.
+
+---
+
 ## Architecture
 
 | Layer | Path | Responsibility |

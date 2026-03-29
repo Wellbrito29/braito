@@ -61,15 +61,15 @@
   "impactValidation": {
     "observed": [
       "/home/runner/work/braito/braito/src/cli/index.ts",
+      "/home/runner/work/braito/braito/CHANGELOG.md",
+      "/home/runner/work/braito/braito/TODO.md",
+      "/home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts",
+      "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts",
+      "/home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts",
       "/home/runner/work/braito/braito/.github/workflows/ai-notes.yml",
       "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
       "/home/runner/work/braito/braito/src/core/cache/cacheStore.ts",
-      "/home/runner/work/braito/braito/src/core/cache/computeHash.ts",
-      "/home/runner/work/braito/braito/src/core/cache/isCacheValid.ts",
-      "/home/runner/work/braito/braito/src/core/output/buildIndex.ts",
-      "/home/runner/work/braito/braito/src/core/output/writeIndexNote.ts",
-      "/home/runner/work/braito/braito/tests/cache/cacheStore.test.ts",
-      "/home/runner/work/braito/braito/tests/output/buildIndex.test.ts"
+      "/home/runner/work/braito/braito/src/core/cache/computeHash.ts"
     ],
     "inferred": [],
     "confidence": 0.8,
@@ -77,6 +77,26 @@
       {
         "type": "graph",
         "detail": "Consumer: /home/runner/work/braito/braito/src/cli/index.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/CHANGELOG.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/TODO.md"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/graph/buildDependencyGraph.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/graph/buildDependencyGraph.test.ts"
       },
       {
         "type": "git",
@@ -97,30 +117,10 @@
       {
         "type": "git",
         "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/computeHash.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/cache/isCacheValid.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/output/buildIndex.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/output/writeIndexNote.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/cache/cacheStore.test.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/tests/output/buildIndex.test.ts"
       }
     ]
   },
-  "criticalityScore": 0.31,
-  "generatedAt": "2026-03-29T01:29:22.026Z",
+  "criticalityScore": 0.37,
+  "generatedAt": "2026-03-29T18:27:22.129Z",
   "model": "static"
 }

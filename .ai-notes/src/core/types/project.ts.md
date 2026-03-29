@@ -1,6 +1,6 @@
 # src/core/types/project.ts
 
-**Criticality:** 0.52 | **Generated:** 2026-03-29 | **Model:** static
+**Criticality:** 0.58 | **Generated:** 2026-03-29 | **Model:** static
 
 ## Purpose
 
@@ -31,13 +31,18 @@
 
 ## Known Pitfalls
 
-- Co-changes frequently with: /home/runner/work/braito/braito/ai-notes.config.ts, /home/runner/work/braito/braito/package.json, /home/runner/work/braito/braito/src/cli/commands/generate.ts
+- Co-changes frequently with: /home/runner/work/braito/braito/src/cli/commands/generate.ts, /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts, /home/runner/work/braito/braito/src/core/config/defaults.ts, /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts, /home/runner/work/braito/braito/src/core/types/file-analysis.ts, /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts, /home/runner/work/braito/braito/ai-notes.config.ts, /home/runner/work/braito/braito/package.json
 
 | Type | Detail |
 |------|--------|
+| git | Co-changed 3x with /home/runner/work/braito/braito/src/cli/commands/generate.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/config/defaults.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
+| git | Co-changed 2x with /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
 | git | Co-changed 2x with /home/runner/work/braito/braito/ai-notes.config.ts |
 | git | Co-changed 2x with /home/runner/work/braito/braito/package.json |
-| git | Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts |
 
 ## Impact Validation
 
@@ -48,14 +53,14 @@
 - /home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts
 - /home/runner/work/braito/braito/src/core/scanner/scanRepository.ts
 - /home/runner/work/braito/braito/src/core/tests/findRelatedTests.ts
-- /home/runner/work/braito/braito/package.json
 - /home/runner/work/braito/braito/src/cli/commands/generate.ts
-- /home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts
-- /home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts
-- /home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts
-- /home/runner/work/braito/braito/src/core/llm/provider/ollama.ts
-- /home/runner/work/braito/braito/src/core/llm/provider/openai.ts
-- /home/runner/work/braito/braito/src/core/llm/provider/types.ts
+- /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts
+- /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts
+- /home/runner/work/braito/braito/src/core/types/file-analysis.ts
+- /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts
+- /home/runner/work/braito/braito/package.json
+- /home/runner/work/braito/braito/CHANGELOG.md
+- /home/runner/work/braito/braito/TODO.md
 
 | Type | Detail |
 |------|--------|
@@ -66,13 +71,13 @@
 | graph | Consumer: /home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts |
 | graph | Consumer: /home/runner/work/braito/braito/src/core/scanner/scanRepository.ts |
 | graph | Consumer: /home/runner/work/braito/braito/src/core/tests/findRelatedTests.ts |
+| git | Co-changed 3x: /home/runner/work/braito/braito/src/cli/commands/generate.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/config/defaults.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/src/core/types/file-analysis.ts |
+| git | Co-changed 2x: /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts |
 | git | Co-changed 2x: /home/runner/work/braito/braito/ai-notes.config.ts |
 | git | Co-changed 2x: /home/runner/work/braito/braito/package.json |
-| git | Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/factory.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/ollama.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/openai.ts |
-| git | Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/types.ts |
+| git | Co-changed 1x: /home/runner/work/braito/braito/CHANGELOG.md |
+| git | Co-changed 1x: /home/runner/work/braito/braito/TODO.md |

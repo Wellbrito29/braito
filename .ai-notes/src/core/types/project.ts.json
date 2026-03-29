@@ -64,11 +64,35 @@
   },
   "knownPitfalls": {
     "observed": [
-      "Co-changes frequently with: /home/runner/work/braito/braito/ai-notes.config.ts, /home/runner/work/braito/braito/package.json, /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      "Co-changes frequently with: /home/runner/work/braito/braito/src/cli/commands/generate.ts, /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts, /home/runner/work/braito/braito/src/core/config/defaults.ts, /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts, /home/runner/work/braito/braito/src/core/types/file-analysis.ts, /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts, /home/runner/work/braito/braito/ai-notes.config.ts, /home/runner/work/braito/braito/package.json"
     ],
     "inferred": [],
     "confidence": 0.9,
     "evidence": [
+      {
+        "type": "git",
+        "detail": "Co-changed 3x with /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/core/config/defaults.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/core/types/file-analysis.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x with /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts"
+      },
       {
         "type": "git",
         "detail": "Co-changed 2x with /home/runner/work/braito/braito/ai-notes.config.ts"
@@ -76,10 +100,6 @@
       {
         "type": "git",
         "detail": "Co-changed 2x with /home/runner/work/braito/braito/package.json"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 2x with /home/runner/work/braito/braito/src/cli/commands/generate.ts"
       }
     ]
   },
@@ -92,14 +112,14 @@
       "/home/runner/work/braito/braito/src/core/scanner/discoverFiles.ts",
       "/home/runner/work/braito/braito/src/core/scanner/scanRepository.ts",
       "/home/runner/work/braito/braito/src/core/tests/findRelatedTests.ts",
-      "/home/runner/work/braito/braito/package.json",
       "/home/runner/work/braito/braito/src/cli/commands/generate.ts",
-      "/home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts",
-      "/home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts",
-      "/home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts",
-      "/home/runner/work/braito/braito/src/core/llm/provider/ollama.ts",
-      "/home/runner/work/braito/braito/src/core/llm/provider/openai.ts",
-      "/home/runner/work/braito/braito/src/core/llm/provider/types.ts"
+      "/home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts",
+      "/home/runner/work/braito/braito/src/core/output/buildBasicNote.ts",
+      "/home/runner/work/braito/braito/src/core/types/file-analysis.ts",
+      "/home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts",
+      "/home/runner/work/braito/braito/package.json",
+      "/home/runner/work/braito/braito/CHANGELOG.md",
+      "/home/runner/work/braito/braito/TODO.md"
     ],
     "inferred": [],
     "confidence": 0.8,
@@ -134,6 +154,30 @@
       },
       {
         "type": "git",
+        "detail": "Co-changed 3x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/core/ast/analyzers/ts/extractComments.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/core/config/defaults.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/core/output/buildBasicNote.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/core/types/file-analysis.ts"
+      },
+      {
+        "type": "git",
+        "detail": "Co-changed 2x: /home/runner/work/braito/braito/tests/output/buildBasicNote.test.ts"
+      },
+      {
+        "type": "git",
         "detail": "Co-changed 2x: /home/runner/work/braito/braito/ai-notes.config.ts"
       },
       {
@@ -142,39 +186,15 @@
       },
       {
         "type": "git",
-        "detail": "Co-changed 2x: /home/runner/work/braito/braito/src/cli/commands/generate.ts"
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/CHANGELOG.md"
       },
       {
         "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/buildPrompt.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/prompts/systemPrompt.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/anthropic.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/factory.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/ollama.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/openai.ts"
-      },
-      {
-        "type": "git",
-        "detail": "Co-changed 1x: /home/runner/work/braito/braito/src/core/llm/provider/types.ts"
+        "detail": "Co-changed 1x: /home/runner/work/braito/braito/TODO.md"
       }
     ]
   },
-  "criticalityScore": 0.52,
-  "generatedAt": "2026-03-29T01:29:22.713Z",
+  "criticalityScore": 0.58,
+  "generatedAt": "2026-03-29T18:27:22.349Z",
   "model": "static"
 }

@@ -105,6 +105,7 @@ export async function runGenerate(args: {
   const provider = llmConfig ? createProvider(llmConfig) : null
   const llmThreshold = llmConfig?.llmThreshold ?? DEFAULT_LLM_THRESHOLD
   const temperature = llmConfig?.temperature ?? 0.2
+  const timeoutMs = llmConfig?.timeoutMs ?? 30_000
 
   if (provider) {
     logger.info(`LLM synthesis enabled (provider: ${llmConfig!.provider}, threshold: ${llmThreshold})`)
@@ -147,6 +148,7 @@ export async function runGenerate(args: {
         { analysis, graph, tests, git: gitSignals, staticNote: note },
         provider,
         temperature,
+        timeoutMs,
       )
       synthesized++
     }

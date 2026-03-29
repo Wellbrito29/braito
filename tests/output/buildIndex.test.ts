@@ -15,6 +15,7 @@ afterEach(async () => {
 function makeNote(filePath: string, score: number, model = 'static'): AiFileNote {
   const empty = { observed: [], inferred: [], confidence: 0, evidence: [] }
   return {
+    schemaVersion: '1.0.0',
     filePath,
     purpose: { observed: ['Does something'], inferred: [], confidence: 0.6, evidence: [] },
     invariants: empty,
@@ -86,6 +87,7 @@ describe('buildIndex', () => {
   it('marks old notes as stale', () => {
     const empty = { observed: [], inferred: [], confidence: 0, evidence: [] }
     const oldNote: AiFileNote = {
+      schemaVersion: '1.0.0',
       filePath: '/project/src/a.ts',
       purpose: { observed: ['Does something'], inferred: [], confidence: 0.6, evidence: [] },
       invariants: empty, sensitiveDependencies: empty, importantDecisions: empty,

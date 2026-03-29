@@ -13,6 +13,7 @@ const structuredListFieldSchema = z.object({
 })
 
 export const llmNoteSchema = z.object({
+  schemaVersion: z.string().optional(),
   purpose: structuredListFieldSchema,
   invariants: structuredListFieldSchema,
   sensitiveDependencies: structuredListFieldSchema,

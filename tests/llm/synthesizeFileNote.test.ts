@@ -7,6 +7,7 @@ import type { AiFileNote } from '../../src/core/types/ai-note.ts'
 function makeStaticNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
   const empty = { observed: [], inferred: [], confidence: 0, evidence: [] }
   return {
+    schemaVersion: '1.0.0',
     filePath: '/project/src/useSearch.ts',
     purpose: { observed: ['Exports hooks: useSearch'], inferred: [], confidence: 0.6, evidence: [] },
     invariants: empty,

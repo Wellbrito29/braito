@@ -2,6 +2,7 @@ import path from 'node:path'
 import type { AiFileNote } from '../types/ai-note.ts'
 import { isNoteStale } from '../cache/isNoteStale.ts'
 import { DEFAULT_STALE_THRESHOLD_DAYS } from '../config/defaults.ts'
+import { SCHEMA_VERSION } from '../types/schema-version.ts'
 
 export type IndexEntry = {
   filePath: string
@@ -15,6 +16,7 @@ export type IndexEntry = {
 }
 
 export type NoteIndex = {
+  schemaVersion: string
   generatedAt: string
   totalFiles: number
   synthesizedFiles: number
@@ -62,6 +64,7 @@ export function buildIndex(
   const staleFiles = entries.filter((e) => e.stale).length
 
   return {
+    schemaVersion: SCHEMA_VERSION,
     generatedAt: new Date().toISOString(),
     totalFiles: notes.length,
     synthesizedFiles,

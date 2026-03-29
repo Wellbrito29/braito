@@ -9,6 +9,8 @@ export async function runScan(args: { root?: string }): Promise<void> {
   const files = await scanRepository(config)
 
   logger.info(`Scanning ${root}`)
+  logger.debug(`Include patterns: ${config.include.join(', ')}`)
+  logger.debug(`Exclude patterns: ${config.exclude.join(', ')}`)
   logger.info(`Found ${files.length} files\n`)
 
   for (const file of files) {

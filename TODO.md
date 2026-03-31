@@ -46,7 +46,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Progress indicator** — TTY progress bar for analyze and write-notes phases in the `generate` command; uses carriage return to update in place; suppressed in non-TTY (CI) environments.
 
-- [ ] **CLI e2e tests** — integration tests for `generate`, `watch`, `mcp`, and `ui` commands using real temp fixtures; currently only unit tests exist.
+- [x] **CLI e2e tests** — integration tests for `generate`, `watch`, `mcp`, and `ui` commands using real temp fixtures; currently only unit tests exist.
 
 - [x] **`scan --format json`** — add `--format json|table` flag to the `scan` command for machine-readable output and integration with external tools.
 
@@ -65,5 +65,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 - [x] **Schema versioning** — add `schemaVersion` field to `AiFileNote` and `NoteIndex`; enables safe migration when the schema evolves without breaking old notes.
 
 - [x] **Diff mode** — `generate --diff` compares old vs. new notes and shows what changed per field; useful for PR review workflows.
+
+- [x] **`generate --dry-run`** — show what would be generated (file paths, scores, LLM/static) without writing any files or cache; useful for previewing output before committing to a full run.
 
 - [x] **VS Code extension** — native extension that surfaces criticality scores in the file explorer, shows inline note summaries on hover, and integrates with the MCP server.

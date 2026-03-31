@@ -17,6 +17,7 @@ const { values } = parseArgs({
     filter:  { type: 'string' },
     format:  { type: 'string' },
     diff:    { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
     debug:   { type: 'boolean' },
     silent:  { type: 'boolean' },
     verbose: { type: 'boolean', short: 'v' },
@@ -42,7 +43,7 @@ switch (command) {
   }
 
   case 'generate':
-    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff })
+    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff, dryRun: (values as Record<string, unknown>)['dry-run'] as boolean | undefined })
     break
 
   case 'watch':
@@ -82,6 +83,7 @@ Options:
   --silent               Suppress all output except errors
   --format <fmt>         Output format for scan: "table" (default) or "json" (scan only)
   --diff                 Show field-level diff between old and new notes (generate only)
+  --dry-run              Show what would be generated without writing any files (generate only)
 `)
     process.exit(command ? 1 : 0)
 }

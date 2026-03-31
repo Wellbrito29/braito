@@ -58,6 +58,20 @@ const TOOLS = [
     description: 'Get the full .ai-notes/index.json with all files ranked by criticality.',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'get_architecture_context',
+    description:
+      'Get a synthesized architectural overview of the codebase — top critical files, domain breakdown, invariants, known pitfalls, and sensitive dependencies. Ideal as initial context before planning code changes or reviewing architecture.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        top_n: {
+          type: 'number',
+          description: 'Number of top critical files to include. Default: 10',
+        },
+      },
+    },
+  },
 ]
 
 function send(msg: JsonRpcResponse): void {
@@ -149,20 +163,98 @@ export async function handleRequest(
       }
     }
 
+    if (name === 'get_architecture_context') {
+      const topN = (args.top_n as number | undefined) ?? 10
+      const indexPath = path.resolve(root, outputDir, 'index.json')
+      if (!fs.existsSync(indexPath)) {
+        return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
+      }
+      try {
+        const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+
+        // Top N critical files with enriched note data
+        const topFiles = (index.entries as Array<{
+          filePath: string
+          criticalityScore: number
+          domain: string
+          stale?: boolean
+        }>)
+          .slice(0, topN)
+          .map((entry) => {
+            const notePath = path.resolve(root, outputDir, entry.filePath + '.json')
+            let note: Record<string, unknown> = {}
+            try { note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { /* skip */ }
+            type Field = { observed?: string[]; inferred?: string[] }
+            const obs = (key: string): string[] => (note[key] as Field | undefined)?.observed ?? []
+            return {
+              filePath: entry.filePath,
+              criticalityScore: entry.criticalityScore,
+              domain: entry.domain,
+              stale: entry.stale ?? false,
+              purpose: obs('purpose')[0] ?? '',
+              invariants: obs('invariants'),
+              knownPitfalls: obs('knownPitfalls'),
+              sensitiveDependencies: obs('sensitiveDependencies'),
+              importantDecisions: obs('importantDecisions'),
+            }
+          })
+
+        // Domain breakdown sorted by avg criticality
+        const domainMap = new Map<string, { count: number; total: number }>()
+        for (const entry of index.entries as Array<{ domain: string; criticalityScore: number }>) {
+          const d = entry.domain ?? 'root'
+          const s = domainMap.get(d) ?? { count: 0, total: 0 }
+          s.count++
+          s.total += entry.criticalityScore
+          domainMap.set(d, s)
+        }
+        const domains = [...domainMap.entries()]
+          .map(([name, s]) => ({ name, fileCount: s.count, avgCriticality: +(s.total / s.count).toFixed(2) }))
+          .sort((a, b) => b.avgCriticality - a.avgCriticality)
+
+        const entries = index.entries as Array<{ criticalityScore: number }>
+        const context = {
+          summary: {
+            totalFiles: entries.length,
+            staleNotes: index.staleFiles ?? 0,
+            avgCriticality: +(entries.reduce((s, e) => s + e.criticalityScore, 0) / entries.length).toFixed(2),
+            generatedAt: index.generatedAt,
+          },
+          domains,
+          topCriticalFiles: topFiles,
+        }
+
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(context, null, 2) }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to build architecture context.')
+      }
+    }
+
     return errorResponse(id, -32601, `Unknown tool: ${name}`)
   }
 
   return errorResponse(id, -32601, `Method not found: ${method}`)
 }
 
-export async function runMcp(args: { root?: string }): Promise<void> {
+export async function runMcp(args: { root?: string; autoGenerate?: boolean }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
   const outputDir = config.output
 
-  process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
+  // Auto-generate notes if index doesn't exist and --auto-generate flag is set
+  if (args.autoGenerate) {
+    const indexPath = path.resolve(root, outputDir, 'index.json')
+    if (!fs.existsSync(indexPath)) {
+      process.stderr.write(`[braito] No notes found — running generate before starting MCP server...\n`)
+      const { runGenerate } = await import('./generate.ts')
+      await runGenerate({ root })
+      process.stderr.write(`[braito] Generate complete. Starting MCP server.\n`)
+    }
+  }
 
-  // Read newline-delimited JSON from stdin
+  process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
+  process.stderr.write(`Tools: get_file_note | search_by_criticality | get_index | get_architecture_context\n`)
+
   let buffer = ''
 
   process.stdin.setEncoding('utf-8')

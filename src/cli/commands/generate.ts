@@ -23,6 +23,7 @@ import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisStore.ts'
 import { concurrentMap } from '../../core/utils/concurrentMap.ts'
 import { logger } from '../../core/utils/logger.ts'
+import { ProgressBar } from '../../core/utils/progress.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
 import type { NoteDiff } from '../../core/output/diffNotes.ts'
 import type { StaticFileAnalysis } from '../../core/types/file-analysis.ts'
@@ -58,6 +59,7 @@ export async function runGenerate(args: {
   const analyses: StaticFileAnalysis[] = []
   let analysisHits = 0
 
+  const analysisProgress = new ProgressBar(files.length, 'Analyzing')
   for (const file of files) {
     const hash = await computeHash(file.path)
     fileHashes.set(file.relativePath, hash)
@@ -76,6 +78,7 @@ export async function runGenerate(args: {
       analyses.push(analysis)
       analysisStore.set(file.relativePath, analysis)
     }
+    analysisProgress.tick(file.relativePath)
   }
 
   if (analysisHits > 0) logger.info(`Reused ${analysisHits} cached analyses (skipped ts-morph parse)`)
@@ -139,6 +142,7 @@ export async function runGenerate(args: {
 
   // Use concurrentMap so multiple files are processed in parallel up to `concurrency` limit.
   // Results may be null when a file is skipped (hash unchanged).
+  const progress = new ProgressBar(filteredAnalyses.length, 'Writing notes')
   const noteResults = await concurrentMap(
     filteredAnalyses,
     async (analysis): Promise<{ note: AiFileNote; relativePath: string; hash: string; diff?: NoteDiff } | null> => {
@@ -188,6 +192,8 @@ export async function runGenerate(args: {
       }
 
       const diff = (args.diff && oldNote) ? diffNotes(oldNote, note) : undefined
+
+      progress.tick(path.relative(root, analysis.filePath))
 
       await writeJsonNote(note, root, config.output)
       await writeMarkdownNote(note, root, config.output)

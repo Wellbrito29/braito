@@ -5,6 +5,7 @@ All notable changes to braito will be documented here.
 ## [Unreleased]
 
 ### Added
+- **Progress indicator** — `ProgressBar` class in `src/core/utils/progress.ts` renders an in-place TTY progress bar (carriage return, filled/empty blocks, percentage, count) for both the analysis and note-writing phases of `generate`; output goes to stderr to keep stdout clean for `--format json` piping; non-TTY environments (CI) receive no output to avoid garbled logs; 6 tests added (`tests/utils/progress.test.ts`)
 - **LLM synthesis timeout** — `synthesizeFileNote` accepts a `timeoutMs` parameter (default 30 000 ms); `Promise.race` races the provider call against a timeout reject, falling back to the static note automatically via the existing catch block; configurable via `llm.timeoutMs` in `ai-notes.config.ts`; `LLMConfig` type and `llmConfigSchema` updated accordingly
 - **Config validation** — `loadConfig` now validates `ai-notes.config.ts` with a Zod schema (`src/core/config/configSchema.ts`); invalid values (unknown provider, out-of-range threshold/temperature, empty output dir, non-positive staleThresholdDays) emit a clear error with field paths instead of silently falling back to defaults; 15 tests added (`tests/config/configSchema.test.ts`)
 - **Temperature bug fix** — confirmed `provider/anthropic.ts` and `provider/openai.ts` correctly pass `request.temperature` through the `LLMRequest` type; marked resolved

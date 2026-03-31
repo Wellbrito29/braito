@@ -76,6 +76,9 @@ bun src/cli/index.ts generate --root ./ --silent
 # Show field-level diff between old and new notes (useful for PR review)
 bun src/cli/index.ts generate --root ./ --diff
 
+# Dry run — show what would be generated without writing any files
+bun src/cli/index.ts generate --root ./ --dry-run
+
 # Watch mode — regenerates on file change
 bun src/cli/index.ts watch --root ./
 

@@ -120,7 +120,11 @@ export async function handleRequest(
 
     if (name === 'get_file_note') {
       const filePath = args.file_path as string
-      const notePath = path.resolve(root, outputDir, filePath + '.json')
+      const notesDir = path.resolve(root, outputDir)
+      const notePath = path.resolve(notesDir, filePath + '.json')
+      if (!path.normalize(notePath).startsWith(path.normalize(notesDir) + path.sep)) {
+        return errorResponse(id, -32602, 'Invalid file path.')
+      }
       if (!fs.existsSync(notePath)) {
         return errorResponse(id, -32602, `No note found for '${filePath}'. Run 'generate' first.`)
       }

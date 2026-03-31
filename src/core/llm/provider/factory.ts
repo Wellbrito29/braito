@@ -13,14 +13,14 @@ export function createProvider(config: LLMConfig): LLMProvider {
       })
 
     case 'anthropic': {
-      const apiKey = config.apiKey ?? process.env.ANTHROPIC_API_KEY
-      if (!apiKey) throw new Error('Anthropic provider requires apiKey or ANTHROPIC_API_KEY env var')
+      const apiKey = process.env.ANTHROPIC_API_KEY
+      if (!apiKey) throw new Error('Anthropic provider requires ANTHROPIC_API_KEY env var')
       return new AnthropicProvider({ apiKey, model: config.model })
     }
 
     case 'openai': {
-      const apiKey = config.apiKey ?? process.env.OPENAI_API_KEY
-      if (!apiKey) throw new Error('OpenAI provider requires apiKey or OPENAI_API_KEY env var')
+      const apiKey = process.env.OPENAI_API_KEY
+      if (!apiKey) throw new Error('OpenAI provider requires OPENAI_API_KEY env var')
       return new OpenAIProvider({ apiKey, model: config.model })
     }
 

@@ -30,7 +30,15 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
       if (url.pathname === '/api/note') {
         const filePath = url.searchParams.get('path')
         if (!filePath) return new Response('Missing ?path=', { status: 400 })
-        return serveJson(path.join(notesDir, filePath + '.json'))
+        const resolved = path.resolve(notesDir, filePath + '.json')
+        const notesDirNorm = path.normalize(notesDir) + path.sep
+        if (!path.normalize(resolved).startsWith(notesDirNorm)) {
+          return new Response(JSON.stringify({ error: 'Access denied' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        return serveJson(resolved)
       }
 
       // UI: everything else serves the SPA shell

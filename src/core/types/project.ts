@@ -11,7 +11,6 @@ export type LLMConfig = {
   provider: LLMProviderName
   model?: string
   baseUrl?: string
-  apiKey?: string
   llmThreshold?: number
   temperature?: number
   timeoutMs?: number

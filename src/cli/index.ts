@@ -18,6 +18,7 @@ const { values } = parseArgs({
     format:  { type: 'string' },
     diff:    { type: 'boolean' },
     'dry-run': { type: 'boolean' },
+    'auto-generate': { type: 'boolean' },
     debug:   { type: 'boolean' },
     silent:  { type: 'boolean' },
     verbose: { type: 'boolean', short: 'v' },
@@ -51,7 +52,7 @@ switch (command) {
     break
 
   case 'mcp':
-    await runMcp({ root: values.root })
+    await runMcp({ root: values.root, autoGenerate: (values as Record<string, unknown>)['auto-generate'] as boolean | undefined })
     break
 
   case 'ui': {
@@ -84,6 +85,7 @@ Options:
   --format <fmt>         Output format for scan: "table" (default) or "json" (scan only)
   --diff                 Show field-level diff between old and new notes (generate only)
   --dry-run              Show what would be generated without writing any files (generate only)
+  --auto-generate        Auto-run generate if no notes exist before starting MCP server (mcp only)
 `)
     process.exit(command ? 1 : 0)
 }

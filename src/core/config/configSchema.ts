@@ -6,7 +6,6 @@ export const llmConfigSchema = z.object({
   }),
   model: z.string().optional(),
   baseUrl: z.string().url({ message: 'llm.baseUrl must be a valid URL' }).optional(),
-  apiKey: z.string().optional(),
   llmThreshold: z
     .number()
     .min(0, 'llm.llmThreshold must be >= 0')

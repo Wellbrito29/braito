@@ -66,4 +66,4 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Diff mode** — `generate --diff` compares old vs. new notes and shows what changed per field; useful for PR review workflows.
 
-- [ ] **VS Code extension** — native extension that surfaces criticality scores in the file explorer, shows inline note summaries on hover, and integrates with the MCP server.
+- [x] **VS Code extension** — native extension that surfaces criticality scores in the file explorer, shows inline note summaries on hover, and integrates with the MCP server.

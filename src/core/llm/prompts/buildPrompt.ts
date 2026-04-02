@@ -34,9 +34,14 @@ export function buildPrompt(ctx: PromptContext): string {
     impactValidation: staticNote.impactValidation.observed,
   }
 
+  const exportList = analysis.exports.length > 0
+    ? `Exported symbols to describe: ${analysis.exports.join(', ')}`
+    : ''
+
   return `Analyze the file below and generate an operational note.
 
 File: ${analysis.filePath}
+${exportList}
 
 Static context:
 ${JSON.stringify(staticContext, null, 2)}
@@ -60,7 +65,7 @@ ${sourceCode}
 
 Return a JSON object with these fields:
 {
-  "summary": "1-2 sentence plain English description of what this file does and why it exists. REQUIRED.",
+  "summary": "2-3 sentences describing: (1) what this file does, (2) what each main export/function/interface/class is for and how it works, (3) why it exists in the codebase. Be specific — mention actual function names, interface fields, parameters, and behaviour. REQUIRED.",
   "purpose": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
   "invariants": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
   "sensitiveDependencies": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
@@ -69,6 +74,7 @@ Return a JSON object with these fields:
   "impactValidation": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] }
 }
 
+For "purpose.inferred": one plain string per major export describing what it does — e.g. "IRepositoryFindOptions: defines filter (FilterQuery), sort (object), and pagination (skip/limit) options for repository queries". Use plain strings, NOT objects.
 evidence items: { "type": "code"|"git"|"test"|"graph"|"comment"|"doc", "detail": "string" }
 Return ONLY the JSON object, no markdown wrapping.`
 }

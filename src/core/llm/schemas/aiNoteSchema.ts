@@ -1,13 +1,34 @@
 import { z } from 'zod'
 
 const evidenceItemSchema = z.object({
-  type: z.enum(['code', 'git', 'test', 'graph', 'comment', 'doc']),
+  type: z.enum(['code', 'git', 'test', 'graph', 'comment', 'doc']).catch('code'),
   detail: z.string(),
 })
 
+// Coerce array items to strings — the LLM sometimes returns objects like
+// { symbol: "Foo", description: "..." } instead of plain strings.
+const coercedStringArray = z
+  .array(z.unknown())
+  .default([])
+  .transform((items) =>
+    items
+      .map((item) => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object') {
+          const o = item as Record<string, unknown>
+          // Try common object shapes the LLM produces
+          const text = o.description ?? o.detail ?? o.text ?? o.value ?? o.content
+          if (typeof text === 'string') return text
+          return JSON.stringify(item)
+        }
+        return String(item)
+      })
+      .filter((s) => s.trim().length > 0),
+  )
+
 const structuredListFieldSchema = z.object({
-  observed: z.array(z.string()).default([]),
-  inferred: z.array(z.string()).default([]),
+  observed: coercedStringArray,
+  inferred: coercedStringArray,
   confidence: z.number().min(0).max(1),
   evidence: z.array(evidenceItemSchema).default([]),
 })

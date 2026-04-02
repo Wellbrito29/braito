@@ -27,6 +27,7 @@ import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisS
 import { concurrentMap } from '../../core/utils/concurrentMap.ts'
 import { logger } from '../../core/utils/logger.ts'
 import { ProgressBar } from '../../core/utils/progress.ts'
+import { tracer } from '../../core/llm/trace.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
 import type { NoteDiff } from '../../core/output/diffNotes.ts'
 import type { StaticFileAnalysis } from '../../core/types/file-analysis.ts'
@@ -42,6 +43,9 @@ export async function runGenerate(args: {
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
+
+  // Init LLM tracer so providers can write real-time events to the trace file
+  tracer.init(path.resolve(root, config.output))
 
   logger.info(`Generating notes for ${root}`)
   logger.debug(`Config: llm=${config.llm?.provider ?? 'none'}, output=${config.output}, staleThreshold=${config.staleThresholdDays}d`)
@@ -72,8 +76,9 @@ export async function runGenerate(args: {
     const noteHash = noteHashStore.get(file.relativePath)
 
     if (!args.force && cachedAnalysis && noteHash === hash) {
-      // File unchanged and note is current — reuse cached AST analysis
-      analyses.push(cachedAnalysis)
+      // File unchanged and note is current — reuse cached AST analysis.
+      // Normalize filePath to current machine's absolute path (cache may come from CI or another machine).
+      analyses.push({ ...cachedAnalysis, filePath: file.path })
       analysisHits++
       logger.debug(`Cache hit: ${file.relativePath}`)
     } else {
@@ -257,7 +262,23 @@ export async function runGenerate(args: {
   // 9. Save note cache
   await saveCache(root, noteHashStore)
 
-  // 10. Build and write index
+  // 10. Load existing notes for skipped files so the index is always complete
+  for (const analysis of filteredAnalyses) {
+    const relativePath = path.relative(root, analysis.filePath)
+    // If this analysis was skipped (result.note not in notes), load from disk
+    const alreadyIncluded = notes.some((n) => n.filePath === analysis.filePath)
+    if (!alreadyIncluded) {
+      const existingNotePath = path.resolve(root, config.output, relativePath + '.json')
+      try {
+        const raw = await fs.readFile(existingNotePath, 'utf-8')
+        notes.push(JSON.parse(raw) as AiFileNote)
+      } catch {
+        // No existing note on disk — skip
+      }
+    }
+  }
+
+  // 11. Build and write index
   const index = buildIndex(notes, root, config.staleThresholdDays, revGraph)
   await writeIndexNote(index, root, config.output)
 

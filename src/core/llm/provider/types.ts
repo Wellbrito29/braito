@@ -2,6 +2,7 @@ export type LLMRequest = {
   system: string
   user: string
   temperature?: number
+  file?: string
 }
 
 export type LLMResponse = {

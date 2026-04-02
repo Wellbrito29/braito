@@ -38,34 +38,34 @@ export function buildPrompt(ctx: PromptContext): string {
     ? `Exported symbols to describe: ${analysis.exports.join(', ')}`
     : ''
 
-  return `Analyze the file below and generate an operational note.
+  return `Analise o arquivo abaixo e gere uma nota operacional em português brasileiro.
 
-File: ${analysis.filePath}
+Arquivo: ${analysis.filePath}
 ${exportList}
 
-Static context:
+Contexto estático:
 ${JSON.stringify(staticContext, null, 2)}
 
-Reverse dependencies (consumers):
-${graph.reverseDependencies.slice(0, 5).join('\n') || 'none'}
+Dependências reversas (consumidores):
+${graph.reverseDependencies.slice(0, 5).join('\n') || 'nenhum'}
 
-Git signals:
+Sinais do Git:
 ${JSON.stringify({ churnScore: git.churnScore, recentCommitMessages: git.recentCommitMessages, coChangedFiles: git.coChangedFiles.slice(0, 5), authorCount: git.authorCount }, null, 2)}
 
-Related tests:
-${tests.relatedTests.join('\n') || 'none'}
+Testes relacionados:
+${tests.relatedTests.join('\n') || 'nenhum'}
 
-Already observed (do not repeat, use as context):
+Já observado (não repita, use como contexto):
 ${JSON.stringify(existingObserved, null, 2)}
 
-Source code:
+Código-fonte:
 \`\`\`typescript
 ${sourceCode}
 \`\`\`
 
-Return a JSON object with these fields:
+Retorne um objeto JSON com estes campos:
 {
-  "summary": "2-3 sentences describing: (1) what this file does, (2) what each main export/function/interface/class is for and how it works, (3) why it exists in the codebase. Be specific — mention actual function names, interface fields, parameters, and behaviour. REQUIRED.",
+  "summary": "2-3 frases descrevendo: (1) o que este arquivo faz, (2) para que serve cada export/função/interface/classe principal e como funciona, (3) por que ele existe no codebase. Seja específico — mencione nomes reais de funções, campos de interfaces, parâmetros e comportamento. OBRIGATÓRIO.",
   "purpose": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
   "invariants": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
   "sensitiveDependencies": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
@@ -74,9 +74,9 @@ Return a JSON object with these fields:
   "impactValidation": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] }
 }
 
-For "purpose.inferred": one plain string per major export describing what it does — e.g. "IRepositoryFindOptions: defines filter (FilterQuery), sort (object), and pagination (skip/limit) options for repository queries". Use plain strings, NOT objects.
+Para "purpose.inferred": uma string simples por export principal descrevendo o que ele faz — ex: "runGenerate: orquestra o pipeline completo de geração de notas, recebe args com root/force/filter/diff, escreve .json e .md por arquivo e reconstrói o índice". Use strings simples, NÃO objetos.
 evidence items: { "type": "code"|"git"|"test"|"graph"|"comment"|"doc", "detail": "string" }
-Return ONLY the JSON object, no markdown wrapping.`
+Retorne APENAS o objeto JSON, sem markdown.`
 }
 
 function readSourceTruncated(filePath: string): string {

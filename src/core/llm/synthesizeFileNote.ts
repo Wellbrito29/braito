@@ -23,6 +23,7 @@ export async function synthesizeFileNote(
         system: SYSTEM_PROMPT,
         user: userPrompt,
         temperature,
+        file: ctx.analysis.filePath,
       }),
       timeoutPromise,
     ])

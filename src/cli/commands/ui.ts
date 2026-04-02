@@ -2,6 +2,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { loadConfig } from '../../core/config/loadConfig.ts'
 import { logger } from '../../core/utils/logger.ts'
+import type { TraceEvent } from '../../core/llm/trace.ts'
 
 const DEFAULT_PORT = 7842
 
@@ -29,6 +30,43 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
       // API: GET /api/index
       if (url.pathname === '/api/index') {
         return serveJson(path.join(notesDir, 'index.json'))
+      }
+
+      // API: GET /api/llm-events — SSE stream of LLM trace events
+      if (url.pathname === '/api/llm-events') {
+        const traceFile = path.join(notesDir, '.llm-trace.jsonl')
+        let offset = 0
+        const stream = new ReadableStream({
+          start(controller) {
+            const send = () => {
+              if (!fs.existsSync(traceFile)) return
+              const stat = fs.statSync(traceFile)
+              if (stat.size <= offset) return
+              const buf = Buffer.alloc(stat.size - offset)
+              const fd = fs.openSync(traceFile, 'r')
+              fs.readSync(fd, buf, 0, buf.length, offset)
+              fs.closeSync(fd)
+              offset = stat.size
+              const lines = buf.toString('utf-8').split('\n').filter(Boolean)
+              for (const line of lines) {
+                controller.enqueue(new TextEncoder().encode(`data: ${line}\n\n`))
+              }
+            }
+            send()
+            const interval = setInterval(send, 800)
+            // Clean up when client disconnects
+            const cleanup = () => clearInterval(interval)
+            req.signal?.addEventListener('abort', cleanup)
+          },
+        })
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+          },
+        })
       }
 
       // API: GET /api/note?path=src/foo.ts
@@ -144,14 +182,34 @@ function renderHtml(): string {
     .folder-name{font-size:12px;color:#888}
     .folder-count{font-size:10px;color:#444;margin-left:auto}
     .folder-children{padding-left:14px;border-left:1px solid #1e1e1e;margin-left:9px}
+    .tab-btn{padding:5px 14px;background:#1a1a1a;border:1px solid #333;color:#666;border-radius:4px;font-size:12px;cursor:pointer}
+    .tab-btn.active{background:#1e2a3a;border-color:#4a9eff;color:#4a9eff}
+    .trace-card{background:#111;border:1px solid #1e1e1e;border-radius:6px;margin-bottom:12px;overflow:hidden}
+    .trace-card.error{border-color:#3a1a1a}
+    .trace-header{padding:8px 12px;background:#161616;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+    .trace-header:hover{background:#1a1a1a}
+    .trace-file{color:#4a9eff;font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .trace-meta{font-size:11px;color:#555;white-space:nowrap}
+    .trace-ok{color:#6bcb77;font-size:11px}
+    .trace-err{color:#ff6b6b;font-size:11px}
+    .trace-body{display:none;padding:12px}
+    .trace-body.open{display:block}
+    .trace-section{margin-bottom:10px}
+    .trace-section-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+    .trace-content{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:4px;padding:10px;color:#ccc;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:300px;overflow-y:auto}
+    .trace-content.response{color:#a8d8a8}
   </style>
 </head>
 <body>
   <header>
     <h1>braito</h1>
     <span class="subtitle">AI Notes</span>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="tab-btn active" id="tabNotes" onclick="setTab('notes')">Notas</button>
+      <button class="tab-btn" id="tabTrace" onclick="setTab('trace')">LLM Trace</button>
+    </div>
   </header>
-  <div class="container">
+  <div id="pageNotes" class="container">
     <div class="sidebar">
       <input class="search" id="search" placeholder="Search files..." />
       <button class="overview-btn" onclick="loadOverview()">📋 Repository Overview</button>
@@ -173,6 +231,13 @@ function renderHtml(): string {
     <div class="detail" id="detail">
       <div class="empty-state"><p>Select a file to view its AI note</p></div>
     </div>
+  </div>
+  <div id="pageTrace" style="display:none;height:calc(100vh - 53px);display:none;flex-direction:column">
+    <div style="padding:12px 24px;border-bottom:1px solid #222;display:flex;align-items:center;gap:12px">
+      <span style="font-size:13px;color:#666">Interações em tempo real com o LLM. Rode <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px">generate</code> em outro terminal para ver.</span>
+      <button onclick="clearTrace()" style="margin-left:auto;padding:4px 12px;background:#1a1a1a;border:1px solid #333;color:#888;border-radius:4px;font-size:12px;cursor:pointer">Limpar</button>
+    </div>
+    <div id="traceList" style="flex:1;overflow-y:auto;padding:16px 24px;font-family:monospace;font-size:12px"></div>
   </div>
   <script>
     let index = null
@@ -421,6 +486,74 @@ function renderHtml(): string {
     document.getElementById('search').addEventListener('input', renderList)
     document.getElementById('scoreFilter').addEventListener('change', renderList)
     loadIndex()
+
+    // --- LLM Trace ---
+    let traceEvents = []
+    let traceEs = null
+
+    function setTab(tab) {
+      const isTrace = tab === 'trace'
+      document.getElementById('pageNotes').style.display = isTrace ? 'none' : 'grid'
+      document.getElementById('pageTrace').style.display = isTrace ? 'flex' : 'none'
+      document.getElementById('tabNotes').classList.toggle('active', !isTrace)
+      document.getElementById('tabTrace').classList.toggle('active', isTrace)
+      if (isTrace && !traceEs) startTraceStream()
+    }
+
+    function startTraceStream() {
+      traceEs = new EventSource('/api/llm-events')
+      traceEs.onmessage = (e) => {
+        try {
+          const ev = JSON.parse(e.data)
+          traceEvents.unshift(ev)
+          renderTrace()
+        } catch {}
+      }
+    }
+
+    function clearTrace() {
+      traceEvents = []
+      renderTrace()
+    }
+
+    function renderTrace() {
+      const list = document.getElementById('traceList')
+      if (!traceEvents.length) {
+        list.innerHTML = '<div style="color:#444;padding:40px;text-align:center">Nenhuma interação ainda. Rode <code>bun src/cli/index.ts generate --root ./ --force</code></div>'
+        return
+      }
+      list.innerHTML = traceEvents.map((ev, i) => {
+        const file = ev.file ? ev.file.split('/').slice(-2).join('/') : '—'
+        const ms = ev.durationMs ? \`\${(ev.durationMs/1000).toFixed(1)}s\` : ''
+        const ts = new Date(ev.ts).toLocaleTimeString('pt-BR')
+        return \`
+          <div class="trace-card \${ev.ok ? '' : 'error'}">
+            <div class="trace-header" onclick="toggleTrace(\${i})">
+              <span class="trace-file" title="\${ev.file}">\${file}</span>
+              <span class="trace-meta">\${ev.model} · \${ms} · \${ts}</span>
+              <span class="\${ev.ok ? 'trace-ok' : 'trace-err'}">\${ev.ok ? '✓' : '✗'}</span>
+            </div>
+            <div class="trace-body" id="trace-body-\${i}">
+              \${ev.error ? \`<div style="color:#ff6b6b;padding:0 0 8px">\${escapeHtml(ev.error)}</div>\` : ''}
+              <div class="trace-section">
+                <div class="trace-section-label">Prompt enviado</div>
+                <div class="trace-content">\${escapeHtml(ev.prompt)}</div>
+              </div>
+              \${ev.response ? \`
+              <div class="trace-section">
+                <div class="trace-section-label">Resposta do modelo</div>
+                <div class="trace-content response">\${escapeHtml(ev.response)}</div>
+              </div>\` : ''}
+            </div>
+          </div>
+        \`
+      }).join('')
+    }
+
+    function toggleTrace(i) {
+      const body = document.getElementById('trace-body-' + i)
+      body.classList.toggle('open')
+    }
   </script>
 </body>
 </html>`

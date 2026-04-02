@@ -6,6 +6,10 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 ## Short-term
 
+- [ ] **Richer notes for type/interface files** — notes on `.types.ts` and `.dto.ts` files are too shallow (only list exports). Prompt should extract and describe each exported interface's fields, purpose, and constraints. Consider a specialized prompt path for pure type files (no function bodies, only interfaces/enums/types).
+
+- [ ] **Absolute paths in Impact Validation** — co-changed files in `impactValidation.observed` still surface as absolute paths in some cases. Trace where `git.coChangedFiles[].path` is set and ensure `path.relative(root, ...)` is applied consistently before building the note.
+
 - [ ] **npm publish** — configure `package.json` for public npm release (`name`, `bin`, `files`, `engines`); add `prepublish` build step; test `npx braito` flow end-to-end
 
 - [ ] **SECURITY.md** — document threat model, responsible disclosure policy, and note that config files execute arbitrary code by design; required before public npm release

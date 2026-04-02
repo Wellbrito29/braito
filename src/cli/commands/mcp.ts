@@ -75,7 +75,7 @@ const TOOLS = [
   {
     name: 'get_impact',
     description:
-      'Get the blast radius of a file — which files directly or transitively depend on it. Useful before making changes to understand what could break.',
+      'Get the blast radius of a file — which files directly or transitively depend on it, with their AI notes. Use this before making changes to understand what could break and review the logic of each dependent.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -86,6 +86,10 @@ const TOOLS = [
         depth: {
           type: 'number',
           description: 'How many levels of transitive dependents to include. Default: 2',
+        },
+        include_notes: {
+          type: 'boolean',
+          description: 'Include the full AI note for each dependent file. Default: false',
         },
       },
       required: ['file_path'],
@@ -296,6 +300,7 @@ export async function handleRequest(
     if (name === 'get_impact') {
       const filePath = args.file_path as string
       const depth = Math.min(Math.max(1, (args.depth as number | undefined) ?? 2), 5)
+      const includeNotes = (args.include_notes as boolean | undefined) ?? false
       const indexPath = path.resolve(root, outputDir, 'index.json')
       if (!fs.existsSync(indexPath)) {
         return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
@@ -306,7 +311,7 @@ export async function handleRequest(
 
         // BFS traversal up to `depth` levels
         const visited = new Set<string>()
-        const levels: Array<{ relativePath: string; criticalityScore: number; domain: string; level: number }> = []
+        const levels: Array<{ relativePath: string; criticalityScore: number; domain: string; level: number; note?: unknown }> = []
         let frontier = [filePath]
         visited.add(filePath)
 
@@ -320,7 +325,12 @@ export async function handleRequest(
                 visited.add(dep)
                 const depEntry = entries.find((e) => e.relativePath === dep)
                 if (depEntry) {
-                  levels.push({ relativePath: dep, criticalityScore: depEntry.criticalityScore, domain: depEntry.domain, level })
+                  const item: (typeof levels)[number] = { relativePath: dep, criticalityScore: depEntry.criticalityScore, domain: depEntry.domain, level }
+                  if (includeNotes) {
+                    const notePath = path.resolve(root, outputDir, dep + '.json')
+                    try { item.note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { /* no note */ }
+                  }
+                  levels.push(item)
                   next.push(dep)
                 }
               }

@@ -40,6 +40,7 @@ export async function runGenerate(args: {
   filter?: string
   diff?: boolean
   dryRun?: boolean
+  cascade?: boolean
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -114,7 +115,48 @@ export async function runGenerate(args: {
     }
   }
 
-  // 6. Load coverage report (optional — lcov.info or coverage-summary.json)
+  // 6. Cascade: find dependents of changed files and force-reprocess them
+  //    A file is "changed" when its current hash differs from the stored note hash.
+  //    We traverse the reverse dependency graph (BFS, depth 2) and collect all
+  //    dependents — these will be reprocessed even if their own hash is unchanged.
+  const cascadeForceSet = new Set<string>()
+  if (args.cascade && !args.force) {
+    const changedFiles = files.filter((f) => {
+      const stored = noteHashStore.get(f.relativePath)
+      const current = fileHashes.get(f.relativePath)
+      return stored !== current
+    })
+
+    if (changedFiles.length > 0) {
+      logger.info(`Cascade: ${changedFiles.length} changed file(s) — propagating to dependents...`)
+      const frontier = changedFiles.map((f) => f.path)
+      const visited = new Set(frontier)
+
+      // BFS depth 2
+      for (let depth = 0; depth < 2; depth++) {
+        const next: string[] = []
+        for (const filePath of frontier) {
+          for (const dep of (revGraph.get(filePath) ?? [])) {
+            if (!visited.has(dep)) {
+              visited.add(dep)
+              next.push(dep)
+              const rel = path.relative(root, dep)
+              cascadeForceSet.add(rel)
+            }
+          }
+        }
+        frontier.length = 0
+        frontier.push(...next)
+        if (frontier.length === 0) break
+      }
+
+      if (cascadeForceSet.size > 0) {
+        logger.info(`Cascade: will reprocess ${cascadeForceSet.size} dependent file(s)`)
+      }
+    }
+  }
+
+  // 6b. Load coverage report (optional — lcov.info or coverage-summary.json)
   const coverageMap = loadCoverage(root)
   if (coverageMap) logger.info(`Coverage report loaded (${coverageMap.size} files)`)
 
@@ -163,7 +205,8 @@ export async function runGenerate(args: {
       const currentHash = fileHashes.get(file.relativePath)!
 
       // Skip if the note is already up to date for this file
-      if (!args.force && noteHashStore.get(file.relativePath) === currentHash) {
+      // Exception: cascade mode forces dependents of changed files to be reprocessed
+      if (!args.force && !cascadeForceSet.has(file.relativePath) && noteHashStore.get(file.relativePath) === currentHash) {
         if (args.dryRun) {
           dryRunEntries.push({ relativePath: file.relativePath, score: 0, useLlm: false, wouldSkip: true })
         }
@@ -292,6 +335,7 @@ export async function runGenerate(args: {
 
   logger.success(`Generated ${written} notes in ${config.output}/`)
   if (skipped > 0) logger.info(`Skipped ${skipped} unchanged files (use --force to reprocess)`)
+  if (args.cascade && cascadeForceSet.size > 0) logger.info(`Cascade: reprocessed ${cascadeForceSet.size} dependent file(s)`)
   if (provider) logger.info(`LLM synthesized: ${synthesized} files`)
   if (index.staleFiles > 0) {
     logger.warn(`${index.staleFiles} note(s) are older than ${config.staleThresholdDays} days — run with --force to refresh`)

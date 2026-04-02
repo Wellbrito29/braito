@@ -255,7 +255,7 @@ export async function runGenerate(args: {
   await saveCache(root, noteHashStore)
 
   // 10. Build and write index
-  const index = buildIndex(notes, root, config.staleThresholdDays)
+  const index = buildIndex(notes, root, config.staleThresholdDays, revGraph)
   await writeIndexNote(index, root, config.output)
 
   logger.success(`Generated ${written} notes in ${config.output}/`)

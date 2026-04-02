@@ -84,6 +84,21 @@ describe('buildIndex', () => {
     expect(index.staleFiles).toBe(0)
   })
 
+  it('populates dependents from revGraph', () => {
+    const notes = [
+      makeNote('/project/src/a.ts', 0.3),
+      makeNote('/project/src/b.ts', 0.8),
+    ]
+    const revGraph = new Map([
+      ['/project/src/b.ts', ['/project/src/a.ts']],
+    ])
+    const index = buildIndex(notes, ROOT, 30, revGraph)
+    const b = index.entries.find((e) => e.relativePath === 'src/b.ts')!
+    const a = index.entries.find((e) => e.relativePath === 'src/a.ts')!
+    expect(b.dependents).toEqual(['src/a.ts'])
+    expect(a.dependents).toEqual([])
+  })
+
   it('marks old notes as stale', () => {
     const empty = { observed: [], inferred: [], confidence: 0, evidence: [] }
     const oldNote: AiFileNote = {

@@ -185,7 +185,7 @@ export async function runGenerate(args: {
       const coveragePct = coverageMap?.get(file.relativePath)
       const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
-      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
+      let note = buildBasicNote(analysis, graph, tests, gitSignals, root, cycleFiles)
       logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
 
       const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)

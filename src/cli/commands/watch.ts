@@ -132,7 +132,7 @@ async function processFile(
     }
     const tests = { filePath, relatedTests }
 
-    let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
+    let note = buildBasicNote(analysis, graph, tests, gitSignals, root, cycleFiles)
 
     if (provider && note.criticalityScore >= llmThreshold) {
       note = await synthesizeFileNote(

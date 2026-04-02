@@ -1,3 +1,4 @@
+import path from 'node:path'
 import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../types/file-analysis.ts'
 import type { AiFileNote, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
 import { SCHEMA_VERSION } from '../types/schema-version.ts'
@@ -5,12 +6,22 @@ import { SCHEMA_VERSION } from '../types/schema-version.ts'
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
 const VALIDATION_LIBS = ['zod', 'yup', 'joi', 'superstruct', 'valibot', 'arktype']
 const DECISION_COMMIT_KEYWORDS = ['because', 'instead of', 'chose', 'migrated', 'switched', 'replaced', 'moved to', 'adopted']
+const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.go'])
+
+function toRel(absPath: string, root: string): string {
+  return path.relative(root, absPath)
+}
+
+function isSourceFile(filePath: string): boolean {
+  return SOURCE_EXTENSIONS.has(path.extname(filePath))
+}
 
 export function buildBasicNote(
   analysis: StaticFileAnalysis,
   graph: GraphSignals,
   tests: TestSignals,
   git: GitSignals,
+  root: string,
   cycleFiles?: Set<string>,
 ): AiFileNote {
   const purposeObserved: string[] = []
@@ -28,20 +39,22 @@ export function buildBasicNote(
     purposeEvidence.push({ type: 'code', detail: `Exported symbols: ${analysis.exports.join(', ')}` })
   }
 
-  if (graph.reverseDependencies.length > 0) {
+  const revDepsRel = graph.reverseDependencies.map((r) => toRel(r, root))
+
+  if (revDepsRel.length > 0) {
     purposeEvidence.push({
       type: 'graph',
-      detail: `Consumed by: ${graph.reverseDependencies.slice(0, 3).join(', ')}`,
+      detail: `Consumed by: ${revDepsRel.slice(0, 3).join(', ')}`,
     })
   }
 
   const sensitiveDepsObserved: string[] = [
     ...analysis.externalImports,
-    ...graph.reverseDependencies.slice(0, 5),
+    ...revDepsRel.slice(0, 5),
   ]
   const sensitiveDepsEvidence: EvidenceItem[] = [
     ...analysis.externalImports.map((i) => ({ type: 'code' as const, detail: `import from '${i}'` })),
-    ...graph.reverseDependencies.slice(0, 5).map((r) => ({ type: 'graph' as const, detail: `Reverse dep: ${r}` })),
+    ...revDepsRel.slice(0, 5).map((r) => ({ type: 'graph' as const, detail: `Reverse dep: ${r}` })),
   ]
 
   // knownPitfalls: comments + risky commit messages + high-frequency co-changes
@@ -69,7 +82,7 @@ export function buildBasicNote(
     }
   }
 
-  const highFreqCoChanged = git.coChangedFiles.filter((f) => f.count >= 2)
+  const highFreqCoChanged = git.coChangedFiles.filter((f) => f.count >= 2 && isSourceFile(f.path))
   if (highFreqCoChanged.length > 0) {
     pitfallsObserved.push(
       `Co-changes frequently with: ${highFreqCoChanged.map((f) => f.path).join(', ')}`,
@@ -84,16 +97,17 @@ export function buildBasicNote(
     pitfallsEvidence.push({ type: 'graph', detail: 'File is part of a circular dependency cycle' })
   }
 
-  // impactValidation: consumers + tests + co-changed files + coverage
+  // impactValidation: consumers + tests + co-changed source files + coverage
+  const sourceCoChanged = git.coChangedFiles.filter((f) => isSourceFile(f.path))
   const impactObserved: string[] = [
-    ...graph.reverseDependencies,
+    ...revDepsRel,
     ...tests.relatedTests,
-    ...git.coChangedFiles.map((f) => f.path),
+    ...sourceCoChanged.map((f) => f.path),
   ]
   const impactEvidence: EvidenceItem[] = [
-    ...graph.reverseDependencies.map((r) => ({ type: 'graph' as const, detail: `Consumer: ${r}` })),
+    ...revDepsRel.map((r) => ({ type: 'graph' as const, detail: `Consumer: ${r}` })),
     ...tests.relatedTests.map((t) => ({ type: 'test' as const, detail: `Related test: ${t}` })),
-    ...git.coChangedFiles.map((f) => ({ type: 'git' as const, detail: `Co-changed ${f.count}x: ${f.path}` })),
+    ...sourceCoChanged.map((f) => ({ type: 'git' as const, detail: `Co-changed ${f.count}x: ${f.path}` })),
   ]
 
   if (tests.coveragePct !== undefined) {

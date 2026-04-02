@@ -18,6 +18,9 @@ import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { buildIndex } from '../../core/output/buildIndex.ts'
 import { writeIndexNote } from '../../core/output/writeIndexNote.ts'
+import { buildOverview } from '../../core/output/buildOverview.ts'
+import { writeOverview } from '../../core/output/writeOverview.ts'
+import { synthesizeOverview } from '../../core/llm/synthesizeOverview.ts'
 import { logger } from '../../core/utils/logger.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
 
@@ -61,7 +64,11 @@ export async function runWatch(args: { root?: string }): Promise<void> {
   }
 
   await saveCache(root, hashStore)
-  await writeIndexNote(buildIndex([...noteMap.values()], root, undefined, revGraph), root, config.output)
+  const initIndex = buildIndex([...noteMap.values()], root, undefined, revGraph)
+  await writeIndexNote(initIndex, root, config.output)
+  let initOverview = buildOverview(initIndex, cycleFiles.size)
+  if (provider) initOverview = await synthesizeOverview(initOverview, provider, temperature, timeoutMs)
+  await writeOverview(initOverview, root, config.output)
   logger.success(`Initial generation complete. Watching for changes...`)
 
   // Debounce map
@@ -94,7 +101,10 @@ export async function runWatch(args: { root?: string }): Promise<void> {
         noteMap.set(absolutePath, note)
         hashStore.set(filename, await computeHash(absolutePath))
         await saveCache(root, hashStore)
-        await writeIndexNote(buildIndex([...noteMap.values()], root, undefined, revGraph), root, config.output)
+        const updatedIndex = buildIndex([...noteMap.values()], root, undefined, revGraph)
+        await writeIndexNote(updatedIndex, root, config.output)
+        const updatedOverview = buildOverview(updatedIndex, filesInCycles(detectCycles(depGraph)).size)
+        await writeOverview(updatedOverview, root, config.output)
         logger.success(`Regenerated: ${filename}`)
       }
     }, DEBOUNCE_MS))

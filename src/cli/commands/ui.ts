@@ -21,6 +21,11 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
     fetch(req) {
       const url = new URL(req.url)
 
+      // API: GET /api/overview
+      if (url.pathname === '/api/overview') {
+        return serveJson(path.join(notesDir, 'overview.json'))
+      }
+
       // API: GET /api/index
       if (url.pathname === '/api/index') {
         return serveJson(path.join(notesDir, 'index.json'))
@@ -101,6 +106,17 @@ function renderHtml(): string {
     .file-name{font-size:12px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
     .file-summary{font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px 5px 8px}
     .detail-summary{font-size:14px;color:#aaa;margin-bottom:20px;line-height:1.5;padding:12px;background:#141414;border-radius:6px;border-left:3px solid #333}
+    .overview-btn{padding:6px 14px;background:#1a1a1a;border:1px solid #333;color:#888;border-radius:5px;font-size:12px;cursor:pointer;margin-bottom:12px;width:100%;text-align:left}
+    .overview-btn:hover{background:#222;color:#ccc}
+    .overview-description{font-size:14px;color:#bbb;line-height:1.6;padding:14px;background:#141414;border-radius:6px;border-left:3px solid #4a9eff;margin-bottom:20px}
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+    .stat-card{background:#141414;border:1px solid #1e1e1e;border-radius:6px;padding:12px;text-align:center}
+    .stat-value{font-size:22px;font-weight:700;color:#fff}
+    .stat-label{font-size:11px;color:#555;margin-top:4px}
+    .overview-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+    .overview-table th{text-align:left;color:#555;font-weight:600;padding:6px 8px;border-bottom:1px solid #1e1e1e;font-size:11px;text-transform:uppercase}
+    .overview-table td{padding:6px 8px;color:#ccc;border-bottom:1px solid #111;vertical-align:top}
+    .overview-table tr:hover td{background:#141414}
     .score{font-size:11px;font-weight:600;padding:2px 6px;border-radius:10px;white-space:nowrap}
     .score-high{background:#3a1a1a;color:#ff6b6b}
     .score-mid{background:#2a2a1a;color:#ffd93d}
@@ -138,6 +154,7 @@ function renderHtml(): string {
   <div class="container">
     <div class="sidebar">
       <input class="search" id="search" placeholder="Search files..." />
+      <button class="overview-btn" onclick="loadOverview()">📋 Repository Overview</button>
       <div class="view-toggle">
         <div class="view-btn active" id="btnDomain" onclick="setView('domain')">Domain</div>
         <div class="view-btn" id="btnFolder" onclick="setView('folder')">Folders</div>
@@ -326,6 +343,78 @@ function renderHtml(): string {
         \${renderField('Known Pitfalls', note.knownPitfalls)}
         \${renderField('Sensitive Dependencies', note.sensitiveDependencies)}
         \${renderField('Impact Validation', note.impactValidation)}
+      \`
+    }
+
+    async function loadOverview() {
+      selected = null
+      const res = await fetch('/api/overview')
+      if (!res.ok) {
+        document.getElementById('detail').innerHTML = '<div class="empty-state"><p>Overview not found. Run <code>generate</code> first.</p></div>'
+        return
+      }
+      const ov = await res.json()
+      renderOverview(ov)
+    }
+
+    function renderOverview(ov) {
+      const date = new Date(ov.generatedAt).toISOString().slice(0, 10)
+      const domains = (ov.domains || []).map(d => \`
+        <tr>
+          <td>\${d.name}</td>
+          <td>\${d.fileCount}</td>
+          <td><span class="score \${scoreClass(d.avgScore)}">\${d.avgScore.toFixed(2)}</span></td>
+        </tr>
+      \`).join('')
+
+      const criticalRows = (ov.criticalFiles || []).map(f => \`
+        <tr onclick="loadNote('\${f.relativePath}')" style="cursor:pointer">
+          <td><span class="score \${scoreClass(f.criticalityScore)}">\${f.criticalityScore.toFixed(2)}</span></td>
+          <td>\${f.relativePath.split('/').pop()}</td>
+          <td style="color:#555;font-size:11px">\${escapeHtml(f.summary).slice(0, 60)}\${f.summary.length > 60 ? '…' : ''}</td>
+        </tr>
+      \`).join('')
+
+      const entryRows = (ov.entryPoints || []).map(f => \`
+        <tr onclick="loadNote('\${f.relativePath}')" style="cursor:pointer">
+          <td>\${f.dependentCount}</td>
+          <td>\${f.relativePath.split('/').pop()}</td>
+          <td style="color:#555;font-size:11px">\${escapeHtml(f.summary).slice(0, 60)}\${f.summary.length > 60 ? '…' : ''}</td>
+        </tr>
+      \`).join('')
+
+      document.getElementById('detail').innerHTML = \`
+        <h2>Repository Overview</h2>
+        <div class="meta">Generated: \${date} · Model: \${ov.model}</div>
+        <div class="overview-description">\${escapeHtml(ov.description)}</div>
+
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-value">\${ov.stats.totalFiles}</div><div class="stat-label">Files</div></div>
+          <div class="stat-card"><div class="stat-value">\${ov.stats.synthesizedFiles}</div><div class="stat-label">LLM-synthesized</div></div>
+          <div class="stat-card"><div class="stat-value">\${ov.stats.avgCriticalityScore.toFixed(2)}</div><div class="stat-label">Avg criticality</div></div>
+          <div class="stat-card"><div class="stat-value">\${ov.stats.cycleCount}</div><div class="stat-label">Import cycles</div></div>
+        </div>
+
+        \${domains ? \`
+        <div class="section"><h3>Domains</h3>
+        <table class="overview-table">
+          <thead><tr><th>Domain</th><th>Files</th><th>Avg Score</th></tr></thead>
+          <tbody>\${domains}</tbody>
+        </table></div>\` : ''}
+
+        \${criticalRows ? \`
+        <div class="section"><h3>Most Critical Files</h3>
+        <table class="overview-table">
+          <thead><tr><th>Score</th><th>File</th><th>Summary</th></tr></thead>
+          <tbody>\${criticalRows}</tbody>
+        </table></div>\` : ''}
+
+        \${entryRows ? \`
+        <div class="section"><h3>Entry Points</h3>
+        <table class="overview-table">
+          <thead><tr><th>Dependents</th><th>File</th><th>Summary</th></tr></thead>
+          <tbody>\${entryRows}</tbody>
+        </table></div>\` : ''}
       \`
     }
 

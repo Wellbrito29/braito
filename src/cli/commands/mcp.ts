@@ -125,6 +125,12 @@ const TOOLS = [
       required: ['domain'],
     },
   },
+  {
+    name: 'get_overview',
+    description:
+      'Get the repository-level overview — a high-level description of what the project does, its main domains, most critical files, and entry points. Read this first to orient yourself in a new codebase.',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ]
 
 function send(msg: JsonRpcResponse): void {
@@ -409,6 +415,19 @@ export async function handleRequest(
       }
     }
 
+    if (name === 'get_overview') {
+      const overviewPath = path.resolve(root, outputDir, 'overview.json')
+      if (!fs.existsSync(overviewPath)) {
+        return errorResponse(id, -32602, "Overview not found. Run 'generate' first.")
+      }
+      try {
+        const overview = fs.readFileSync(overviewPath, 'utf-8')
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: overview }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to read overview.')
+      }
+    }
+
     return errorResponse(id, -32601, `Unknown tool: ${name}`)
   }
 
@@ -432,7 +451,7 @@ export async function runMcp(args: { root?: string; autoGenerate?: boolean }): P
   }
 
   process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
-  process.stderr.write(`Tools: get_file_note | search_by_criticality | get_index | get_architecture_context\n`)
+  process.stderr.write(`Tools: get_overview | get_file_note | get_index | get_impact | search | get_domain | search_by_criticality\n`)
 
   let buffer = ''
 

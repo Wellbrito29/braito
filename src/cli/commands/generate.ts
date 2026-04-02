@@ -16,8 +16,11 @@ import { writeMarkdownNote } from '../../core/output/writeMarkdownNote.ts'
 import { buildIndex } from '../../core/output/buildIndex.ts'
 import { writeIndexNote } from '../../core/output/writeIndexNote.ts'
 import { diffNotes, renderDiff } from '../../core/output/diffNotes.ts'
+import { buildOverview } from '../../core/output/buildOverview.ts'
+import { writeOverview } from '../../core/output/writeOverview.ts'
 import { createProvider } from '../../core/llm/provider/factory.ts'
 import { synthesizeFileNote } from '../../core/llm/synthesizeFileNote.ts'
+import { synthesizeOverview } from '../../core/llm/synthesizeOverview.ts'
 import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisStore.ts'
@@ -257,6 +260,14 @@ export async function runGenerate(args: {
   // 10. Build and write index
   const index = buildIndex(notes, root, config.staleThresholdDays, revGraph)
   await writeIndexNote(index, root, config.output)
+
+  // 11. Build and write repo overview
+  let overview = buildOverview(index, cycles.length)
+  if (provider) {
+    logger.info('Synthesizing repo overview...')
+    overview = await synthesizeOverview(overview, provider, temperature, timeoutMs)
+  }
+  await writeOverview(overview, root, config.output)
 
   logger.success(`Generated ${written} notes in ${config.output}/`)
   if (skipped > 0) logger.info(`Skipped ${skipped} unchanged files (use --force to reprocess)`)

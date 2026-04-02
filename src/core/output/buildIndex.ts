@@ -13,6 +13,7 @@ export type IndexEntry = {
   purpose: string
   generatedAt: string
   stale: boolean
+  dependents: string[]
 }
 
 export type NoteIndex = {
@@ -43,10 +44,12 @@ export function buildIndex(
   notes: AiFileNote[],
   root: string,
   staleThresholdDays = DEFAULT_STALE_THRESHOLD_DAYS,
+  revGraph?: Map<string, string[]>,
 ): NoteIndex {
   const entries: IndexEntry[] = notes
     .map((note) => {
       const relativePath = path.relative(root, note.filePath)
+      const rawDependents = revGraph?.get(note.filePath) ?? []
       return {
         filePath: note.filePath,
         relativePath,
@@ -56,6 +59,7 @@ export function buildIndex(
         purpose: note.purpose.observed[0] ?? note.purpose.inferred[0] ?? '',
         generatedAt: note.generatedAt,
         stale: isNoteStale(note.generatedAt, staleThresholdDays),
+        dependents: rawDependents.map((d) => path.relative(root, d)),
       }
     })
     .sort((a, b) => b.criticalityScore - a.criticalityScore)

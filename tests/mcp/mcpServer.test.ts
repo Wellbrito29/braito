@@ -24,13 +24,38 @@ const MOCK_NOTE = {
   model: 'static',
 }
 
+const MOCK_NOTE_B = {
+  schemaVersion: '1.0.0',
+  filePath: '/project/src/b.ts',
+  purpose: { observed: ['Handles authentication logic'], inferred: [], confidence: 0.8, evidence: [] },
+  invariants: { observed: ['Must validate token before use'], inferred: [], confidence: 0.7, evidence: [] },
+  sensitiveDependencies: { observed: [], inferred: [], confidence: 0, evidence: [] },
+  importantDecisions: { observed: [], inferred: [], confidence: 0, evidence: [] },
+  knownPitfalls: { observed: ['Race condition on token refresh'], inferred: [], confidence: 0.6, evidence: [] },
+  impactValidation: { observed: [], inferred: [], confidence: 0, evidence: [] },
+  criticalityScore: 0.9,
+  generatedAt: new Date().toISOString(),
+  model: 'static',
+}
+
 const MOCK_INDEX = {
   schemaVersion: '1.0.0',
   generatedAt: new Date().toISOString(),
-  totalFiles: 1,
+  totalFiles: 2,
   synthesizedFiles: 0,
   staleFiles: 0,
   entries: [
+    {
+      filePath: '/project/src/b.ts',
+      relativePath: 'src/b.ts',
+      domain: 'src',
+      criticalityScore: 0.9,
+      model: 'static',
+      purpose: 'Handles authentication logic',
+      generatedAt: MOCK_NOTE_B.generatedAt,
+      stale: false,
+      dependents: ['src/a.ts'],
+    },
     {
       filePath: '/project/src/a.ts',
       relativePath: 'src/a.ts',
@@ -40,6 +65,7 @@ const MOCK_INDEX = {
       purpose: 'Exports: foo',
       generatedAt: MOCK_NOTE.generatedAt,
       stale: false,
+      dependents: [],
     },
   ],
 }
@@ -49,6 +75,7 @@ beforeAll(() => {
   notesDir = path.join(tmpDir, '.ai-notes', 'src')
   fs.mkdirSync(notesDir, { recursive: true })
   fs.writeFileSync(path.join(notesDir, 'a.ts.json'), JSON.stringify(MOCK_NOTE))
+  fs.writeFileSync(path.join(notesDir, 'b.ts.json'), JSON.stringify(MOCK_NOTE_B))
   fs.writeFileSync(path.join(tmpDir, '.ai-notes', 'index.json'), JSON.stringify(MOCK_INDEX))
 })
 
@@ -93,6 +120,11 @@ describe('MCP server', () => {
     expect(names).toContain('get_file_note')
     expect(names).toContain('search_by_criticality')
     expect(names).toContain('get_index')
+    expect(names).toContain('get_architecture_context')
+    expect(names).toContain('get_impact')
+    expect(names).toContain('search')
+    expect(names).toContain('get_domain')
+    expect(res.result.tools).toHaveLength(7)
   })
 
   it('get_file_note returns note content', async () => {
@@ -127,8 +159,8 @@ describe('MCP server', () => {
     )
     const res = responses.find((r: any) => r.id === 5) as any
     const entries = JSON.parse(res.result.content[0].text)
-    expect(entries.length).toBe(1)
-    expect(entries[0].criticalityScore).toBe(0.7)
+    expect(entries.length).toBe(2)
+    expect(entries[0].criticalityScore).toBe(0.9)
   })
 
   it('get_index returns full index', async () => {
@@ -140,7 +172,84 @@ describe('MCP server', () => {
     )
     const res = responses.find((r: any) => r.id === 6) as any
     const index = JSON.parse(res.result.content[0].text)
-    expect(index.totalFiles).toBe(1)
-    expect(index.entries[0].relativePath).toBe('src/a.ts')
+    expect(index.totalFiles).toBe(2)
+    expect(index.entries[0].relativePath).toBe('src/b.ts')
+  })
+
+  it('get_impact returns direct dependents', async () => {
+    const responses = await sendMcpRequest(
+      JSON.stringify({
+        jsonrpc: '2.0', id: 7, method: 'tools/call',
+        params: { name: 'get_impact', arguments: { file_path: 'src/b.ts', depth: 1 } },
+      }),
+    )
+    const res = responses.find((r: any) => r.id === 7) as any
+    const result = JSON.parse(res.result.content[0].text)
+    expect(result.file).toBe('src/b.ts')
+    expect(result.totalAffected).toBe(1)
+    expect(result.dependents[0].relativePath).toBe('src/a.ts')
+    expect(result.dependents[0].level).toBe(1)
+  })
+
+  it('get_impact returns empty for leaf file', async () => {
+    const responses = await sendMcpRequest(
+      JSON.stringify({
+        jsonrpc: '2.0', id: 8, method: 'tools/call',
+        params: { name: 'get_impact', arguments: { file_path: 'src/a.ts' } },
+      }),
+    )
+    const res = responses.find((r: any) => r.id === 8) as any
+    const result = JSON.parse(res.result.content[0].text)
+    expect(result.totalAffected).toBe(0)
+  })
+
+  it('search finds notes matching query', async () => {
+    const responses = await sendMcpRequest(
+      JSON.stringify({
+        jsonrpc: '2.0', id: 9, method: 'tools/call',
+        params: { name: 'search', arguments: { query: 'authentication' } },
+      }),
+    )
+    const res = responses.find((r: any) => r.id === 9) as any
+    const result = JSON.parse(res.result.content[0].text)
+    expect(result.totalResults).toBeGreaterThan(0)
+    expect(result.results[0].relativePath).toBe('src/b.ts')
+  })
+
+  it('search returns empty for no matches', async () => {
+    const responses = await sendMcpRequest(
+      JSON.stringify({
+        jsonrpc: '2.0', id: 10, method: 'tools/call',
+        params: { name: 'search', arguments: { query: 'zzz_no_match_xyz' } },
+      }),
+    )
+    const res = responses.find((r: any) => r.id === 10) as any
+    const result = JSON.parse(res.result.content[0].text)
+    expect(result.totalResults).toBe(0)
+  })
+
+  it('get_domain returns files in domain', async () => {
+    const responses = await sendMcpRequest(
+      JSON.stringify({
+        jsonrpc: '2.0', id: 11, method: 'tools/call',
+        params: { name: 'get_domain', arguments: { domain: 'src' } },
+      }),
+    )
+    const res = responses.find((r: any) => r.id === 11) as any
+    const result = JSON.parse(res.result.content[0].text)
+    expect(result.domain).toBe('src')
+    expect(result.fileCount).toBe(2)
+    expect(result.files[0].criticalityScore).toBeGreaterThanOrEqual(result.files[1].criticalityScore)
+  })
+
+  it('get_domain returns error for unknown domain', async () => {
+    const responses = await sendMcpRequest(
+      JSON.stringify({
+        jsonrpc: '2.0', id: 12, method: 'tools/call',
+        params: { name: 'get_domain', arguments: { domain: 'nonexistent' } },
+      }),
+    )
+    const res = responses.find((r: any) => r.id === 12) as any
+    expect(res.error).toBeDefined()
   })
 })

@@ -61,7 +61,7 @@ export async function runWatch(args: { root?: string }): Promise<void> {
   }
 
   await saveCache(root, hashStore)
-  await writeIndexNote(buildIndex([...noteMap.values()], root), root, config.output)
+  await writeIndexNote(buildIndex([...noteMap.values()], root, undefined, revGraph), root, config.output)
   logger.success(`Initial generation complete. Watching for changes...`)
 
   // Debounce map
@@ -94,7 +94,7 @@ export async function runWatch(args: { root?: string }): Promise<void> {
         noteMap.set(absolutePath, note)
         hashStore.set(filename, await computeHash(absolutePath))
         await saveCache(root, hashStore)
-        await writeIndexNote(buildIndex([...noteMap.values()], root), root, config.output)
+        await writeIndexNote(buildIndex([...noteMap.values()], root, undefined, revGraph), root, config.output)
         logger.success(`Regenerated: ${filename}`)
       }
     }, DEBOUNCE_MS))

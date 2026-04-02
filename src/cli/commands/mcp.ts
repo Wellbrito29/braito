@@ -72,6 +72,59 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'get_impact',
+    description:
+      'Get the blast radius of a file — which files directly or transitively depend on it. Useful before making changes to understand what could break.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        file_path: {
+          type: 'string',
+          description: 'Path to the source file, relative to the project root.',
+        },
+        depth: {
+          type: 'number',
+          description: 'How many levels of transitive dependents to include. Default: 2',
+        },
+      },
+      required: ['file_path'],
+    },
+  },
+  {
+    name: 'search',
+    description:
+      'Full-text search across all AI notes fields (purpose, invariants, pitfalls, decisions, sensitiveDependencies). Returns matching files with relevant snippets.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Text to search for (case-insensitive).',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results. Default: 20',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'get_domain',
+    description:
+      'Get all files belonging to a specific domain (e.g. "src/core", "src/cli"), sorted by criticality score.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        domain: {
+          type: 'string',
+          description: 'Domain name as it appears in the index (e.g. "src/core", "cli").',
+        },
+      },
+      required: ['domain'],
+    },
+  },
 ]
 
 function send(msg: JsonRpcResponse): void {
@@ -231,6 +284,128 @@ export async function handleRequest(
         return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(context, null, 2) }] } }
       } catch {
         return errorResponse(id, -32603, 'Failed to build architecture context.')
+      }
+    }
+
+    if (name === 'get_impact') {
+      const filePath = args.file_path as string
+      const depth = Math.min(Math.max(1, (args.depth as number | undefined) ?? 2), 5)
+      const indexPath = path.resolve(root, outputDir, 'index.json')
+      if (!fs.existsSync(indexPath)) {
+        return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
+      }
+      try {
+        const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+        const entries = index.entries as Array<{ relativePath: string; criticalityScore: number; domain: string; dependents: string[] }>
+
+        // BFS traversal up to `depth` levels
+        const visited = new Set<string>()
+        const levels: Array<{ relativePath: string; criticalityScore: number; domain: string; level: number }> = []
+        let frontier = [filePath]
+        visited.add(filePath)
+
+        for (let level = 1; level <= depth; level++) {
+          const next: string[] = []
+          for (const current of frontier) {
+            const entry = entries.find((e) => e.relativePath === current)
+            if (!entry) continue
+            for (const dep of (entry.dependents ?? [])) {
+              if (!visited.has(dep)) {
+                visited.add(dep)
+                const depEntry = entries.find((e) => e.relativePath === dep)
+                if (depEntry) {
+                  levels.push({ relativePath: dep, criticalityScore: depEntry.criticalityScore, domain: depEntry.domain, level })
+                  next.push(dep)
+                }
+              }
+            }
+          }
+          frontier = next
+          if (frontier.length === 0) break
+        }
+
+        levels.sort((a, b) => a.level - b.level || b.criticalityScore - a.criticalityScore)
+        const result = { file: filePath, totalAffected: levels.length, dependents: levels }
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to compute impact.')
+      }
+    }
+
+    if (name === 'search') {
+      const query = (args.query as string).toLowerCase().trim()
+      const limit = (args.limit as number | undefined) ?? 20
+      if (!query) return errorResponse(id, -32602, 'query must not be empty.')
+      const indexPath = path.resolve(root, outputDir, 'index.json')
+      if (!fs.existsSync(indexPath)) {
+        return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
+      }
+      try {
+        const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+        const entries = index.entries as Array<{ relativePath: string; criticalityScore: number; domain: string }>
+        const SEARCH_FIELDS = ['purpose', 'invariants', 'knownPitfalls', 'importantDecisions', 'sensitiveDependencies', 'impactValidation']
+
+        const results: Array<{ relativePath: string; criticalityScore: number; domain: string; matches: Array<{ field: string; text: string }> }> = []
+
+        for (const entry of entries) {
+          const notePath = path.resolve(root, outputDir, entry.relativePath + '.json')
+          const notesDir = path.resolve(root, outputDir)
+          if (!path.normalize(notePath).startsWith(path.normalize(notesDir) + path.sep)) continue
+          if (!fs.existsSync(notePath)) continue
+
+          let note: Record<string, unknown>
+          try { note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { continue }
+
+          const matches: Array<{ field: string; text: string }> = []
+          type NoteField = { observed?: string[]; inferred?: string[] }
+
+          for (const field of SEARCH_FIELDS) {
+            const f = note[field] as NoteField | undefined
+            if (!f) continue
+            for (const text of [...(f.observed ?? []), ...(f.inferred ?? [])]) {
+              if (text.toLowerCase().includes(query)) {
+                matches.push({ field, text })
+              }
+            }
+          }
+
+          if (matches.length > 0) {
+            results.push({ relativePath: entry.relativePath, criticalityScore: entry.criticalityScore, domain: entry.domain, matches })
+          }
+
+          if (results.length >= limit) break
+        }
+
+        results.sort((a, b) => b.criticalityScore - a.criticalityScore)
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ query, totalResults: results.length, results }, null, 2) }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to search notes.')
+      }
+    }
+
+    if (name === 'get_domain') {
+      const domain = (args.domain as string).trim()
+      if (!domain) return errorResponse(id, -32602, 'domain must not be empty.')
+      const indexPath = path.resolve(root, outputDir, 'index.json')
+      if (!fs.existsSync(indexPath)) {
+        return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
+      }
+      try {
+        const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+        const entries = (index.entries as Array<{ relativePath: string; criticalityScore: number; domain: string; model: string; purpose: string; stale: boolean; dependents: string[] }>)
+          .filter((e) => e.domain === domain)
+          .sort((a, b) => b.criticalityScore - a.criticalityScore)
+
+        if (entries.length === 0) {
+          const domains = [...new Set((index.entries as Array<{ domain: string }>).map((e) => e.domain))].sort()
+          return errorResponse(id, -32602, `Domain '${domain}' not found. Available: ${domains.join(', ')}`)
+        }
+
+        const avgCriticality = +(entries.reduce((s, e) => s + e.criticalityScore, 0) / entries.length).toFixed(2)
+        const result = { domain, fileCount: entries.length, avgCriticality, files: entries }
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to get domain.')
       }
     }
 

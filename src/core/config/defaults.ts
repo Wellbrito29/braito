@@ -31,6 +31,7 @@ export function withDefaults(partial: Partial<AiNotesConfig> & { root: string })
     exclude: partial.exclude ?? DEFAULT_EXCLUDE,
     output: partial.output ?? '.ai-notes',
     tsconfigPath: partial.tsconfigPath,
+    llm: partial.llm,
     staleThresholdDays: partial.staleThresholdDays ?? DEFAULT_STALE_THRESHOLD_DAYS,
   }
 }

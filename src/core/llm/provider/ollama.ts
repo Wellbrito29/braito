@@ -21,6 +21,7 @@ export class OllamaProvider implements LLMProvider {
         body: JSON.stringify({
           model: this.model,
           stream: false,
+          format: 'json',
           options: { temperature: request.temperature ?? 0.2 },
           messages: [
             { role: 'system', content: request.system },

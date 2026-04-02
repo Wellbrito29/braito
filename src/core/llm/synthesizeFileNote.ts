@@ -41,6 +41,7 @@ export async function synthesizeFileNote(
     return {
       ...staticNote,
       model: response.model,
+      summary: llm.summary ?? staticNote.summary,
       purpose: merge(staticNote.purpose, llm.purpose),
       invariants: merge(staticNote.invariants, llm.invariants),
       sensitiveDependencies: merge(staticNote.sensitiveDependencies, llm.sensitiveDependencies),

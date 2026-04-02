@@ -10,7 +10,7 @@ export type IndexEntry = {
   domain: string
   criticalityScore: number
   model: string
-  purpose: string
+  summary: string
   generatedAt: string
   stale: boolean
   dependents: string[]
@@ -56,7 +56,7 @@ export function buildIndex(
         domain: deriveDomain(relativePath),
         criticalityScore: note.criticalityScore,
         model: note.model,
-        purpose: note.purpose.observed[0] ?? note.purpose.inferred[0] ?? '',
+        summary: note.summary,
         generatedAt: note.generatedAt,
         stale: isNoteStale(note.generatedAt, staleThresholdDays),
         dependents: rawDependents.map((d) => path.relative(root, d)),

@@ -15,6 +15,7 @@ function makeNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
   return {
     schemaVersion: '1.0.0',
     filePath: '/project/src/useSearch.ts',
+    summary: 'Manages the search state and orchestrates search flow for the app.',
     purpose: {
       observed: ['Exports hooks: useSearch'],
       inferred: ['Orchestrates search flow'],

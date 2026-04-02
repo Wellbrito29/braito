@@ -39,13 +39,13 @@ const git: GitSignals = {
 
 describe('schema versioning', () => {
   it('buildBasicNote includes schemaVersion matching SCHEMA_VERSION', () => {
-    const note = buildBasicNote(analysis, graph, tests, git)
+    const note = buildBasicNote(analysis, graph, tests, git, '/project')
     expect(note.schemaVersion).toBe(SCHEMA_VERSION)
     expect(note.schemaVersion).toBe('1.0.0')
   })
 
   it('buildIndex includes schemaVersion matching SCHEMA_VERSION', () => {
-    const note = buildBasicNote(analysis, graph, tests, git)
+    const note = buildBasicNote(analysis, graph, tests, git, '/project')
     const index = buildIndex([note], '/project')
     expect(index.schemaVersion).toBe(SCHEMA_VERSION)
     expect(index.schemaVersion).toBe('1.0.0')

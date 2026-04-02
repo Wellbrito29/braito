@@ -26,6 +26,7 @@ function renderMarkdown(note: AiFileNote, relativePath: string): string {
     ``,
     `**Criticality:** ${score} | **Generated:** ${date} | **Model:** ${note.model}`,
     ``,
+    note.summary ? `> ${note.summary}\n` : '',
     renderSection('Purpose', note.purpose),
     renderSection('Invariants', note.invariants),
     renderSection('Sensitive Dependencies', note.sensitiveDependencies),

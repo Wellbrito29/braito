@@ -13,6 +13,7 @@ let notesDir: string
 const MOCK_NOTE = {
   schemaVersion: '1.0.0',
   filePath: '/project/src/a.ts',
+  summary: 'Exports the foo utility.',
   purpose: { observed: ['Exports: foo'], inferred: [], confidence: 0.6, evidence: [] },
   invariants: { observed: [], inferred: [], confidence: 0, evidence: [] },
   sensitiveDependencies: { observed: [], inferred: [], confidence: 0, evidence: [] },
@@ -27,6 +28,7 @@ const MOCK_NOTE = {
 const MOCK_NOTE_B = {
   schemaVersion: '1.0.0',
   filePath: '/project/src/b.ts',
+  summary: 'Handles authentication logic including token validation and refresh.',
   purpose: { observed: ['Handles authentication logic'], inferred: [], confidence: 0.8, evidence: [] },
   invariants: { observed: ['Must validate token before use'], inferred: [], confidence: 0.7, evidence: [] },
   sensitiveDependencies: { observed: [], inferred: [], confidence: 0, evidence: [] },
@@ -51,7 +53,7 @@ const MOCK_INDEX = {
       domain: 'src',
       criticalityScore: 0.9,
       model: 'static',
-      purpose: 'Handles authentication logic',
+      summary: 'Handles authentication logic including token validation and refresh.',
       generatedAt: MOCK_NOTE_B.generatedAt,
       stale: false,
       dependents: ['src/a.ts'],
@@ -62,7 +64,7 @@ const MOCK_INDEX = {
       domain: 'src',
       criticalityScore: 0.7,
       model: 'static',
-      purpose: 'Exports: foo',
+      summary: 'Exports the foo utility.',
       generatedAt: MOCK_NOTE.generatedAt,
       stale: false,
       dependents: [],

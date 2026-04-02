@@ -9,6 +9,7 @@ function makeStaticNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
   return {
     schemaVersion: '1.0.0',
     filePath: '/project/src/useSearch.ts',
+    summary: 'Exports React hooks for search.',
     purpose: { observed: ['Exports hooks: useSearch'], inferred: [], confidence: 0.6, evidence: [] },
     invariants: empty,
     sensitiveDependencies: empty,

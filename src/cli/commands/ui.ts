@@ -99,6 +99,8 @@ function renderHtml(): string {
     .file-item:hover{background:#1a1a1a}
     .file-item.active{background:#1e2a3a;border-left:2px solid #4a9eff}
     .file-name{font-size:12px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+    .file-summary{font-size:11px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px 5px 8px}
+    .detail-summary{font-size:14px;color:#aaa;margin-bottom:20px;line-height:1.5;padding:12px;background:#141414;border-radius:6px;border-left:3px solid #333}
     .score{font-size:11px;font-weight:600;padding:2px 6px;border-radius:10px;white-space:nowrap}
     .score-high{background:#3a1a1a;color:#ff6b6b}
     .score-mid{background:#2a2a1a;color:#ffd93d}
@@ -116,6 +118,16 @@ function renderHtml(): string {
     .filter-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
     .filter-label{font-size:12px;color:#666;white-space:nowrap}
     select{background:#1a1a1a;border:1px solid #333;color:#ccc;padding:4px 8px;border-radius:4px;font-size:12px}
+    .view-toggle{display:flex;gap:4px;margin-bottom:12px}
+    .view-btn{flex:1;padding:5px 8px;background:#1a1a1a;border:1px solid #333;color:#666;border-radius:4px;font-size:12px;cursor:pointer;text-align:center}
+    .view-btn.active{background:#1e2a3a;border-color:#4a9eff;color:#4a9eff}
+    .folder-item{padding:5px 8px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none}
+    .folder-item:hover{background:#1a1a1a}
+    .folder-chevron{font-size:10px;color:#555;width:10px;text-align:center;transition:transform .15s}
+    .folder-chevron.open{transform:rotate(90deg)}
+    .folder-name{font-size:12px;color:#888}
+    .folder-count{font-size:10px;color:#444;margin-left:auto}
+    .folder-children{padding-left:14px;border-left:1px solid #1e1e1e;margin-left:9px}
   </style>
 </head>
 <body>
@@ -126,6 +138,10 @@ function renderHtml(): string {
   <div class="container">
     <div class="sidebar">
       <input class="search" id="search" placeholder="Search files..." />
+      <div class="view-toggle">
+        <div class="view-btn active" id="btnDomain" onclick="setView('domain')">Domain</div>
+        <div class="view-btn" id="btnFolder" onclick="setView('folder')">Folders</div>
+      </div>
       <div class="filter-bar">
         <span class="filter-label">Min score:</span>
         <select id="scoreFilter">
@@ -144,6 +160,8 @@ function renderHtml(): string {
   <script>
     let index = null
     let selected = null
+    let viewMode = 'domain'
+    const openFolders = new Set()
 
     async function loadIndex() {
       const res = await fetch('/api/index')
@@ -157,13 +175,25 @@ function renderHtml(): string {
       return 'score-low'
     }
 
-    function renderList() {
+    function setView(mode) {
+      viewMode = mode
+      document.getElementById('btnDomain').classList.toggle('active', mode === 'domain')
+      document.getElementById('btnFolder').classList.toggle('active', mode === 'folder')
+      renderList()
+    }
+
+    function filteredEntries() {
       const q = document.getElementById('search').value.toLowerCase()
       const minScore = parseFloat(document.getElementById('scoreFilter').value)
-      const entries = (index.entries || [])
+      return (index.entries || [])
         .filter(e => e.criticalityScore >= minScore)
         .filter(e => !q || e.relativePath.toLowerCase().includes(q))
+    }
 
+    function renderList() {
+      if (viewMode === 'folder') { renderFolderTree(); return }
+
+      const entries = filteredEntries()
       const groups = {}
       for (const e of entries) {
         if (!groups[e.domain]) groups[e.domain] = []
@@ -183,15 +213,85 @@ function renderHtml(): string {
         <div class="domain-group">
           <div class="domain-label">\${domain}</div>
           \${groups[domain].map(e => \`
-            <div class="file-item \${selected === e.relativePath ? 'active' : ''}"
-                 onclick="loadNote('\${e.relativePath}')">
-              <span class="file-name" title="\${e.relativePath}">\${e.relativePath.split('/').pop()}</span>
-              \${e.stale ? '<span class="stale-badge">⚠</span>' : ''}
-              <span class="score \${scoreClass(e.criticalityScore)}">\${e.criticalityScore.toFixed(2)}</span>
+            <div onclick="loadNote('\${e.relativePath}')" style="cursor:pointer;border-radius:5px" class="\${selected === e.relativePath ? 'active' : ''}">
+              <div class="file-item" style="pointer-events:none">
+                <span class="file-name" title="\${e.relativePath}">\${e.relativePath.split('/').pop()}</span>
+                \${e.stale ? '<span class="stale-badge">⚠</span>' : ''}
+                <span class="score \${scoreClass(e.criticalityScore)}">\${e.criticalityScore.toFixed(2)}</span>
+              </div>
+              \${e.summary ? \`<div class="file-summary">\${e.summary}</div>\` : ''}
             </div>
           \`).join('')}
         </div>
       \`).join('')
+    }
+
+    function buildTree(entries) {
+      const root = { children: {}, files: [] }
+      for (const e of entries) {
+        const parts = e.relativePath.split('/')
+        let node = root
+        for (let i = 0; i < parts.length - 1; i++) {
+          const part = parts[i]
+          if (!node.children[part]) node.children[part] = { children: {}, files: [], path: parts.slice(0, i + 1).join('/') }
+          node = node.children[part]
+        }
+        node.files.push(e)
+      }
+      return root
+    }
+
+    function renderFolderNode(node, depth) {
+      const folders = Object.entries(node.children).sort(([a], [b]) => a.localeCompare(b))
+      const files = node.files.sort((a, b) => b.criticalityScore - a.criticalityScore)
+
+      let html = ''
+      for (const [name, child] of folders) {
+        const isOpen = openFolders.has(child.path)
+        const fileCount = countFiles(child)
+        html += \`
+          <div class="folder-item" onclick="toggleFolder('\${child.path}')">
+            <span class="folder-chevron \${isOpen ? 'open' : ''}">▶</span>
+            <span style="font-size:13px">📁</span>
+            <span class="folder-name">\${name}</span>
+            <span class="folder-count">\${fileCount}</span>
+          </div>
+          \${isOpen ? \`<div class="folder-children">\${renderFolderNode(child, depth + 1)}</div>\` : ''}
+        \`
+      }
+      for (const e of files) {
+        html += \`
+          <div onclick="loadNote('\${e.relativePath}')" style="cursor:pointer;border-radius:5px" class="\${selected === e.relativePath ? 'active' : ''}">
+            <div class="file-item" style="pointer-events:none">
+              <span class="file-name" title="\${e.relativePath}">\${e.relativePath.split('/').pop()}</span>
+              \${e.stale ? '<span class="stale-badge">⚠</span>' : ''}
+              <span class="score \${scoreClass(e.criticalityScore)}">\${e.criticalityScore.toFixed(2)}</span>
+            </div>
+            \${e.summary ? \`<div class="file-summary">\${e.summary}</div>\` : ''}
+          </div>
+        \`
+      }
+      return html
+    }
+
+    function countFiles(node) {
+      let n = node.files.length
+      for (const child of Object.values(node.children)) n += countFiles(child)
+      return n
+    }
+
+    function renderFolderTree() {
+      const entries = filteredEntries()
+      const list = document.getElementById('fileList')
+      if (!entries.length) { list.innerHTML = '<div style="color:#444;font-size:13px;padding:8px">No files match</div>'; return }
+      const tree = buildTree(entries)
+      list.innerHTML = renderFolderNode(tree, 0)
+    }
+
+    function toggleFolder(folderPath) {
+      if (openFolders.has(folderPath)) openFolders.delete(folderPath)
+      else openFolders.add(folderPath)
+      renderFolderTree()
     }
 
     async function loadNote(relPath) {
@@ -205,9 +305,13 @@ function renderHtml(): string {
 
     function renderField(title, field) {
       if (!field || (!field.observed.length && !field.inferred.length)) return ''
-      const obs = field.observed.map(o => \`<div class="item">\${o}</div>\`).join('')
+      const obs = field.observed.map(o => \`<div class="item">\${escapeHtml(o)}</div>\`).join('')
       const inf = field.inferred.length ? field.inferred.map(i => \`<div class="inferred">↳ \${i}</div>\`).join('') : ''
       return \`<div class="section"><h3>\${title}</h3>\${obs}\${inf}</div>\`
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
     }
 
     function renderDetail(note, relPath) {
@@ -215,6 +319,7 @@ function renderHtml(): string {
       document.getElementById('detail').innerHTML = \`
         <h2>\${relPath}</h2>
         <div class="meta">Score: \${note.criticalityScore.toFixed(2)} · Model: \${note.model} · \${date}</div>
+        \${note.summary ? \`<div class="detail-summary">\${escapeHtml(note.summary)}</div>\` : ''}
         \${renderField('Purpose', note.purpose)}
         \${renderField('Invariants', note.invariants)}
         \${renderField('Important Decisions', note.importantDecisions)}

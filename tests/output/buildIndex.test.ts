@@ -17,6 +17,7 @@ function makeNote(filePath: string, score: number, model = 'static'): AiFileNote
   return {
     schemaVersion: '1.0.0',
     filePath,
+    summary: 'Does something useful.',
     purpose: { observed: ['Does something'], inferred: [], confidence: 0.6, evidence: [] },
     invariants: empty,
     sensitiveDependencies: empty,

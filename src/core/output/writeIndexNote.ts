@@ -52,15 +52,15 @@ function renderIndexMarkdown(index: NoteIndex): string {
     lines.push(``)
     lines.push(`_${entries.length} file${entries.length !== 1 ? 's' : ''} · avg criticality ${avgScore}_`)
     lines.push(``)
-    lines.push(`| Score | File | Model | Purpose |`)
+    lines.push(`| Score | File | Model | Summary |`)
     lines.push(`|-------|------|-------|---------|`)
 
     for (const entry of entries) {
       const score = entry.criticalityScore.toFixed(2)
       const staleMarker = entry.stale ? ' ⚠' : ''
       const link = `[${entry.relativePath}](./${entry.relativePath}.md)`
-      const purpose = entry.purpose.replace(/\|/g, '\\|').slice(0, 80)
-      lines.push(`| ${score}${staleMarker} | ${link} | ${entry.model} | ${purpose} |`)
+      const summary = entry.summary.replace(/\|/g, '\\|').slice(0, 80)
+      lines.push(`| ${score}${staleMarker} | ${link} | ${entry.model} | ${summary} |`)
     }
 
     lines.push('')

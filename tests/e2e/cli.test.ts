@@ -162,6 +162,7 @@ describe('generate command', () => {
     const noteFile = path.join(tmpDir, '.ai-notes', 'src', 'index.ts.json')
     const note = JSON.parse(fs.readFileSync(noteFile, 'utf-8'))
     expect(note).toHaveProperty('filePath')
+    expect(note).toHaveProperty('summary')
     expect(note).toHaveProperty('criticalityScore')
     expect(note).toHaveProperty('purpose')
     expect(note).toHaveProperty('invariants')
@@ -276,6 +277,7 @@ describe('mcp server (handleRequest)', () => {
   const MOCK_NOTE = {
     schemaVersion: '1.0.0',
     filePath: '/tmp/project/src/a.ts',
+    summary: 'Exports the foo utility.',
     purpose: { observed: ['Exports: foo'], inferred: [], confidence: 0.6, evidence: [] },
     invariants: { observed: [], inferred: [], confidence: 0, evidence: [] },
     sensitiveDependencies: { observed: [], inferred: [], confidence: 0, evidence: [] },
@@ -300,7 +302,7 @@ describe('mcp server (handleRequest)', () => {
         domain: 'src',
         criticalityScore: 0.7,
         model: 'static',
-        purpose: 'Exports: foo',
+        summary: 'Exports the foo utility.',
         generatedAt: MOCK_NOTE.generatedAt,
         stale: false,
       },

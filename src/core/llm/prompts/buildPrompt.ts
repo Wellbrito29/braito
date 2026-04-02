@@ -58,8 +58,9 @@ Source code:
 ${sourceCode}
 \`\`\`
 
-Return a JSON object with these fields. Each field follows the StructuredListField schema:
+Return a JSON object with these fields:
 {
+  "summary": "1-2 sentence plain English description of what this file does and why it exists. REQUIRED.",
   "purpose": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
   "invariants": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
   "sensitiveDependencies": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },

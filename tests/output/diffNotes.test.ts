@@ -6,6 +6,7 @@ function makeNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
   const emptyField = { observed: [], inferred: [], confidence: 0.5, evidence: [] }
   return {
     filePath: '/project/src/example.ts',
+    summary: 'Example file for testing.',
     purpose: { ...emptyField },
     invariants: { ...emptyField },
     sensitiveDependencies: { ...emptyField },

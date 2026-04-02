@@ -122,6 +122,8 @@ export function buildBasicNote(
 
   const criticalityScore = computeCriticality(analysis, graph, tests, git)
 
+  const summary = buildStaticSummary(analysis, revDepsRel)
+
   // invariants: explicit comments + structural heuristics
   const invariantsObserved: string[] = []
   const invariantsEvidence: EvidenceItem[] = []
@@ -171,6 +173,7 @@ export function buildBasicNote(
   return {
     schemaVersion: SCHEMA_VERSION,
     filePath: analysis.filePath,
+    summary,
     purpose: {
       observed: purposeObserved,
       inferred: [],
@@ -211,6 +214,32 @@ export function buildBasicNote(
     generatedAt: new Date().toISOString(),
     model: 'static',
   }
+}
+
+function buildStaticSummary(analysis: StaticFileAnalysis, revDepsRel: string[]): string {
+  const parts: string[] = []
+
+  if (analysis.hooks.length > 0) {
+    parts.push(`Exports React hook${analysis.hooks.length > 1 ? 's' : ''} (${analysis.hooks.join(', ')}).`)
+  } else if (analysis.exports.length > 0) {
+    const names = analysis.exports.slice(0, 3).join(', ')
+    const more = analysis.exports.length > 3 ? ` and ${analysis.exports.length - 3} more` : ''
+    parts.push(`Exports ${names}${more}.`)
+  }
+
+  if (revDepsRel.length > 0) {
+    parts.push(`Used by ${revDepsRel.length} file${revDepsRel.length > 1 ? 's' : ''}.`)
+  }
+
+  if (analysis.apiCalls.length > 0) {
+    parts.push(`Makes API calls.`)
+  }
+
+  if (analysis.envVars.length > 0) {
+    parts.push(`Reads env vars (${analysis.envVars.join(', ')}).`)
+  }
+
+  return parts.length > 0 ? parts.join(' ') : 'No exports or notable signals detected.'
 }
 
 function computeCriticality(

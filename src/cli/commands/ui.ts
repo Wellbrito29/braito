@@ -106,11 +106,39 @@ function renderHtml(): string {
     .stale-badge{font-size:10px;color:#f0a500}
     .detail{overflow-y:auto;padding:24px}
     .detail h2{font-size:16px;color:#fff;margin-bottom:4px}
-    .detail .meta{font-size:12px;color:#666;margin-bottom:20px}
+    .detail .meta{font-size:12px;color:#666;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .tab-bar{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #222;padding-bottom:0}
+    .tab{padding:6px 14px;font-size:12px;cursor:pointer;color:#666;border-bottom:2px solid transparent;margin-bottom:-1px}
+    .tab:hover{color:#ccc}
+    .tab.active{color:#4a9eff;border-bottom-color:#4a9eff}
     .section{margin-bottom:20px}
     .section h3{font-size:13px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #1e1e1e}
     .item{font-size:13px;color:#ccc;padding:4px 0;padding-left:12px;border-left:2px solid #333;margin-bottom:4px}
     .inferred{font-size:12px;color:#888;font-style:italic;padding:4px 0 4px 12px;border-left:2px solid #2a3a2a;margin-bottom:4px}
+    .evidence-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+    .evidence-table th{text-align:left;color:#555;font-weight:500;padding:4px 8px;border-bottom:1px solid #1e1e1e}
+    .evidence-table td{padding:4px 8px;color:#999;border-bottom:1px solid #141414;vertical-align:top}
+    .evidence-table td:first-child{color:#4a9eff;white-space:nowrap;width:60px}
+    .badge{font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600;white-space:nowrap}
+    .badge-code{background:#1a2a3a;color:#4a9eff}
+    .badge-git{background:#1e2a1a;color:#6bcb77}
+    .badge-test{background:#2a1a2a;color:#c77bff}
+    .badge-graph{background:#2a2a1a;color:#ffd93d}
+    .badge-comment{background:#2a1a1a;color:#ff8080}
+    .badge-doc{background:#1a1a2a;color:#a0a0ff}
+    .changelog-entry{padding:5px 0;border-bottom:1px solid #141414;font-size:12px;display:flex;gap:8px;align-items:baseline}
+    .changelog-hash{font-family:monospace;color:#4a9eff;font-size:11px;white-space:nowrap}
+    .changelog-date{color:#555;font-size:11px;white-space:nowrap}
+    .changelog-msg{color:#ccc;flex:1}
+    .changelog-author{color:#555;font-size:11px;white-space:nowrap}
+    .debug-kv{font-size:12px;color:#888;padding:3px 0}
+    .debug-kv span{color:#ccc}
+    .debug-section{margin-bottom:16px}
+    .debug-section h4{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+    .score-bar-wrap{margin-bottom:8px}
+    .score-bar-label{font-size:12px;color:#888;display:flex;justify-content:space-between;margin-bottom:3px}
+    .score-bar{height:4px;background:#1e1e1e;border-radius:2px;overflow:hidden}
+    .score-bar-fill{height:100%;border-radius:2px;background:#4a9eff}
     .empty-state{text-align:center;padding:80px 24px;color:#444}
     .empty-state p{font-size:14px}
     .filter-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
@@ -144,6 +172,7 @@ function renderHtml(): string {
   <script>
     let index = null
     let selected = null
+    let activeTab = 'note'
 
     async function loadIndex() {
       const res = await fetch('/api/index')
@@ -205,16 +234,86 @@ function renderHtml(): string {
 
     function renderField(title, field) {
       if (!field || (!field.observed.length && !field.inferred.length)) return ''
-      const obs = field.observed.map(o => \`<div class="item">\${o}</div>\`).join('')
-      const inf = field.inferred.length ? field.inferred.map(i => \`<div class="inferred">↳ \${i}</div>\`).join('') : ''
+      const obs = field.observed.map(o => \`<div class="item">\${escHtml(o)}</div>\`).join('')
+      const inf = field.inferred.length ? field.inferred.map(i => \`<div class="inferred">↳ \${escHtml(i)}</div>\`).join('') : ''
       return \`<div class="section"><h3>\${title}</h3>\${obs}\${inf}</div>\`
     }
 
-    function renderDetail(note, relPath) {
-      const date = new Date(note.generatedAt).toISOString().slice(0,10)
-      document.getElementById('detail').innerHTML = \`
-        <h2>\${relPath}</h2>
-        <div class="meta">Score: \${note.criticalityScore.toFixed(2)} · Model: \${note.model} · \${date}</div>
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    }
+
+    function badgeClass(type) {
+      return 'badge badge-' + (type || 'code')
+    }
+
+    function renderEvidenceSection(note) {
+      const fields = ['purpose','invariants','sensitiveDependencies','importantDecisions','knownPitfalls','impactValidation']
+      const fieldLabels = {purpose:'Purpose',invariants:'Invariants',sensitiveDependencies:'Sensitive Deps',importantDecisions:'Decisions',knownPitfalls:'Pitfalls',impactValidation:'Impact'}
+      let html = ''
+      for (const f of fields) {
+        const field = note[f]
+        if (!field || !field.evidence || field.evidence.length === 0) continue
+        html += \`<div class="debug-section"><h4>\${fieldLabels[f]} — \${field.evidence.length} evidence item(s), confidence \${field.confidence.toFixed(2)}</h4>
+          <table class="evidence-table"><thead><tr><th>Type</th><th>Detail</th></tr></thead><tbody>
+          \${field.evidence.map(e => \`<tr><td><span class="\${badgeClass(e.type)}">\${e.type}</span></td><td>\${escHtml(e.detail)}</td></tr>\`).join('')}
+          </tbody></table></div>\`
+      }
+      return html || '<div style="color:#444;font-size:13px">No evidence items recorded.</div>'
+    }
+
+    function renderChangelog(recentChanges) {
+      if (!recentChanges || recentChanges.length === 0) return '<div style="color:#444;font-size:13px">No git history available.</div>'
+      return recentChanges.map(c => \`
+        <div class="changelog-entry">
+          <span class="changelog-hash">\${c.hash.slice(0,7)}</span>
+          <span class="changelog-date">\${c.date.slice(0,10)}</span>
+          <span class="changelog-msg">\${escHtml(c.message)}</span>
+          <span class="changelog-author">\${escHtml(c.author)}</span>
+        </div>
+      \`).join('')
+    }
+
+    function renderScoreBreakdown(note) {
+      const score = note.criticalityScore
+      const fields = [
+        {label:'Purpose entries', val: note.purpose?.observed.length ?? 0, max:5},
+        {label:'Invariants', val: note.invariants?.observed.length ?? 0, max:3},
+        {label:'Known pitfalls', val: note.knownPitfalls?.observed.length ?? 0, max:5},
+        {label:'Sensitive deps', val: note.sensitiveDependencies?.observed.length ?? 0, max:5},
+        {label:'Impact targets', val: note.impactValidation?.observed.length ?? 0, max:5},
+        {label:'Decisions', val: note.importantDecisions?.observed.length ?? 0, max:3},
+        {label:'Changelog entries', val: (note.recentChanges || []).length, max:10},
+      ]
+      const bars = fields.map(f => {
+        const pct = Math.min(f.val / f.max * 100, 100).toFixed(0)
+        return \`<div class="score-bar-wrap">
+          <div class="score-bar-label"><span>\${f.label}</span><span>\${f.val}</span></div>
+          <div class="score-bar"><div class="score-bar-fill" style="width:\${pct}%"></div></div>
+        </div>\`
+      }).join('')
+      return \`<div class="debug-section">
+        <h4>Criticality score: \${score.toFixed(2)}</h4>
+        \${bars}
+      </div>\`
+    }
+
+    function renderDebugTab(note) {
+      return \`
+        \${renderScoreBreakdown(note)}
+        <div class="debug-section">
+          <h4>Evidence trail</h4>
+          \${renderEvidenceSection(note)}
+        </div>
+        <div class="debug-section">
+          <h4>Changelog (\${(note.recentChanges||[]).length} commits)</h4>
+          \${renderChangelog(note.recentChanges)}
+        </div>
+      \`
+    }
+
+    function renderNoteTab(note) {
+      return \`
         \${renderField('Purpose', note.purpose)}
         \${renderField('Invariants', note.invariants)}
         \${renderField('Important Decisions', note.importantDecisions)}
@@ -222,6 +321,33 @@ function renderHtml(): string {
         \${renderField('Sensitive Dependencies', note.sensitiveDependencies)}
         \${renderField('Impact Validation', note.impactValidation)}
       \`
+    }
+
+    function switchTab(tab, note) {
+      activeTab = tab
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab))
+      document.getElementById('tab-content').innerHTML = tab === 'debug' ? renderDebugTab(note) : renderNoteTab(note)
+    }
+
+    function renderDetail(note, relPath) {
+      const date = new Date(note.generatedAt).toISOString().slice(0,10)
+      const changeCount = (note.recentChanges || []).length
+      document.getElementById('detail').innerHTML = \`
+        <h2>\${escHtml(relPath)}</h2>
+        <div class="meta">
+          <span>Score: <strong>\${note.criticalityScore.toFixed(2)}</strong></span>
+          <span>Model: \${note.model}</span>
+          <span>\${date}</span>
+          \${changeCount > 0 ? '<span>' + changeCount + ' commits</span>' : ''}
+        </div>
+        <div class="tab-bar">
+          <div class="tab \${activeTab==='note'?'active':''}" data-tab="note" onclick="switchTab('note', currentNote)">Note</div>
+          <div class="tab \${activeTab==='debug'?'active':''}" data-tab="debug" onclick="switchTab('debug', currentNote)">Debug</div>
+        </div>
+        <div id="tab-content"></div>
+      \`
+      window.currentNote = note
+      document.getElementById('tab-content').innerHTML = activeTab === 'debug' ? renderDebugTab(note) : renderNoteTab(note)
     }
 
     document.getElementById('search').addEventListener('input', renderList)

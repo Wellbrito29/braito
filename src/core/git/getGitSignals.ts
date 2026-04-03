@@ -14,6 +14,7 @@ export function getGitSignals(filePath: string, root: string): GitSignals {
     filePath,
     churnScore: history.churnScore,
     recentCommitMessages: history.recentCommitMessages,
+    recentCommits: history.recentCommits,
     coChangedFiles,
     authorCount: history.authorCount,
   }
@@ -33,6 +34,7 @@ function empty(filePath: string): GitSignals {
     filePath,
     churnScore: 0,
     recentCommitMessages: [],
+    recentCommits: [],
     coChangedFiles: [],
     authorCount: 0,
   }

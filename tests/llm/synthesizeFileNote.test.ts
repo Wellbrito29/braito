@@ -33,7 +33,7 @@ function makeCtx(staticNote: AiFileNote) {
   }
   const graph: GraphSignals = { filePath: staticNote.filePath, directDependencies: [], reverseDependencies: [] }
   const tests: TestSignals = { filePath: staticNote.filePath, relatedTests: [] }
-  const git: GitSignals = { filePath: staticNote.filePath, churnScore: 0, recentCommitMessages: [], coChangedFiles: [], authorCount: 0 }
+  const git: GitSignals = { filePath: staticNote.filePath, churnScore: 0, recentCommitMessages: [], recentCommits: [], coChangedFiles: [], authorCount: 0 }
   return { analysis, graph, tests, git, staticNote }
 }
 

@@ -30,10 +30,18 @@ export type TestSignals = {
   coveragePct?: number  // 0–1 from lcov/c8 report; undefined if no report available
 }
 
+export type GitCommitEntry = {
+  hash: string
+  date: string    // ISO 8601
+  message: string
+  author: string
+}
+
 export type GitSignals = {
   filePath: string
   churnScore: number
   recentCommitMessages: string[]
+  recentCommits: GitCommitEntry[]
   coChangedFiles: Array<{ path: string; count: number }>
   authorCount: number
 }

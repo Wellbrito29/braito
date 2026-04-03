@@ -1,8 +1,16 @@
 import path from 'node:path'
 
+export type CommitEntry = {
+  hash: string
+  date: string    // ISO 8601
+  message: string
+  author: string
+}
+
 export type FileHistory = {
   churnScore: number
   recentCommitMessages: string[]
+  recentCommits: CommitEntry[]
   authorCount: number
 }
 
@@ -12,18 +20,31 @@ export function getFileHistory(filePath: string, root: string): FileHistory {
   try {
     const relPath = path.relative(root, filePath)
 
+    // %H = full hash, %aI = author date ISO 8601, %s = subject, %an = author name
     const logResult = Bun.spawnSync(
-      ['git', 'log', '--follow', `--format=%s`, '--', relPath],
+      ['git', 'log', '--follow', '--format=%H|%aI|%s|%an', '--', relPath],
       { cwd: root },
     )
 
     if (logResult.exitCode !== 0) return empty()
 
-    const messages = logResult.stdout
+    const lines = logResult.stdout
       .toString()
       .split('\n')
       .map((l) => l.trim())
       .filter(Boolean)
+
+    const recentCommits: CommitEntry[] = lines
+      .slice(0, RECENT_COMMITS_LIMIT)
+      .map((line) => {
+        const [hash, date, ...rest] = line.split('|')
+        // author name is the last segment; message may contain pipes
+        const author = rest.pop() ?? ''
+        const message = rest.join('|')
+        return { hash: hash ?? '', date: date ?? '', message, author }
+      })
+
+    const recentCommitMessages = recentCommits.map((c) => c.message)
 
     const shortlogResult = Bun.spawnSync(
       ['git', 'shortlog', '-sn', '--follow', '--', relPath],
@@ -38,8 +59,9 @@ export function getFileHistory(filePath: string, root: string): FileHistory {
       : 0
 
     return {
-      churnScore: messages.length,
-      recentCommitMessages: messages.slice(0, RECENT_COMMITS_LIMIT),
+      churnScore: lines.length,
+      recentCommitMessages,
+      recentCommits,
       authorCount,
     }
   } catch {
@@ -48,5 +70,5 @@ export function getFileHistory(filePath: string, root: string): FileHistory {
 }
 
 function empty(): FileHistory {
-  return { churnScore: 0, recentCommitMessages: [], authorCount: 0 }
+  return { churnScore: 0, recentCommitMessages: [], recentCommits: [], authorCount: 0 }
 }

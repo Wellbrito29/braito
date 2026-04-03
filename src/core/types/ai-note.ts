@@ -10,6 +10,13 @@ export type StructuredListField = {
   evidence: EvidenceItem[]
 }
 
+export type ChangelogEntry = {
+  hash: string
+  date: string    // ISO 8601
+  message: string
+  author: string
+}
+
 export type AiFileNote = {
   schemaVersion: string
   filePath: string
@@ -19,6 +26,7 @@ export type AiFileNote = {
   importantDecisions: StructuredListField
   knownPitfalls: StructuredListField
   impactValidation: StructuredListField
+  recentChanges: ChangelogEntry[]
   criticalityScore: number
   generatedAt: string
   model: string

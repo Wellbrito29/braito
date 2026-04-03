@@ -9,6 +9,7 @@ describe('getFileHistory', () => {
     const result = getFileHistory('/tmp/ghost.ts', repoRoot)
     expect(result.churnScore).toBe(0)
     expect(result.recentCommitMessages).toHaveLength(0)
+    expect(result.recentCommits).toHaveLength(0)
     expect(result.authorCount).toBe(0)
   })
 
@@ -18,5 +19,19 @@ describe('getFileHistory', () => {
     expect(result.churnScore).toBeGreaterThanOrEqual(0)
     expect(Array.isArray(result.recentCommitMessages)).toBe(true)
     expect(result.recentCommitMessages.length).toBeLessThanOrEqual(10)
+    expect(Array.isArray(result.recentCommits)).toBe(true)
+    expect(result.recentCommits.length).toBeLessThanOrEqual(10)
+  })
+
+  it('recentCommits entries have hash, date, message and author', () => {
+    const filePath = path.resolve(repoRoot, 'src/core/types/ai-note.ts')
+    const result = getFileHistory(filePath, repoRoot)
+    for (const commit of result.recentCommits) {
+      expect(typeof commit.hash).toBe('string')
+      expect(commit.hash.length).toBeGreaterThan(0)
+      expect(typeof commit.date).toBe('string')
+      expect(typeof commit.message).toBe('string')
+      expect(typeof commit.author).toBe('string')
+    }
   })
 })

@@ -14,6 +14,7 @@
 </p>
 
 <p align="center">
+  <a href="https://wellbrito29.github.io/braito/">Documentation</a> &nbsp;·&nbsp;
   <a href="README.pt-BR.md">Leia em Português</a>
 </p>
 

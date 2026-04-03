@@ -36,6 +36,7 @@ export async function runGenerate(args: {
   filter?: string
   diff?: boolean
   dryRun?: boolean
+  language?: string
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -126,6 +127,7 @@ export async function runGenerate(args: {
   const llmThreshold = llmConfig?.llmThreshold ?? DEFAULT_LLM_THRESHOLD
   const temperature = llmConfig?.temperature ?? 0.2
   const timeoutMs = llmConfig?.timeoutMs ?? 30_000
+  const language = args.language ?? config.language ?? 'en'
   // Use concurrency cap from config when LLM is active; fall back to 1 (sequential) otherwise
   const concurrency = provider ? (llmConfig?.concurrency ?? 5) : 1
 
@@ -202,6 +204,7 @@ export async function runGenerate(args: {
           provider!,
           temperature,
           timeoutMs,
+          language,
         )
         synthesized++
       }

@@ -1,4 +1,9 @@
-export const SYSTEM_PROMPT = `You are a software analyst specialized in generating operational notes per file.
+export function buildSystemPrompt(language = 'en'): string {
+  const langInstruction =
+    language !== 'en'
+      ? `\n- Write all text content (observed, inferred, evidence details) in ${language}.`
+      : ''
+  return `You are a software analyst specialized in generating operational notes per file.
 
 Rules:
 - Use only the evidence provided. Do not invent facts.
@@ -9,4 +14,5 @@ Rules:
 - Return valid JSON following the requested schema exactly.
 - confidence must be a number between 0 and 1.
 - evidence items must have type ("code" | "git" | "test" | "graph" | "comment" | "doc") and detail (string).
-- Fields can be empty arrays when there is insufficient evidence.`
+- Fields can be empty arrays when there is insufficient evidence.${langInstruction}`
+}

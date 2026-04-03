@@ -32,6 +32,7 @@ export const aiNotesConfigSchema = z.object({
     .int('staleThresholdDays must be an integer')
     .positive('staleThresholdDays must be > 0')
     .optional(),
+  language: z.string().min(2, 'language must be a valid BCP 47 tag (e.g. "en", "pt-BR")').optional(),
 })
 
 export type ValidatedConfig = z.infer<typeof aiNotesConfigSchema>

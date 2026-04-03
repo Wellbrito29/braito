@@ -12,16 +12,17 @@ const [, , command, ...rest] = process.argv
 const { values } = parseArgs({
   args: rest,
   options: {
-    root:    { type: 'string',  short: 'r' },
-    force:   { type: 'boolean', short: 'f' },
-    filter:  { type: 'string' },
-    format:  { type: 'string' },
-    diff:    { type: 'boolean' },
+    root:     { type: 'string',  short: 'r' },
+    force:    { type: 'boolean', short: 'f' },
+    filter:   { type: 'string' },
+    format:   { type: 'string' },
+    diff:     { type: 'boolean' },
+    language: { type: 'string',  short: 'l' },
     'dry-run': { type: 'boolean' },
     'auto-generate': { type: 'boolean' },
-    debug:   { type: 'boolean' },
-    silent:  { type: 'boolean' },
-    verbose: { type: 'boolean', short: 'v' },
+    debug:    { type: 'boolean' },
+    silent:   { type: 'boolean' },
+    verbose:  { type: 'boolean', short: 'v' },
   },
   strict: false,
 })
@@ -44,11 +45,11 @@ switch (command) {
   }
 
   case 'generate':
-    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff, dryRun: (values as Record<string, unknown>)['dry-run'] as boolean | undefined })
+    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff, dryRun: (values as Record<string, unknown>)['dry-run'] as boolean | undefined, language: values.language })
     break
 
   case 'watch':
-    await runWatch({ root: values.root })
+    await runWatch({ root: values.root, language: values.language })
     break
 
   case 'mcp':
@@ -86,6 +87,7 @@ Options:
   --diff                 Show field-level diff between old and new notes (generate only)
   --dry-run              Show what would be generated without writing any files (generate only)
   --auto-generate        Auto-run generate if no notes exist before starting MCP server (mcp only)
+  --language, -l <lang>  Output language for LLM-synthesized content, e.g. "pt-BR", "es" (generate/watch)
 `)
     process.exit(command ? 1 : 0)
 }

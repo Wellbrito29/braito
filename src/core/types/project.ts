@@ -25,4 +25,5 @@ export type AiNotesConfig = {
   tsconfigPath?: string
   llm?: LLMConfig
   staleThresholdDays?: number
+  language?: string  // BCP 47 language tag — e.g. 'en', 'pt-BR', 'es'. Default: 'en'
 }

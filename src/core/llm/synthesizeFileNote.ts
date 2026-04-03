@@ -1,7 +1,7 @@
 import type { AiFileNote } from '../types/ai-note.ts'
 import type { LLMProvider } from './provider/types.ts'
 import { buildPrompt, type PromptContext } from './prompts/buildPrompt.ts'
-import { SYSTEM_PROMPT } from './prompts/systemPrompt.ts'
+import { buildSystemPrompt } from './prompts/systemPrompt.ts'
 import { llmNoteSchema } from './schemas/aiNoteSchema.ts'
 import { logger } from '../utils/logger.ts'
 
@@ -10,6 +10,7 @@ export async function synthesizeFileNote(
   provider: LLMProvider,
   temperature: number = 0.2,
   timeoutMs: number = 30_000,
+  language: string = 'en',
 ): Promise<AiFileNote> {
   const staticNote = ctx.staticNote
 
@@ -20,7 +21,7 @@ export async function synthesizeFileNote(
     )
     const response = await Promise.race([
       provider.complete({
-        system: SYSTEM_PROMPT,
+        system: buildSystemPrompt(language),
         user: userPrompt,
         temperature,
       }),

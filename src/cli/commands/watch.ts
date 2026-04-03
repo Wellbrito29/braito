@@ -24,7 +24,7 @@ import type { AiFileNote } from '../../core/types/ai-note.ts'
 const DEFAULT_LLM_THRESHOLD = 0.4
 const DEBOUNCE_MS = 300
 
-export async function runWatch(args: { root?: string }): Promise<void> {
+export async function runWatch(args: { root?: string; language?: string }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
 
@@ -46,13 +46,14 @@ export async function runWatch(args: { root?: string }): Promise<void> {
   const llmThreshold = llmConfig?.llmThreshold ?? DEFAULT_LLM_THRESHOLD
   const temperature = llmConfig?.temperature ?? 0.2
   const timeoutMs = llmConfig?.timeoutMs ?? 30_000
+  const language = args.language ?? config.language ?? 'en'
 
   const hashStore = await loadCache(root)
   const noteMap = new Map<string, AiFileNote>()
 
   // Generate initial notes
   for (const analysis of analyses) {
-    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs)
+    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs, language)
     if (note) {
       noteMap.set(analysis.filePath, note)
       const relPath = path.relative(root, analysis.filePath)
@@ -119,6 +120,7 @@ async function processFile(
   llmThreshold: number,
   temperature: number,
   timeoutMs: number,
+  language: string = 'en',
 ): Promise<AiFileNote | null> {
   try {
     const analysis = parseFile(filePath)
@@ -140,6 +142,7 @@ async function processFile(
         provider,
         temperature,
         timeoutMs,
+        language,
       )
     }
 

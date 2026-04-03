@@ -4,6 +4,7 @@ import { Project } from 'ts-morph'
 import type { StaticFileAnalysis } from '../types/file-analysis.ts'
 import { extractImports } from './analyzers/ts/extractImports.ts'
 import { extractExports } from './analyzers/ts/extractExports.ts'
+import { extractExportDetails } from './analyzers/ts/extractExportDetails.ts'
 import { extractSymbols } from './analyzers/ts/extractSymbols.ts'
 import { extractHooks } from './analyzers/ts/extractHooks.ts'
 import { extractComments } from './analyzers/ts/extractComments.ts'
@@ -38,6 +39,7 @@ export function parseFile(filePath: string): StaticFileAnalysis {
 
     const imports = extractImports(sourceFile)
     const exports = extractExports(sourceFile)
+    const exportDetails = extractExportDetails(sourceFile)
     const symbols = extractSymbols(sourceFile)
     const hooks = extractHooks(sourceFile)
     const comments = extractComments(sourceFile)
@@ -53,6 +55,7 @@ export function parseFile(filePath: string): StaticFileAnalysis {
       localImports: imports.local,
       externalImports: imports.external,
       exports,
+      exportDetails,
       symbols,
       hooks,
       envVars: extractEnvVars(sourceFile.getFullText()),
@@ -73,6 +76,7 @@ function emptyAnalysis(filePath: string): StaticFileAnalysis {
     localImports: [],
     externalImports: [],
     exports: [],
+    exportDetails: [],
     symbols: [],
     hooks: [],
     envVars: [],

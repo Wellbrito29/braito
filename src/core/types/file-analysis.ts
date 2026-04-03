@@ -1,9 +1,17 @@
+export type ExportDetail = {
+  name: string
+  signature: string
+  kind: 'function' | 'class' | 'type' | 'variable' | 'enum'
+  docComment?: string
+}
+
 export type StaticFileAnalysis = {
   filePath: string
   imports: string[]
   localImports: string[]
   externalImports: string[]
   exports: string[]
+  exportDetails: ExportDetail[]
   symbols: string[]
   hooks: string[]
   envVars: string[]

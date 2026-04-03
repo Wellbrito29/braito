@@ -25,9 +25,9 @@ function makeCtx(staticNote: AiFileNote) {
   const analysis: StaticFileAnalysis = {
     filePath: staticNote.filePath,
     imports: [], localImports: [], externalImports: [],
-    exports: ['useSearch'], symbols: ['useSearch'], hooks: ['useSearch'],
+    exports: ['useSearch'], exportDetails: [], symbols: ['useSearch'], hooks: ['useSearch'],
     envVars: [], apiCalls: [],
-    comments: { todo: [], fixme: [], hack: [] },
+    comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
     hasSideEffects: false,
   }
   const graph: GraphSignals = { filePath: staticNote.filePath, directDependencies: [], reverseDependencies: [] }

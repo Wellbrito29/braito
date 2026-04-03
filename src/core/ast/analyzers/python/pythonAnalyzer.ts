@@ -10,6 +10,7 @@ export const pythonAnalyzer: LanguageAnalyzer = {
       localImports: extractLocalImports(content),
       externalImports: extractExternalImports(content),
       exports: extractExports(content),
+      exportDetails: [],
       symbols: extractSymbols(content),
       hooks: [],
       envVars: extractEnvVars(content),

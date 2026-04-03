@@ -1,10 +1,81 @@
+# Project Description
+
+## Vision
+
+`braito` (AI File Notes) is a tool for generating operational memory per file in large codebases. The intent is not to create a per-file changelog, but a layer of practical knowledge for humans and AI agents.
+
+Instead of just answering "what does this file do?", the tool tries to answer:
+
+- what is the purpose of the file
+- what must not be broken
+- which dependencies require care
+- what decisions appear to have been made
+- what risks or pitfalls exist
+- where to validate impact before shipping a change
+
+## Problem it solves
+
+Large projects accumulate:
+
+- implicit couplings
+- undocumented contracts
+- forgotten decisions
+- "sensitive" files that look simple
+- rework for onboarding and maintenance
+- difficulty for AI to understand the real project context
+
+This tool reduces that cost by generating actionable notes per file.
+
+## What it is not
+
+- does not replace ADRs
+- does not replace PRs and Git history
+- is not complete functional documentation
+- must not invent architecture without evidence
+- must not try to understand the entire system at once
+
+## Target audience
+
+- engineering teams with monorepos
+- mobile/web/backend squads with shared code
+- teams using Copilot, Cursor, or internal AI agents
+- tech leads who want to reduce the risk of lateral changes
+
+## Ideal use cases
+
+- central hook used by multiple screens
+- adapter between API and UI
+- search/recommendation service
+- file with high churn in Git
+- central reducers/stores/contexts
+- critical design system components
+- gateways for analytics, feature flags, env vars, and authentication
+
+## Value proposition
+
+### For humans
+
+- faster onboarding
+- less time to understand critical files
+- lower risk of hidden impact
+- support for code review
+
+### For AI agents
+
+- better grounding per file
+- richer context for vibe coding
+- less need for large prompts
+- lower chance of changes breaking lateral flows
+
+---
+
 # Descrição do Projeto
 
 ## Visão
 
-O projeto `AI File Notes` é uma ferramenta para gerar memória operacional por arquivo em codebases grandes. A intenção não é criar um changelog por arquivo, e sim uma camada de conhecimento prático para humanos e agentes de IA.
+O `braito` (AI File Notes) é uma ferramenta para gerar memória operacional por arquivo em codebases grandes. A intenção não é criar um changelog por arquivo, e sim uma camada de conhecimento prático para humanos e agentes de IA.
 
-Em vez de responder apenas “o que este arquivo faz?”, a ferramenta tenta responder:
+Em vez de responder apenas "o que este arquivo faz?", a ferramenta tenta responder:
 
 - qual é o propósito do arquivo
 - o que não deve ser quebrado
@@ -20,7 +91,7 @@ Projetos grandes acumulam:
 - acoplamentos implícitos
 - contratos não documentados
 - decisões esquecidas
-- arquivos “sensíveis” que parecem simples
+- arquivos "sensíveis" que parecem simples
 - retrabalho para onboarding e manutenção
 - dificuldade para IA entender contexto real do projeto
 
@@ -38,7 +109,7 @@ Essa ferramenta reduz esse custo gerando notas acionáveis por arquivo.
 
 - times de engenharia com monorepo
 - squads mobile/web/backend com código compartilhado
-- times que usam Copilot, Cursor, ChatGPT ou agentes internos
+- times que usam Copilot, Cursor ou agentes internos
 - líderes técnicos que querem reduzir risco de mudanças laterais
 
 ## Casos ideais
@@ -66,12 +137,3 @@ Essa ferramenta reduz esse custo gerando notas acionáveis por arquivo.
 - melhor contexto para vibe coding
 - menor necessidade de prompt enorme
 - menos chance de mudança quebrar fluxo lateral
-
-## Resultado esperado
-
-Gerar artefatos em `.ai-notes/` como:
-
-- `.json` para integração com ferramentas
-- `.md` para leitura humana
-- índice geral por criticidade
-- opcionalmente cabeçalhos inline em arquivos críticos

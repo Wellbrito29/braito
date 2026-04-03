@@ -1,18 +1,122 @@
+# Recommendations
+
+## Technical
+
+### 1. TypeScript first
+
+Even if the architecture allows future expansion, the MVP focuses on TS/TSX. Python and Go are supported via opt-in.
+
+### 2. Use `ts-morph` for TypeScript
+
+It greatly simplifies extraction of imports, exports, symbols, and basic navigation without forcing you to deal with low-level Compiler API details too early.
+
+### 3. Sidecar before inline
+
+Generate `.md` and `.json` in `.ai-notes/`. Only then consider inline headers at the top of files (if at all).
+
+### 4. Don't generate for everything at once
+
+Prioritize:
+
+- high churn
+- many dependents
+- central services
+- shared hooks
+- files without tests
+- API/analytics/env integrations
+
+### 5. Treat `importantDecisions` with skepticism
+
+This field is the most prone to hallucination. Only fill it with high confidence when there is:
+
+- an explicit comment
+- domain documentation
+- a strong commit message
+- a very obvious pattern
+
+### 6. Separate fact from inference
+
+This is essential for operational confidence. Never deliver only polished prose.
+
+### 7. Keep everything auditable
+
+Every note should be explainable by:
+
+- a code snippet
+- a graph relationship
+- a found test
+- a comment
+- a commit
+
+### 8. Resolve aliases early
+
+Monorepos typically depend on:
+
+- `tsconfig paths`
+- bundler aliases
+- workspace packages
+
+Without this, the dependency graph is incomplete.
+
+## Product
+
+### 1. Think of it as a support tool, not absolute truth
+
+The notes should guide, not replace technical judgment.
+
+### 2. Show confidence and evidence in the UI or output
+
+This increases adoption and reduces distrust.
+
+### 3. Have incremental mode
+
+Large projects cannot reprocess everything on every run.
+
+### 4. Generate criticality index
+
+This helps focus first on the most valuable files.
+
+## Operational
+
+### 1. Cache is mandatory
+
+Cache by file hash + signals. This reduces cost and time.
+
+### 2. Ignore generated files and noise
+
+Filter:
+
+- `node_modules`
+- `dist`, `build`
+- snapshots
+- generated files
+- coverage output
+
+### 3. CI only after the pipeline stabilizes
+
+First run locally and adjust quality. Then bring to CI.
+
+### 4. Have a fallback without LLM
+
+The system should remain useful even when the provider fails. Static notes are always generated first.
+
+---
+
 # Recomendações
 
 ## Técnicas
 
 ### 1. Comece por TypeScript
 
-Mesmo que a arquitetura permita expansão futura, o MVP deve focar em TS/TSX. Isso reduz complexidade e acelera entrega.
+Mesmo que a arquitetura permita expansão futura, o MVP foca em TS/TSX. Python e Go são suportados via opt-in.
 
-### 2. Use `ts-morph` no início
+### 2. Use `ts-morph` para TypeScript
 
 Ele facilita muito extração de imports, exports, símbolos e navegação básica sem te forçar a lidar cedo demais com detalhes baixos da Compiler API.
 
 ### 3. Sidecar antes de inline
 
-Comece gerando `.md` e `.json` em `.ai-notes/`. Só depois considere cabeçalhos no topo do arquivo.
+Gere `.md` e `.json` em `.ai-notes/`. Só depois considere cabeçalhos inline no topo dos arquivos (se for o caso).
 
 ### 4. Não gere para tudo de uma vez
 
@@ -30,8 +134,8 @@ Priorize:
 Esse campo é o mais sujeito a alucinação. Só preencha com confiança alta quando houver:
 
 - comentário explícito
-- doc do domínio
-- commit forte
+- documentação do domínio
+- mensagem de commit forte
 - padrão muito evidente
 
 ### 6. Separe fato de inferência
@@ -56,7 +160,7 @@ Monorepos costumam depender de:
 - aliases do bundler
 - pacotes workspace
 
-Sem isso, o grafo fica capenga.
+Sem isso, o grafo de dependências fica incompleto.
 
 ## Produto
 
@@ -82,17 +186,15 @@ Isso ajuda a focar primeiro nos arquivos mais valiosos.
 
 Faça cache por hash do arquivo + sinais. Isso reduz custo e tempo.
 
-### 2. Ignore gerados e ruído
+### 2. Ignore arquivos gerados e ruído
 
 Filtre:
 
 - `node_modules`
-- `dist`
-- `build`
+- `dist`, `build`
 - snapshots
 - arquivos gerados
-- storybook output
-- cobertura
+- saída de cobertura
 
 ### 3. CI só depois do pipeline estabilizar
 
@@ -100,21 +202,4 @@ Primeiro rode localmente e ajuste qualidade. Depois leve para CI.
 
 ### 4. Tenha fallback sem LLM
 
-O sistema deve continuar útil mesmo quando o provider falhar.
-
-## Recomendações de saída
-
-### JSON
-
-- melhor para integração com outras ferramentas
-- obrigatório no pipeline
-
-### Markdown
-
-- melhor para leitura humana
-- ótimo para revisão manual
-
-### Inline header
-
-- útil só em arquivos muito críticos
-- deve ser opcional
+O sistema deve continuar útil mesmo quando o provider falhar. Notas estáticas são sempre geradas primeiro.

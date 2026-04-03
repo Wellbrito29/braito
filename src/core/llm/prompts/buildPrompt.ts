@@ -1,8 +1,6 @@
-import fs from 'node:fs'
 import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../../types/file-analysis.ts'
 import type { AiFileNote } from '../../types/ai-note.ts'
-
-const MAX_SOURCE_LINES = 200
+import { extractSkeleton } from '../../ast/extractSkeleton.ts'
 
 export type PromptContext = {
   analysis: StaticFileAnalysis
@@ -15,11 +13,12 @@ export type PromptContext = {
 export function buildPrompt(ctx: PromptContext): string {
   const { analysis, graph, tests, git, staticNote } = ctx
 
-  const sourceCode = readSourceTruncated(analysis.filePath)
+  const sourceCode = extractSkeleton(analysis.filePath)
 
   const staticContext = {
     imports: analysis.imports,
     exports: analysis.exports,
+    exportDetails: analysis.exportDetails,
     hooks: analysis.hooks,
     envVars: analysis.envVars,
     apiCalls: analysis.apiCalls,
@@ -72,13 +71,3 @@ evidence items: { "type": "code"|"git"|"test"|"graph"|"comment"|"doc", "detail":
 Return ONLY the JSON object, no markdown wrapping.`
 }
 
-function readSourceTruncated(filePath: string): string {
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8')
-    const lines = content.split('\n')
-    if (lines.length <= MAX_SOURCE_LINES) return content
-    return lines.slice(0, MAX_SOURCE_LINES).join('\n') + `\n// ... (truncated at ${MAX_SOURCE_LINES} lines)`
-  } catch {
-    return '// source not available'
-  }
-}

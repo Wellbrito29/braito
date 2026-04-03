@@ -1,161 +1,193 @@
+# Architecture
+
+## Overview
+
+The pipeline is divided into six main blocks:
+
+1. scanner
+2. static analyzer (AST)
+3. graph engine
+4. git intelligence
+5. LLM synthesizer
+6. output publisher
+
+## Pipeline
+
+```
+repo → scanner → AST analyzer → graph engine → git intelligence
+     → [cache check] → static note → [LLM synthesis] → write .json + .md + index
+```
+
+**Key constraint:** LLM sits at the synthesis edge only. The majority of the pipeline is deterministic and auditable.
+
+## 1. Scanner
+
+Responsibilities:
+
+- discover eligible files via `Bun.Glob`
+- apply include/exclude patterns
+- respect ignore rules
+- classify domain from folder structure
+
+Output: list of candidate files with path, extension, size.
+
+## 2. Static Analyzer (AST)
+
+Extracts facts from source code:
+
+- imports (static + dynamic `import()`)
+- exports
+- relevant symbols (functions, classes, interfaces)
+- React/Vue hooks
+- env var usage
+- API calls
+- comments: `TODO`, `FIXME`, `HACK`, `INVARIANT`, `DECISION`, `WHY`
+
+Implementation:
+- TypeScript/JavaScript: `ts-morph`
+- Python: regex-based analyzer
+- Go: regex-based analyzer with `go.mod` module path resolution
+
+## 3. Graph Engine
+
+Builds:
+
+- direct dependency graph (who this file imports)
+- reverse dependency graph (who imports this file)
+- domain grouping
+- cycle detection
+
+Import resolution handles relative paths, `tsconfig.paths` aliases, and bundler aliases (Vite, Webpack, Metro).
+
+## 4. Git Intelligence
+
+Crosses historical signals: churn score, recent commit messages, co-changed files, author count.
+
+## 5. Test Intelligence
+
+Maps validation points: related tests by name heuristic, real line coverage from `lcov.info` or `coverage-summary.json`.
+
+## 6. LLM Synthesizer
+
+Receives the file context package and generates all note fields. Rules:
+
+- differentiate observed from inferred
+- include evidence
+- return confidence scores
+- never invent decisions without supporting signals
+- fall back to static note on any error or timeout
+
+## 7. Output Publisher
+
+Writes `.ai-notes/<path>.json`, `.ai-notes/<path>.md`, `index.json`, `index.md`.
+
+## Layer breakdown
+
+| Layer | Path | Responsibility |
+|---|---|---|
+| CLI | `src/cli/` | Command orchestration — `scan`, `generate`, `watch`, `mcp`, `ui` |
+| Core | `src/core/` | All business logic |
+| Output | `src/core/output/` | JSON/Markdown serialization, index building |
+| Cache | `src/core/cache/` | SHA-1 per file, skip unchanged, stale detection |
+
+## Key architectural decision
+
+The LLM must stay **at the synthesis edge**, not at the center of the pipeline. Files are only sent to LLM when `criticalityScore >= llmThreshold` (default `0.4`).
+
+---
+
 # Arquitetura
 
 ## Visão geral
 
-A arquitetura é dividida em seis blocos principais:
+O pipeline é dividido em seis blocos principais:
 
 1. scanner
-2. static analyzer
-3. graph engine
-4. git intelligence
-5. context builder
-6. llm synthesizer + publisher
+2. analisador estático (AST)
+3. grafo de dependências
+4. sinais do git
+5. síntese por LLM
+6. publisher de saída
+
+## Pipeline
+
+```
+repo → scanner → analisador AST → grafo de dependências → sinais do git
+     → [verificação de cache] → nota estática → [síntese LLM] → grava .json + .md + index
+```
+
+**Restrição principal:** o LLM fica apenas na borda de síntese. A maior parte do pipeline é determinística e auditável.
 
 ## 1. Scanner
 
-Responsável por:
+Responsabilidades:
 
-- descobrir arquivos elegíveis
-- aplicar include/exclude
-- respeitar ignore patterns
-- classificar domínio ou pasta
+- descobrir arquivos elegíveis via `Bun.Glob`
+- aplicar padrões include/exclude
+- respeitar regras de ignore
+- classificar domínio pela estrutura de pastas
 
-Entradas:
+Saída: lista de arquivos candidatos com path, extensão e tamanho.
 
-- raiz do projeto
-- globs configurados
-- lista de exclusão
+## 2. Analisador Estático (AST)
 
-Saída:
+Extrai fatos do código fonte:
 
-- lista de arquivos candidatos
-
-## 2. Static Analyzer
-
-Responsável por extrair fatos do código:
-
-- imports
+- imports (estáticos + `import()` dinâmicos)
 - exports
-- símbolos relevantes
-- hooks
-- uso de env vars
+- símbolos relevantes (funções, classes, interfaces)
+- hooks React/Vue
+- uso de variáveis de ambiente
 - chamadas de API
-- side effects
-- comentários `TODO`, `FIXME`, `HACK`
+- comentários: `TODO`, `FIXME`, `HACK`, `INVARIANT`, `DECISION`, `WHY`
 
-Preferência inicial:
+Implementação:
+- TypeScript/JavaScript: `ts-morph`
+- Python: analisador baseado em regex
+- Go: analisador baseado em regex com resolução de módulo via `go.mod`
 
-- TypeScript Compiler API ou `ts-morph`
-
-## 3. Graph Engine
+## 3. Grafo de Dependências
 
 Constrói:
 
-- dependências diretas
-- dependências reversas
-- agrupamentos por domínio
-- arquivos relacionados por importação
+- grafo de dependências diretas (o que este arquivo importa)
+- grafo de dependências reversas (quem importa este arquivo)
+- agrupamento por domínio
+- detecção de ciclos
 
-Esse bloco é central para impacto e criticidade.
+Resolução de imports trata caminhos relativos, aliases de `tsconfig.paths` e aliases de bundlers (Vite, Webpack, Metro).
 
-## 4. Git Intelligence
+## 4. Sinais do Git
 
-Cruza sinais históricos:
+Cruza sinais históricos: score de churn, mensagens de commits recentes, arquivos que mudam juntos, contagem de autores.
 
-- churn por arquivo
-- commits recentes
-- arquivos que mudam juntos
-- mensagens relevantes
-- hints de “hotfix”, “rollback”, “legacy”, “analytics”, “compat”
+## 5. Inteligência de Testes
 
-Objetivo:
+Mapeia pontos de validação: testes relacionados por heurística de nome, cobertura real de linhas via `lcov.info` ou `coverage-summary.json`.
 
-- aumentar qualidade de `knownPitfalls`
-- melhorar `importantDecisions`
-- priorizar arquivos mais sensíveis
+## 6. Sintetizador LLM
 
-## 5. Test Intelligence
+Recebe o pacote de contexto do arquivo e gera todos os campos da nota. Regras:
 
-Mapeia possíveis pontos de validação:
-
-- testes relacionados por nome
-- imports em arquivos de teste
-- testes da mesma pasta ou domínio
-- cobertura indireta por co-change
-
-## 6. Context Builder
-
-Empacota só o contexto necessário para um arquivo:
-
-- código do arquivo atual
-- análise estática
-- dependentes principais
-- testes relacionados
-- sinais do Git
-- contexto do domínio
-
-Princípio:
-
-- contexto curto, rico e baseado em evidência
-
-## 7. LLM Synthesizer
-
-Recebe o pacote do arquivo e gera:
-
-- purpose
-- invariants
-- sensitiveDependencies
-- importantDecisions
-- knownPitfalls
-- impactValidation
-
-Regras:
-
-- diferenciar observado e inferido
+- diferenciar observado de inferido
 - incluir evidências
-- devolver confiança
-- não inventar decisões sem suporte
+- retornar scores de confiança
+- nunca inventar decisões sem sinais de suporte
+- fallback para nota estática em caso de erro ou timeout
 
-## 8. Publisher
+## 7. Publisher de Saída
 
-Publica resultados em:
+Grava `.ai-notes/<caminho>.json`, `.ai-notes/<caminho>.md`, `index.json`, `index.md`.
 
-- `.json`
-- `.md`
-- índice agregado
-- opcionalmente header inline
+## Camadas
 
-## Fluxo fim a fim
+| Camada | Caminho | Responsabilidade |
+|---|---|---|
+| CLI | `src/cli/` | Orquestração dos comandos — `scan`, `generate`, `watch`, `mcp`, `ui` |
+| Core | `src/core/` | Toda a lógica de negócio |
+| Output | `src/core/output/` | Serialização JSON/Markdown, construção do índice |
+| Cache | `src/core/cache/` | SHA-1 por arquivo, pular inalterados, detecção de notas antigas |
 
-```text
-repo -> scanner -> analyzer -> graph -> git/test signals -> context builder -> llm -> publisher
-```
+## Decisão arquitetural principal
 
-## Camadas sugeridas
-
-### CLI
-
-Comandos como:
-
-- `scan`
-- `generate`
-- `publish`
-- `watch`
-
-### Core
-
-- parsing
-- graph
-- git
-- context
-- ranking
-
-### Output
-
-- serialização
-- sidecar Markdown/JSON
-- indexação
-
-## Decisão arquitetural importante
-
-O LLM deve ficar **na borda de síntese**, não no centro do pipeline. A maior parte do trabalho deve ser determinística e auditável.
+O LLM deve ficar **na borda de síntese**, não no centro do pipeline. Arquivos só são enviados ao LLM quando `criticalityScore >= llmThreshold` (padrão `0.4`).

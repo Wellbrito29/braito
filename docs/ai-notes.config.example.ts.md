@@ -36,8 +36,9 @@ export default {
   staleThresholdDays: 30,
 
   // Language for LLM-synthesized content (BCP 47 tag, default: 'en')
+  // Controls the language of all inferred fields (observed, inferred, evidence details).
   // Examples: 'pt-BR', 'es', 'fr', 'de'
-  // Can also be set via --language CLI flag
+  // Can also be set via --language CLI flag (flag takes priority over config)
   language: 'en',
 
   // LLM configuration (optional — omit to use static-only notes)
@@ -71,79 +72,3 @@ export OPENAI_API_KEY=sk-...
 ```
 
 Never put API keys in `ai-notes.config.ts`.
-
----
-
-# Exemplo de Configuração
-
-Referência completa para `ai-notes.config.ts` na raiz do projeto.
-
-```ts
-import { MULTI_LANGUAGE_INCLUDE } from './src/core/config/defaults.ts'
-
-export default {
-  // Raiz do projeto (padrão: process.cwd())
-  root: process.cwd(),
-
-  // Arquivos a incluir — apenas TypeScript/JavaScript por padrão
-  include: ['src/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
-
-  // Ou ativar suporte a Python e Go:
-  // include: MULTI_LANGUAGE_INCLUDE,
-
-  // Arquivos a excluir
-  exclude: [
-    '**/node_modules/**',
-    '**/dist/**',
-    '**/build/**',
-    '**/*.generated.*',
-    '**/coverage/**',
-    '**/*.test.ts',
-    '**/*.spec.ts',
-  ],
-
-  // Diretório de saída para .ai-notes/
-  output: '.ai-notes',
-
-  // Caminho para tsconfig.json (detectado automaticamente se omitido)
-  tsconfigPath: './tsconfig.json',
-
-  // Notas mais antigas que isso são marcadas como stale
-  staleThresholdDays: 30,
-
-  // Idioma do conteúdo gerado pelo LLM (tag BCP 47, padrão: 'en')
-  // Exemplos: 'pt-BR', 'es', 'fr', 'de'
-  // Pode ser definido também via flag --language na CLI
-  language: 'pt-BR',
-
-  // Configuração do LLM (opcional — omita para usar apenas notas estáticas)
-  llm: {
-    // Provider: 'ollama' | 'anthropic' | 'openai'
-    provider: 'anthropic',
-
-    // Nome do modelo
-    model: 'claude-sonnet-4-6',
-
-    // Arquivos com criticalityScore >= llmThreshold são enviados ao LLM
-    llmThreshold: 0.4,
-
-    // Temperatura de amostragem (0–2, menor = mais determinístico)
-    temperature: 0.2,
-
-    // Timeout de síntese por arquivo em milissegundos (padrão: 30000)
-    timeoutMs: 30000,
-
-    // Máximo de chamadas LLM paralelas (padrão: 5)
-    concurrency: 5,
-  },
-}
-```
-
-**Segurança:** chaves de API devem ser definidas apenas por variáveis de ambiente:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-export OPENAI_API_KEY=sk-...
-```
-
-Nunca coloque chaves de API no `ai-notes.config.ts`.

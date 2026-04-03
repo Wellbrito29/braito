@@ -50,6 +50,14 @@ Rules:
 - Return valid JSON following the requested schema.
 ```
 
+When `language` is set to a non-English BCP 47 tag (e.g. `pt-BR`, `es`), an additional instruction is appended to the system prompt:
+
+```
+- Write all text content (observed, inferred, evidence details) in <language>.
+```
+
+This keeps the output language configurable without changing the schema or pipeline.
+
 ## Quality rules
 
 1. Evidence required for important claims
@@ -78,86 +86,3 @@ Rules:
 - 0.70–0.89 when there is good evidence but some inference
 - 0.40–0.69 when it depends on heuristics or partial git signals
 - below 0.40 when there is little evidence
-
----
-
-# Estratégia de LLM
-
-## Papel do modelo
-
-O LLM não deve ser responsável por descobrir tudo sozinho. Ele recebe evidências preparadas e sintetiza uma nota confiável e útil.
-
-## Regra principal
-
-**LLM na borda, não no centro.**
-
-A pipeline ideal é:
-
-- análise determinística primeiro
-- síntese probabilística depois
-
-## O que mandar para o modelo
-
-Para cada arquivo:
-
-- conteúdo do arquivo
-- imports e exports
-- dependências reversas mais relevantes
-- sinais de Git
-- testes relacionados e cobertura
-- comentários especiais
-- contexto do domínio
-- score de criticidade
-
-## O que não fazer
-
-- mandar o repo inteiro
-- pedir inferência sem evidência
-- pedir "resuma o arquivo" sem contexto
-- misturar dezenas de arquivos sem necessidade
-
-## Regras de prompt
-
-### System prompt
-
-```
-Você é um analista de software especializado em gerar notas operacionais por arquivo.
-
-Regras:
-- Use apenas as evidências fornecidas.
-- Não invente fatos.
-- Diferencie observado de inferido.
-- Seja técnico e conciso.
-- Preencha "importantDecisions" apenas se houver sinais reais em código, comentários, docs ou Git.
-- Quando algo não estiver claro, reduza a confiança e deixe o campo vazio ou parcial.
-- Retorne JSON válido seguindo o schema solicitado.
-```
-
-## Regras de qualidade
-
-1. Evidência obrigatória para afirmações importantes
-2. Confiança numérica sempre presente
-3. Campos podem ficar vazios
-4. `importantDecisions` deve ser conservador
-5. `knownPitfalls` pode usar sinais de churn e TODOs
-6. `impactValidation` deve priorizar consumidores reais e testes
-
-## Recomendações práticas
-
-- usar temperature baixa (0.2)
-- usar schema rígido (validação Zod)
-- descartar respostas fora do schema
-- reprocessar apenas arquivos alterados
-
-## Estratégia de custo
-
-- cache por hash de arquivo + sinais
-- limitar síntese a arquivos relevantes ou críticos (`criticalityScore >= llmThreshold`)
-- permitir execução incremental
-
-## Referência de confiança
-
-- 0.90+ quando há import, uso e teste claros
-- 0.70–0.89 quando há boa evidência, mas alguma inferência
-- 0.40–0.69 quando depende de heurística ou Git parcial
-- abaixo de 0.40 quando há pouca evidência

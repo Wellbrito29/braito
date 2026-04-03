@@ -34,6 +34,7 @@ const emptyGit: GitSignals = {
   filePath: '/project/src/useSearch.ts',
   churnScore: 0,
   recentCommitMessages: [],
+  recentCommits: [],
   coChangedFiles: [],
   authorCount: 0,
 }
@@ -179,5 +180,25 @@ describe('buildBasicNote', () => {
   it('does not add coverage to impactValidation when not provided', () => {
     const note = buildBasicNote(makeAnalysis(), graph, tests, emptyGit)
     expect(note.impactValidation.observed.every((o) => !o.includes('coverage'))).toBe(true)
+  })
+
+  it('populates recentChanges from git commits', () => {
+    const git: GitSignals = {
+      ...emptyGit,
+      recentCommits: [
+        { hash: 'abc1234def5678', date: '2026-03-01T12:00:00Z', message: 'fix: correct null check', author: 'Dev' },
+        { hash: 'bcd2345ef6789a', date: '2026-02-15T09:30:00Z', message: 'feat: add retry logic', author: 'Dev' },
+      ],
+    }
+    const note = buildBasicNote(makeAnalysis(), graph, tests, git)
+    expect(note.recentChanges).toHaveLength(2)
+    expect(note.recentChanges[0].message).toBe('fix: correct null check')
+    expect(note.recentChanges[0].hash).toBe('abc1234def5678')
+    expect(note.recentChanges[1].message).toBe('feat: add retry logic')
+  })
+
+  it('recentChanges is empty when there are no commits', () => {
+    const note = buildBasicNote(makeAnalysis(), graph, tests, emptyGit)
+    expect(note.recentChanges).toHaveLength(0)
   })
 })

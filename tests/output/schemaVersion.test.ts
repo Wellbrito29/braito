@@ -33,6 +33,7 @@ const git: GitSignals = {
   filePath: '/project/src/example.ts',
   churnScore: 0,
   recentCommitMessages: [],
+  recentCommits: [],
   coChangedFiles: [],
   authorCount: 1,
 }

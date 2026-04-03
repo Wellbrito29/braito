@@ -32,9 +32,22 @@ function renderMarkdown(note: AiFileNote, relativePath: string): string {
     renderSection('Important Decisions', note.importantDecisions),
     renderSection('Known Pitfalls', note.knownPitfalls),
     renderSection('Impact Validation', note.impactValidation),
+    renderChangelog(note.recentChanges),
   ]
 
   return sections.filter((s) => s !== null).join('\n')
+}
+
+function renderChangelog(entries: AiFileNote['recentChanges']): string {
+  if (!entries || entries.length === 0) return ''
+  const lines = ['## Recent Changes', '']
+  for (const e of entries) {
+    const d = e.date.slice(0, 10)
+    const shortHash = e.hash.slice(0, 7)
+    lines.push(`- \`${shortHash}\` **${d}** ${e.message} _(${e.author})_`)
+  }
+  lines.push('')
+  return lines.join('\n')
 }
 
 function renderSection(title: string, field: StructuredListField): string {

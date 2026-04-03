@@ -1,5 +1,5 @@
 import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../types/file-analysis.ts'
-import type { AiFileNote, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
+import type { AiFileNote, ChangelogEntry, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
 import { SCHEMA_VERSION } from '../types/schema-version.ts'
 
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
@@ -108,6 +108,13 @@ export function buildBasicNote(
 
   const criticalityScore = computeCriticality(analysis, graph, tests, git)
 
+  const recentChanges: ChangelogEntry[] = git.recentCommits.map((c) => ({
+    hash: c.hash,
+    date: c.date,
+    message: c.message,
+    author: c.author,
+  }))
+
   // invariants: explicit comments + structural heuristics
   const invariantsObserved: string[] = []
   const invariantsEvidence: EvidenceItem[] = []
@@ -193,6 +200,7 @@ export function buildBasicNote(
       confidence: impactObserved.length > 0 ? 0.8 : 0.1,
       evidence: impactEvidence,
     },
+    recentChanges,
     criticalityScore,
     generatedAt: new Date().toISOString(),
     model: 'static',

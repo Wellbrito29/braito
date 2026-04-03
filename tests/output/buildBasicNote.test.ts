@@ -9,6 +9,7 @@ function makeAnalysis(overrides: Partial<StaticFileAnalysis> = {}): StaticFileAn
     localImports: [],
     externalImports: [],
     exports: ['useSearch'],
+    exportDetails: [{ name: 'useSearch', signature: 'useSearch(query: string): SearchResult', kind: 'function' }],
     symbols: ['useSearch'],
     hooks: ['useSearch'],
     envVars: [],

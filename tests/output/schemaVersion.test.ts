@@ -10,6 +10,7 @@ const analysis: StaticFileAnalysis = {
   localImports: [],
   externalImports: [],
   exports: ['example'],
+  exportDetails: [],
   symbols: ['example'],
   hooks: [],
   envVars: [],

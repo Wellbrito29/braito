@@ -17,13 +17,25 @@ export function buildBasicNote(
   const purposeEvidence: EvidenceItem[] = []
 
   if (analysis.hooks.length > 0) {
-    purposeObserved.push(`Exports hooks: ${analysis.hooks.join(', ')}`)
     for (const hook of analysis.hooks) {
-      purposeEvidence.push({ type: 'code', detail: `export function ${hook}` })
+      const detail = analysis.exportDetails.find((d) => d.name === hook)
+      const sig = detail ? detail.signature : `${hook}()`
+      const desc = detail?.docComment ? ` — ${detail.docComment}` : ''
+      purposeObserved.push(`Hook: ${sig}${desc}`)
+      purposeEvidence.push({ type: 'code', detail: `export function ${sig}` })
     }
   }
 
-  if (analysis.exports.length > 0) {
+  if (analysis.exportDetails.length > 0) {
+    for (const det of analysis.exportDetails) {
+      // Skip hooks already listed above
+      if (analysis.hooks.includes(det.name)) continue
+      const desc = det.docComment ? ` — ${det.docComment}` : ''
+      purposeObserved.push(`${det.kind === 'type' ? 'Type' : 'Export'}: ${det.signature}${desc}`)
+      purposeEvidence.push({ type: 'code', detail: det.signature })
+    }
+  } else if (analysis.exports.length > 0 && analysis.hooks.length === 0) {
+    // Fallback for non-TS files (Python/Go analyzers don't produce exportDetails)
     purposeObserved.push(`Exports: ${analysis.exports.join(', ')}`)
     purposeEvidence.push({ type: 'code', detail: `Exported symbols: ${analysis.exports.join(', ')}` })
   }

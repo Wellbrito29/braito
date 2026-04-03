@@ -26,11 +26,12 @@ function makeAnalysis(filePath: string, localImports: string[]): StaticFileAnaly
     localImports,
     externalImports: [],
     exports: [],
+    exportDetails: [],
     symbols: [],
     hooks: [],
     envVars: [],
     apiCalls: [],
-    comments: { todo: [], fixme: [], hack: [] },
+    comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
     hasSideEffects: false,
   }
 }

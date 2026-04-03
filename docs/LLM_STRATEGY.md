@@ -1,8 +1,91 @@
+# LLM Strategy
+
+## Role of the model
+
+The LLM must not be responsible for discovering everything on its own. It receives prepared evidence and synthesizes a reliable, useful note.
+
+## Main rule
+
+**LLM at the edge, not at the center.**
+
+The ideal pipeline is:
+
+- deterministic analysis first
+- probabilistic synthesis after
+
+## What to send to the model
+
+For each file:
+
+- file content
+- imports and exports
+- most relevant reverse dependencies
+- git signals
+- related tests and coverage
+- special comments
+- domain context
+- criticality score
+
+## What not to do
+
+- send the entire repo
+- request inference without evidence
+- ask "summarize the file" without context
+- mix dozens of files unnecessarily
+
+## Prompt rules
+
+### System prompt
+
+```
+You are a software analyst specialized in generating operational notes per file.
+
+Rules:
+- Use only the provided evidence.
+- Do not invent facts.
+- Differentiate observed from inferred.
+- Be technical and concise.
+- Fill "importantDecisions" only if there are real signals in code, comments, docs, or Git.
+- When something is unclear, reduce confidence and leave the field empty or partial.
+- Return valid JSON following the requested schema.
+```
+
+## Quality rules
+
+1. Evidence required for important claims
+2. Numeric confidence always present
+3. Fields may be empty
+4. `importantDecisions` must be conservative
+5. `knownPitfalls` may use churn signals and TODOs
+6. `impactValidation` should prioritize real consumers and tests
+
+## Practical recommendations
+
+- use low temperature (0.2)
+- use rigid schema (Zod validation)
+- discard responses outside the schema
+- reprocess only changed files
+
+## Cost strategy
+
+- cache by file hash + signals
+- limit synthesis to relevant or critical files (`criticalityScore >= llmThreshold`)
+- allow incremental execution
+
+## Confidence guidelines
+
+- 0.90+ when there are clear imports, usage, and tests
+- 0.70–0.89 when there is good evidence but some inference
+- 0.40–0.69 when it depends on heuristics or partial git signals
+- below 0.40 when there is little evidence
+
+---
+
 # Estratégia de LLM
 
 ## Papel do modelo
 
-O LLM não deve ser responsável por descobrir tudo sozinho. Ele deve receber evidências preparadas e sintetizar uma nota confiável e útil.
+O LLM não deve ser responsável por descobrir tudo sozinho. Ele recebe evidências preparadas e sintetiza uma nota confiável e útil.
 
 ## Regra principal
 
@@ -21,7 +104,7 @@ Para cada arquivo:
 - imports e exports
 - dependências reversas mais relevantes
 - sinais de Git
-- testes relacionados
+- testes relacionados e cobertura
 - comentários especiais
 - contexto do domínio
 - score de criticidade
@@ -30,14 +113,14 @@ Para cada arquivo:
 
 - mandar o repo inteiro
 - pedir inferência sem evidência
-- pedir “resuma o arquivo” sem contexto
+- pedir "resuma o arquivo" sem contexto
 - misturar dezenas de arquivos sem necessidade
 
 ## Regras de prompt
 
-### System prompt sugerido
+### System prompt
 
-```text
+```
 Você é um analista de software especializado em gerar notas operacionais por arquivo.
 
 Regras:
@@ -50,74 +133,29 @@ Regras:
 - Retorne JSON válido seguindo o schema solicitado.
 ```
 
-### User prompt sugerido
-
-```text
-Analise o arquivo abaixo e gere uma nota operacional.
-
-Arquivo: [path]
-
-Contexto estático:
-[json]
-
-Dependências reversas:
-[list]
-
-Sinais do Git:
-[json]
-
-Testes relacionados:
-[json]
-
-Contexto do domínio:
-[text]
-
-Código:
-```ts
-[source]
-```
-
-Retorne JSON com:
-- purpose
-- invariants
-- sensitiveDependencies
-- importantDecisions
-- knownPitfalls
-- impactValidation
-
-Cada campo deve conter:
-- observed
-- inferred
-- confidence
-- evidence
-```
-
 ## Regras de qualidade
 
-1. evidência obrigatória para afirmações importantes
-2. confiança numérica sempre presente
-3. campos podem ficar vazios
+1. Evidência obrigatória para afirmações importantes
+2. Confiança numérica sempre presente
+3. Campos podem ficar vazios
 4. `importantDecisions` deve ser conservador
 5. `knownPitfalls` pode usar sinais de churn e TODOs
 6. `impactValidation` deve priorizar consumidores reais e testes
 
 ## Recomendações práticas
 
-- usar temperature baixa
-- usar schema rígido
-- validar JSON com `zod`
+- usar temperature baixa (0.2)
+- usar schema rígido (validação Zod)
 - descartar respostas fora do schema
 - reprocessar apenas arquivos alterados
 
 ## Estratégia de custo
 
 - cache por hash de arquivo + sinais
-- limitar síntese a arquivos relevantes ou críticos
+- limitar síntese a arquivos relevantes ou críticos (`criticalityScore >= llmThreshold`)
 - permitir execução incremental
 
-## Estratégia de confiança
-
-Sugestão informal:
+## Referência de confiança
 
 - 0.90+ quando há import, uso e teste claros
 - 0.70–0.89 quando há boa evidência, mas alguma inferência

@@ -35,6 +35,11 @@ export default {
   // Notes older than this are flagged as stale
   staleThresholdDays: 30,
 
+  // Language for LLM-synthesized content (BCP 47 tag, default: 'en')
+  // Examples: 'pt-BR', 'es', 'fr', 'de'
+  // Can also be set via --language CLI flag
+  language: 'en',
+
   // LLM configuration (optional — omit to use static-only notes)
   llm: {
     // Provider: 'ollama' | 'anthropic' | 'openai'
@@ -105,6 +110,11 @@ export default {
 
   // Notas mais antigas que isso são marcadas como stale
   staleThresholdDays: 30,
+
+  // Idioma do conteúdo gerado pelo LLM (tag BCP 47, padrão: 'en')
+  // Exemplos: 'pt-BR', 'es', 'fr', 'de'
+  // Pode ser definido também via flag --language na CLI
+  language: 'pt-BR',
 
   // Configuração do LLM (opcional — omita para usar apenas notas estáticas)
   llm: {

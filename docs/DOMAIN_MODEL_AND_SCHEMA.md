@@ -1,102 +1,14 @@
-# Modelo de Domínio e Schema
+# Domain Model and Schema
 
-## Entidades principais
+## Core types
 
-### DiscoveredFile
+### AiFileNote
 
-```ts
-export type DiscoveredFile = {
-  path: string
-  extension: string
-  size: number
-  domain?: string
-}
-```
-
-### StaticFileAnalysis
+The primary output type — one per analyzed file.
 
 ```ts
-export type StaticFileAnalysis = {
-  filePath: string
-  imports: string[]
-  localImports: string[]
-  externalImports: string[]
-  exports: string[]
-  symbols: string[]
-  hooks: string[]
-  envVars: string[]
-  apiCalls: string[]
-  comments: {
-    todo: string[]
-    fixme: string[]
-    hack: string[]
-  }
-  hasSideEffects: boolean
-  rawSummary: string
-}
-```
-
-### GitSignals
-
-```ts
-export type GitSignals = {
-  filePath: string
-  churnScore: number
-  recentCommitMessages: string[]
-  coChangedFiles: Array<{ path: string; count: number }>
-  authorCount: number
-}
-```
-
-### TestSignals
-
-```ts
-export type TestSignals = {
-  filePath: string
-  relatedTests: string[]
-  validationTargets: string[]
-}
-```
-
-### FileContextPacket
-
-```ts
-export type FileContextPacket = {
-  filePath: string
-  sourceCode: string
-  staticAnalysis: StaticFileAnalysis
-  reverseDependencies: string[]
-  gitSignals: GitSignals
-  testSignals: TestSignals
-  domainContext?: string
-  criticalityScore: number
-}
-```
-
-## Schema de evidência
-
-```ts
-export type EvidenceItem = {
-  type: 'code' | 'git' | 'test' | 'graph' | 'comment' | 'doc'
-  detail: string
-}
-```
-
-## Campo estruturado recomendado
-
-```ts
-export type StructuredListField = {
-  observed: string[]
-  inferred: string[]
-  confidence: number
-  evidence: EvidenceItem[]
-}
-```
-
-## Schema principal da nota
-
-```ts
-export type AiFileNote = {
+type AiFileNote = {
+  schemaVersion: string
   filePath: string
   purpose: StructuredListField
   invariants: StructuredListField
@@ -104,98 +16,161 @@ export type AiFileNote = {
   importantDecisions: StructuredListField
   knownPitfalls: StructuredListField
   impactValidation: StructuredListField
-  criticalityScore: number
-  generatedAt: string
-  model: string
+  criticalityScore: number   // 0–1
+  generatedAt: string        // ISO 8601
+  model: string              // "static" | "<llm-model-name>"
 }
 ```
 
-## Recomendações de modelagem
+### StructuredListField
 
-1. Nunca usar apenas texto livre no topo do sistema.
+Every note field uses this shape. The `observed`/`inferred` split is mandatory — never collapse them.
+
+```ts
+type StructuredListField = {
+  observed: string[]       // facts from static analysis, git, tests
+  inferred: string[]       // LLM synthesis (empty when model = "static")
+  confidence: number       // 0–1
+  evidence: EvidenceItem[]
+}
+
+type EvidenceItem = {
+  type: 'code' | 'git' | 'test' | 'graph' | 'comment' | 'doc'
+  detail: string
+}
+```
+
+### NoteIndex
+
+The aggregated index written to `.ai-notes/index.json`.
+
+```ts
+type NoteIndex = {
+  schemaVersion: string
+  generatedAt: string
+  totalFiles: number
+  synthesizedFiles: number
+  staleFiles: number
+  entries: IndexEntry[]
+}
+
+type IndexEntry = {
+  filePath: string
+  relativePath: string
+  domain: string
+  criticalityScore: number
+  model: string
+  purpose: string        // first observed purpose string
+  generatedAt: string
+  stale: boolean
+  dependents: string[]   // relative paths of files that import this one
+}
+```
+
+## Modeling rules
+
+1. Never use plain free text at the top level — always use structured fields.
+2. Every synthesis must carry a `confidence` value.
+3. Always keep evidence alongside the conclusion.
+4. Differentiate `observed` from `inferred`.
+5. Allow fields to be empty when there is not enough basis.
+
+## Example note
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "filePath": "src/core/llm/synthesizeFileNote.ts",
+  "purpose": {
+    "observed": ["Exports synthesizeFileNote function", "Calls LLM provider with file context"],
+    "inferred": ["Orchestrates LLM synthesis with timeout and retry, merging static and inferred fields"],
+    "confidence": 0.91,
+    "evidence": [
+      { "type": "code", "detail": "export async function synthesizeFileNote" },
+      { "type": "graph", "detail": "Called by generate.ts and watch.ts" }
+    ]
+  },
+  "criticalityScore": 0.82,
+  "generatedAt": "2026-04-01T00:00:00.000Z",
+  "model": "claude-sonnet-4-6"
+}
+```
+
+---
+
+# Modelo de Domínio e Schema
+
+## Tipos principais
+
+### AiFileNote
+
+O tipo de saída principal — um por arquivo analisado.
+
+```ts
+type AiFileNote = {
+  schemaVersion: string
+  filePath: string
+  purpose: StructuredListField
+  invariants: StructuredListField
+  sensitiveDependencies: StructuredListField
+  importantDecisions: StructuredListField
+  knownPitfalls: StructuredListField
+  impactValidation: StructuredListField
+  criticalityScore: number   // 0–1
+  generatedAt: string        // ISO 8601
+  model: string              // "static" | "<nome-do-modelo-llm>"
+}
+```
+
+### StructuredListField
+
+Cada campo da nota usa esse formato. A separação `observed`/`inferred` é obrigatória — nunca colapse os dois.
+
+```ts
+type StructuredListField = {
+  observed: string[]       // fatos da análise estática, git, testes
+  inferred: string[]       // síntese LLM (vazio quando model = "static")
+  confidence: number       // 0–1
+  evidence: EvidenceItem[]
+}
+
+type EvidenceItem = {
+  type: 'code' | 'git' | 'test' | 'graph' | 'comment' | 'doc'
+  detail: string
+}
+```
+
+### NoteIndex
+
+O índice agregado gravado em `.ai-notes/index.json`.
+
+```ts
+type NoteIndex = {
+  schemaVersion: string
+  generatedAt: string
+  totalFiles: number
+  synthesizedFiles: number
+  staleFiles: number
+  entries: IndexEntry[]
+}
+
+type IndexEntry = {
+  filePath: string
+  relativePath: string
+  domain: string
+  criticalityScore: number
+  model: string
+  purpose: string        // primeiro string de purpose observado
+  generatedAt: string
+  stale: boolean
+  dependents: string[]   // caminhos relativos dos arquivos que importam este
+}
+```
+
+## Regras de modelagem
+
+1. Nunca usar apenas texto livre no topo — sempre usar campos estruturados.
 2. Toda síntese deve carregar `confidence`.
 3. Sempre manter evidência junto da conclusão.
 4. Diferenciar `observed` e `inferred`.
 5. Permitir campos vazios quando não houver base suficiente.
-
-## Exemplo de saída
-
-```json
-{
-  "filePath": "packages/search/src/useImageSearch.ts",
-  "purpose": {
-    "observed": [
-      "Exporta um hook chamado useImageSearch",
-      "Consome um client de busca por imagem"
-    ],
-    "inferred": [
-      "Orquestra o fluxo de busca por imagem e prepara o resultado para consumidores"
-    ],
-    "confidence": 0.91,
-    "evidence": [
-      { "type": "code", "detail": "export function useImageSearch" },
-      { "type": "graph", "detail": "É consumido por SearchScreen.tsx" }
-    ]
-  },
-  "invariants": {
-    "observed": [
-      "Retorna dados usados por consumidores da UI"
-    ],
-    "inferred": [
-      "Deve preservar o shape esperado pela tela de busca"
-    ],
-    "confidence": 0.76,
-    "evidence": [
-      { "type": "code", "detail": "Campos retornados são lidos pela SearchScreen" }
-    ]
-  },
-  "sensitiveDependencies": {
-    "observed": [
-      "searchApi.searchByImage",
-      "SearchScreen.tsx"
-    ],
-    "inferred": [],
-    "confidence": 0.94,
-    "evidence": [
-      { "type": "code", "detail": "Import direto do client searchApi" },
-      { "type": "graph", "detail": "Dependência reversa da SearchScreen" }
-    ]
-  },
-  "importantDecisions": {
-    "observed": [],
-    "inferred": [],
-    "confidence": 0.22,
-    "evidence": []
-  },
-  "knownPitfalls": {
-    "observed": [
-      "Há um comentário TODO sobre compatibilidade legada"
-    ],
-    "inferred": [
-      "Mudanças na normalização podem impactar analytics e ordenação"
-    ],
-    "confidence": 0.68,
-    "evidence": [
-      { "type": "comment", "detail": "TODO: remover fallback legado" },
-      { "type": "git", "detail": "Arquivo co-muda com SearchScreen e tracking" }
-    ]
-  },
-  "impactValidation": {
-    "observed": [
-      "SearchScreen.tsx",
-      "tests/useImageSearch.spec.ts"
-    ],
-    "inferred": [
-      "Validar eventos de analytics de busca"
-    ],
-    "confidence": 0.87,
-    "evidence": [
-      { "type": "graph", "detail": "Dependência reversa da SearchScreen" },
-      { "type": "test", "detail": "Teste relacionado encontrado por nome e import" }
-    ]
-  },
-  "criticalityScore": 0.81,
-  "generatedAt": "2026-03-27T00:00:00.000Z",
-  "model": "gpt-5"
-}
-```

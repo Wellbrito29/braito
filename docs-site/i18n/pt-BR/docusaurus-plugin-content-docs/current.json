@@ -1,0 +1,10 @@
+{
+  "sidebar.guideSidebar.category.Guide": {
+    "message": "Guia",
+    "description": "The label for category Guide in the sidebar"
+  },
+  "sidebar.referenceSidebar.category.Reference": {
+    "message": "Referência",
+    "description": "The label for category Reference in the sidebar"
+  }
+}

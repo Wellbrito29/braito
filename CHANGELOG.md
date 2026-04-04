@@ -5,6 +5,8 @@ All notable changes to braito will be documented here.
 ## [Unreleased]
 
 ### Added
+- **Project constitution** (`braito.context.md`) — optional file at project root injected into every LLM synthesis prompt; `loadProjectContext` reads and caps at 4 000 chars; `buildSystemPrompt` accepts `projectContext` param and prepends a `## Project context` section; `generate` and `watch` commands load and pass context through; `braito.context.md` template committed to repo as a real example
+
 - **VS Code extension** — `vscode-extension/` package with file decorations (`⚡` high-criticality, `⚠` stale), a hover provider showing purpose and score on import statements, and a `braito: Show Note for Current File` command that opens the `.md` sidecar in a webview panel
 - **`generate --dry-run`** — runs the full pipeline (scan, analyze, graph, cache check) without writing any files; prints a per-file summary showing which files would be written, their criticality scores, and whether LLM synthesis would be used; `saveAnalysisStore`, `saveCache`, `writeJsonNote`, `writeMarkdownNote`, and `writeIndexNote` are all skipped; `--dry-run` added to CLI parseArgs options and help text
 - **CLI e2e tests** — integration tests in `tests/e2e/cli.test.ts` covering `scan` (table and JSON format), `generate` (sidecar creation, cache skip, `--force`, `--filter`, `--diff`), and `mcp` (`handleRequest` exported for direct testing; covers `initialize`, `tools/list`, `get_file_note`, `get_index`, notification no-op, and error cases); 22 tests, all exercising real temp directories; `mcp.ts` refactored so `handleRequest` returns `JsonRpcResponse | null` for testability

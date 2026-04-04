@@ -102,6 +102,44 @@ llm: { provider: 'ollama', model: 'llama3', llmThreshold: 0.4, temperature: 0.2 
 Chaves de API devem ser definidas apenas por variáveis de ambiente. Nunca coloque-as no `ai-notes.config.ts`.
 :::
 
+## Constituição do projeto
+
+Crie um arquivo `braito.context.md` na raiz do projeto para injetar conhecimento específico em cada prompt de síntese LLM. É opcional — o pipeline funciona identicamente sem ele.
+
+```markdown
+# Contexto do Meu Projeto
+
+## Vocabulário de domínio
+
+- **note** — o artefato principal gerado por arquivo
+- **pipeline** — a cadeia completa de análise + síntese
+
+## Restrições arquiteturais
+
+- O LLM só é chamado na borda de síntese — as camadas de análise e grafo são livres de LLM
+- Todos os providers são trocáveis via factory.ts
+
+## Áreas de risco
+
+- Mudanças no tipo principal de schema podem exigir um bump de versão
+- Mudanças no system prompt afetam a qualidade de todo output LLM
+
+## Notas de testes
+
+- Execute os testes com `bun test`
+- Testes e2e usam diretórios temporários reais
+```
+
+Quando presente, o braito lê esse arquivo (limitado a 4 000 caracteres) e acrescenta uma seção `## Project context` ao system prompt do LLM. O modelo usa isso para:
+
+- Aplicar o vocabulário de domínio correto (ex: nunca usar "documento" quando o time chama de "note")
+- Respeitar as restrições arquiteturais ao inferir propósito e armadilhas
+- Destacar as áreas de risco certas em `knownPitfalls` e `sensitiveDependencies`
+
+::: tip
+Mantenha esse arquivo com menos de 4 000 caracteres. Conteúdo mais longo é truncado antes de ser enviado ao LLM.
+:::
+
 ## Saída multilíngue
 
 O campo `language` controla o idioma de todo o conteúdo sintetizado pelo LLM (arrays `inferred[]` e detalhes de evidência). A flag CLI tem prioridade sobre o config:

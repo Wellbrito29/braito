@@ -11,6 +11,7 @@ export async function synthesizeFileNote(
   temperature: number = 0.2,
   timeoutMs: number = 30_000,
   language: string = 'en',
+  projectContext: string | null = null,
 ): Promise<AiFileNote> {
   const staticNote = ctx.staticNote
 
@@ -21,7 +22,7 @@ export async function synthesizeFileNote(
     )
     const response = await Promise.race([
       provider.complete({
-        system: buildSystemPrompt(language),
+        system: buildSystemPrompt(language, projectContext),
         user: userPrompt,
         temperature,
       }),

@@ -6,15 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- **Project constitution** (`braito.context.md`) — optional file at project root injected into every LLM synthesis prompt; lets teams define domain vocabulary, architectural constraints, and risk areas that the model uses as context when generating notes
 - **Agent slash commands** (`init --agent` command) — generates native command files for AI coding assistants (`.claude/commands/`, `.cursor/commands/`, etc.) so braito tools are available without manual MCP setup
-- **Docs site changelog** — this page, tracking all changes in the GitHub Pages documentation site
-- **Docs site i18n** — full Portuguese (pt-BR) translation of all 11 documentation pages with language switcher in the top nav
 
 ### Changed
 - **`purpose.observed`** — now shows full typed function signatures (`name(param: Type): ReturnType`) and first JSDoc line instead of bare export name lists
 - **LLM prompt context** — replaced first-200-lines truncation with semantic skeleton extraction: exports + JSDoc + special comments (DECISION/INVARIANT/WHY/HACK), giving the model the most informative content within the same token budget
 - **System prompt** — added field-by-field BAD/GOOD examples for all six note fields, preventing the LLM from producing generic export-list summaries
+- **Project constitution** (`braito.context.md`) — optional file at project root injected into every LLM synthesis prompt; lets teams define domain vocabulary, architectural constraints, and risk areas that the model uses as context when generating notes
+- **Docs site i18n** — full Portuguese (pt-BR) translation of all 11 documentation pages with language switcher in the top nav
+- **Docs site changelog** — dedicated changelog page tracking all notable changes
 
 ---
 

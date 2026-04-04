@@ -1,10 +1,14 @@
-export function buildSystemPrompt(language = 'en'): string {
+export function buildSystemPrompt(language = 'en', projectContext: string | null = null): string {
   const langInstruction =
     language !== 'en'
       ? `\n- Write all text content (observed, inferred, evidence details) in ${language}.`
       : ''
 
-  return `You are a software analyst generating operational notes for individual files in a codebase.
+  const contextSection = projectContext
+    ? `\n\n## Project context\n\nThe following context was provided by the project team. Use it to inform your analysis — respect the domain vocabulary, architectural constraints, and risk areas described here.\n\n${projectContext}\n`
+    : ''
+
+  return `You are a software analyst generating operational notes for individual files in a codebase.${contextSection}
 
 ## Core rules
 

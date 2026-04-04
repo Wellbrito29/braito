@@ -14,6 +14,7 @@ import { writeJsonNote } from '../../core/output/writeJsonNote.ts'
 import { writeMarkdownNote } from '../../core/output/writeMarkdownNote.ts'
 import { createProvider } from '../../core/llm/provider/factory.ts'
 import { synthesizeFileNote } from '../../core/llm/synthesizeFileNote.ts'
+import { loadProjectContext } from '../../core/config/loadProjectContext.ts'
 import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { buildIndex } from '../../core/output/buildIndex.ts'
@@ -47,13 +48,14 @@ export async function runWatch(args: { root?: string; language?: string }): Prom
   const temperature = llmConfig?.temperature ?? 0.2
   const timeoutMs = llmConfig?.timeoutMs ?? 30_000
   const language = args.language ?? config.language ?? 'en'
+  const projectContext = loadProjectContext(root)
 
   const hashStore = await loadCache(root)
   const noteMap = new Map<string, AiFileNote>()
 
   // Generate initial notes
   for (const analysis of analyses) {
-    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs, language)
+    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs, language, projectContext)
     if (note) {
       noteMap.set(analysis.filePath, note)
       const relPath = path.relative(root, analysis.filePath)
@@ -121,6 +123,7 @@ async function processFile(
   temperature: number,
   timeoutMs: number,
   language: string = 'en',
+  projectContext: string | null = null,
 ): Promise<AiFileNote | null> {
   try {
     const analysis = parseFile(filePath)
@@ -143,6 +146,7 @@ async function processFile(
         temperature,
         timeoutMs,
         language,
+        projectContext,
       )
     }
 

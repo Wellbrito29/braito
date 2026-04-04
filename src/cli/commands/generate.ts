@@ -18,6 +18,7 @@ import { writeIndexNote } from '../../core/output/writeIndexNote.ts'
 import { diffNotes, renderDiff } from '../../core/output/diffNotes.ts'
 import { createProvider } from '../../core/llm/provider/factory.ts'
 import { synthesizeFileNote } from '../../core/llm/synthesizeFileNote.ts'
+import { loadProjectContext } from '../../core/config/loadProjectContext.ts'
 import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisStore.ts'
@@ -128,6 +129,8 @@ export async function runGenerate(args: {
   const temperature = llmConfig?.temperature ?? 0.2
   const timeoutMs = llmConfig?.timeoutMs ?? 30_000
   const language = args.language ?? config.language ?? 'en'
+  const projectContext = loadProjectContext(root)
+  if (projectContext) logger.info('braito.context.md loaded — injecting project context into LLM prompts')
   // Use concurrency cap from config when LLM is active; fall back to 1 (sequential) otherwise
   const concurrency = provider ? (llmConfig?.concurrency ?? 5) : 1
 
@@ -205,6 +208,7 @@ export async function runGenerate(args: {
           temperature,
           timeoutMs,
           language,
+          projectContext,
         )
         synthesized++
       }

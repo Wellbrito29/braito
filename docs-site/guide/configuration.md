@@ -102,6 +102,44 @@ llm: { provider: 'ollama', model: 'llama3', llmThreshold: 0.4, temperature: 0.2 
 API keys must be set via environment variables only. Never put them in `ai-notes.config.ts`.
 :::
 
+## Project constitution
+
+Create a `braito.context.md` file at your project root to inject project-specific knowledge into every LLM synthesis prompt. This is optional — the pipeline runs identically without it.
+
+```markdown
+# My Project Context
+
+## Domain vocabulary
+
+- **note** — the primary artifact generated per file
+- **pipeline** — the full analysis + synthesis chain
+
+## Architecture constraints
+
+- LLM is only called at the synthesis edge — analysis and graph layers are LLM-free
+- All providers are swappable via factory.ts
+
+## Risk areas
+
+- Changes to the main schema type may require a schema version bump
+- System prompt changes affect all LLM output quality
+
+## Testing notes
+
+- Run tests with `bun test`
+- E2e tests use real temp directories
+```
+
+When present, braito reads this file (capped at 4 000 chars) and prepends a `## Project context` section to the LLM system prompt. The model uses it to:
+
+- Apply the correct domain vocabulary (e.g. never say "document" when the team calls it a "note")
+- Respect architectural constraints when inferring purpose and pitfalls
+- Surface the right risk areas in `knownPitfalls` and `sensitiveDependencies`
+
+::: tip
+Keep this file under 4 000 characters. Longer content is truncated before being sent to the LLM.
+:::
+
 ## Multi-language output
 
 The `language` field controls the language of all LLM-synthesized content (`inferred[]` arrays and evidence details). The CLI flag takes priority over the config:

@@ -149,6 +149,15 @@ Tools: `get_file_note`, `search_by_criticality`, `get_index`, `get_architecture_
 - Do not let the README describe a subset of what the tool can do
 - README must always be bilingual (English + Portuguese)
 
+### Docs Site Rule
+
+**When a new feature, command, or configuration option is added, update the GitHub Pages documentation site (`docs-site/`) to reflect it.**
+
+- The relevant page in `docs-site/guide/` or `docs-site/reference/` must be updated in both English and Portuguese (`docs-site/pt/`)
+- If a new concept is large enough to warrant its own page, create it and add it to the sidebar in `docs-site/.vitepress/config.ts`
+- Keep `docs-site/changelog.md` and `docs-site/pt/changelog.md` in sync with `CHANGELOG.md` — add the new entry under `[Unreleased]` in both languages
+- Do not let the docs site describe a subset of what the tool can do
+
 ### Git Conventions
 
 **Never include any reference to the AI assistant in commits, branches, or code.**
@@ -306,6 +315,15 @@ Ferramentas: `get_file_note`, `search_by_criticality`, `get_index`, `get_archite
 - Mantenha a seção de comandos CLI, tabela de arquitetura e exemplos de configuração sincronizados com a implementação real
 - Não deixe o README descrever apenas um subconjunto do que a ferramenta faz
 - O README deve sempre ser bilíngue (inglês + português)
+
+### Regra do Site de Docs
+
+**Quando uma nova feature, comando ou opção de configuração for adicionada, atualize o site GitHub Pages (`docs-site/`) para refletir isso.**
+
+- A página relevante em `docs-site/guide/` ou `docs-site/reference/` deve ser atualizada em inglês e português (`docs-site/pt/`)
+- Se o conceito for grande o suficiente, crie uma página nova e adicione na sidebar em `docs-site/.vitepress/config.ts`
+- Mantenha `docs-site/changelog.md` e `docs-site/pt/changelog.md` sincronizados com `CHANGELOG.md` — adicione a nova entrada em `[Unreleased]` em ambos os idiomas
+- Não deixe o site de docs descrever apenas um subconjunto do que a ferramenta faz
 
 ### Convenções de Git
 

@@ -3,12 +3,14 @@ import { defineConfig } from 'vitepress'
 const enNav = [
   { text: 'Guide', link: '/guide/getting-started' },
   { text: 'Reference', link: '/reference/architecture' },
+  { text: 'Changelog', link: '/changelog' },
   { text: 'GitHub', link: 'https://github.com/wellbrito29/braito' },
 ]
 
 const ptNav = [
   { text: 'Guia', link: '/pt/guide/getting-started' },
   { text: 'Referência', link: '/pt/reference/architecture' },
+  { text: 'Changelog', link: '/pt/changelog' },
   { text: 'GitHub', link: 'https://github.com/wellbrito29/braito' },
 ]
 

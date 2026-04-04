@@ -1,10 +1,9 @@
 import React from 'react'
 import clsx from 'clsx'
 import Link from '@docusaurus/Link'
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
 import useBaseUrl from '@docusaurus/useBaseUrl'
 import Layout from '@theme/Layout'
-import styles from './index.module.css'
+import styles from '@site/src/pages/index.module.css'
 
 type FeatureItem = {
   emoji: string
@@ -15,39 +14,39 @@ type FeatureItem = {
 const features: FeatureItem[] = [
   {
     emoji: '🔍',
-    title: 'Static analysis first',
+    title: 'Análise estática primeiro',
     description:
-      'Extracts imports, exports, typed signatures, hooks, env vars, API calls, and special comments (DECISION, INVARIANT, WHY, HACK) from every file without touching an LLM.',
+      'Extrai imports, exports, assinaturas tipadas, hooks, env vars, chamadas de API e comentários especiais (DECISION, INVARIANT, WHY, HACK) de cada arquivo sem precisar de LLM.',
   },
   {
     emoji: '🧠',
-    title: 'LLM at the synthesis edge',
+    title: 'LLM na borda de síntese',
     description:
-      'The model only runs on files above a criticality threshold. It enriches observed facts — never replaces them. Observed and inferred are always kept separate.',
+      'O modelo só roda em arquivos acima de um threshold de criticidade. Ele enriquece fatos observados — nunca os substitui. Observado e inferido são sempre mantidos separados.',
   },
   {
     emoji: '📊',
-    title: 'Git intelligence',
+    title: 'Inteligência git',
     description:
-      'Churn score, recent commit history, co-changed files, and author count give every note historical context. No manual annotation required.',
+      'Score de churn, histórico de commits recentes, arquivos co-modificados e contagem de autores dão contexto histórico a cada nota. Sem anotação manual.',
   },
   {
     emoji: '🔌',
-    title: 'MCP server',
+    title: 'Servidor MCP',
     description:
-      'Seven tools expose braito notes to AI assistants — Cursor, Claude Code, or any MCP-compatible client. Includes blast-radius analysis and full-text search.',
+      'Sete ferramentas expõem as notas do braito para assistentes de IA — Cursor, Claude Code ou qualquer cliente MCP. Inclui análise de raio de impacto e busca de texto completo.',
   },
   {
     emoji: '🌐',
-    title: 'Local web UI',
+    title: 'Interface web local',
     description:
-      'Built-in dark-theme SPA with search, score filtering, and a Debug tab showing evidence trails, score breakdown, and per-file changelog.',
+      'SPA com tema escuro, busca, filtro por score e aba Debug com trilha de evidências, breakdown de score e changelog por arquivo.',
   },
   {
     emoji: '🌍',
-    title: 'Multi-language output',
+    title: 'Saída multilíngue',
     description:
-      'LLM-synthesized content can be generated in any BCP 47 language. Set language in config or pass --language on the CLI.',
+      'O conteúdo sintetizado pelo LLM pode ser gerado em qualquer idioma BCP 47. Configure language no arquivo de config ou passe --language na CLI.',
   },
 ]
 
@@ -66,27 +65,29 @@ function Feature({ emoji, title, description }: FeatureItem) {
 }
 
 export default function Home(): JSX.Element {
-  const { siteConfig } = useDocusaurusContext()
   const heroImg = useBaseUrl('/img/braito.png')
   return (
     <Layout
-      title="Operational context for codebases"
-      description="Structured knowledge sidecars per file — static analysis, git intelligence, and optional LLM synthesis.">
+      title="Contexto operacional para codebases"
+      description="Sidecars de conhecimento estruturado por arquivo — análise estática, inteligência git e síntese LLM opcional.">
       <header className={clsx('hero hero--primary', styles.heroBanner)}>
         <div className={clsx('container', styles.heroContainer)}>
           <div className={styles.heroText}>
             <h1 className={clsx('hero__title', styles.heroTitle)}>braito</h1>
-            <p className="hero__subtitle">{siteConfig.tagline}</p>
+            <p className="hero__subtitle">
+              Sidecars de conhecimento estruturado por arquivo — análise estática, inteligência git
+              e síntese LLM opcional.
+            </p>
             <div className={styles.buttons}>
               <Link
                 className="button button--secondary button--lg"
                 to="/docs/guide/getting-started">
-                Get Started →
+                Começar →
               </Link>
               <Link
                 className="button button--outline button--secondary button--lg"
                 href="https://github.com/wellbrito29/braito">
-                View on GitHub
+                Ver no GitHub
               </Link>
             </div>
           </div>

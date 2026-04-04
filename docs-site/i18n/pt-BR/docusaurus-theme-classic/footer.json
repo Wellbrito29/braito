@@ -1,0 +1,42 @@
+{
+  "link.title.Guide": {
+    "message": "Guia",
+    "description": "The title of the footer links column with title=Guide"
+  },
+  "link.title.Reference": {
+    "message": "Referência",
+    "description": "The title of the footer links column with title=Reference"
+  },
+  "link.title.More": {
+    "message": "Mais",
+    "description": "The title of the footer links column with title=More"
+  },
+  "link.item.label.Getting Started": {
+    "message": "Início Rápido",
+    "description": "Footer link with label Getting Started"
+  },
+  "link.item.label.Configuration": {
+    "message": "Configuração",
+    "description": "Footer link with label Configuration"
+  },
+  "link.item.label.MCP Server": {
+    "message": "Servidor MCP",
+    "description": "Footer link with label MCP Server"
+  },
+  "link.item.label.Architecture": {
+    "message": "Arquitetura",
+    "description": "Footer link with label Architecture"
+  },
+  "link.item.label.Domain Model": {
+    "message": "Modelo de Domínio",
+    "description": "Footer link with label Domain Model"
+  },
+  "link.item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Footer link with label GitHub"
+  },
+  "link.item.label.Changelog": {
+    "message": "Changelog",
+    "description": "Footer link with label Changelog"
+  }
+}

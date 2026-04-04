@@ -1,0 +1,18 @@
+{
+  "item.label.Guide": {
+    "message": "Guia",
+    "description": "Navbar item with label Guide"
+  },
+  "item.label.Reference": {
+    "message": "Referência",
+    "description": "Navbar item with label Reference"
+  },
+  "item.label.Changelog": {
+    "message": "Changelog",
+    "description": "Navbar item with label Changelog"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

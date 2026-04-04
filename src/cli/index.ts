@@ -6,6 +6,7 @@ import { runGenerate } from './commands/generate.ts'
 import { runWatch } from './commands/watch.ts'
 import { runMcp } from './commands/mcp.ts'
 import { runUi } from './commands/ui.ts'
+import { runInit } from './commands/init.ts'
 
 const [, , command, ...rest] = process.argv
 
@@ -13,6 +14,7 @@ const { values } = parseArgs({
   args: rest,
   options: {
     root:     { type: 'string',  short: 'r' },
+    agent:    { type: 'boolean' },
     force:    { type: 'boolean', short: 'f' },
     filter:   { type: 'string' },
     format:   { type: 'string' },
@@ -56,6 +58,10 @@ switch (command) {
     await runMcp({ root: values.root, autoGenerate: (values as Record<string, unknown>)['auto-generate'] as boolean | undefined })
     break
 
+  case 'init':
+    await runInit({ root: values.root, agent: values.agent })
+    break
+
   case 'ui': {
     const portStr = (values as Record<string, unknown>).port as string | undefined
     await runUi({ root: values.root, port: portStr ? parseInt(portStr) : undefined })
@@ -75,6 +81,7 @@ Commands:
   watch     Watch for changes and regenerate notes incrementally
   mcp       Start the MCP server (JSON-RPC 2.0 over stdio)
   ui        Start the local web UI to browse notes
+  init      Initialize braito integrations (e.g. agent slash commands)
 
 Options:
   --root, -r <path>      Root directory to analyze (default: cwd)
@@ -88,6 +95,7 @@ Options:
   --dry-run              Show what would be generated without writing any files (generate only)
   --auto-generate        Auto-run generate if no notes exist before starting MCP server (mcp only)
   --language, -l <lang>  Output language for LLM-synthesized content, e.g. "pt-BR", "es" (generate/watch)
+  --agent                Generate AI assistant slash command files (init only)
 `)
     process.exit(command ? 1 : 0)
 }

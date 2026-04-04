@@ -6,6 +6,7 @@ All notable changes to braito will be documented here.
 
 ### Added
 - **Project constitution** (`braito.context.md`) — optional file at project root injected into every LLM synthesis prompt; `loadProjectContext` reads and caps at 4 000 chars; `buildSystemPrompt` accepts `projectContext` param and prepends a `## Project context` section; `generate` and `watch` commands load and pass context through; `braito.context.md` template committed to repo as a real example
+- **Agent slash commands** (`init --agent`) — new `init` command generates `.claude/commands/braito-note.md`, `braito-impact.md`, `braito-search.md` in the target project; command files instruct Claude Code / Cursor to call the corresponding MCP tools; 5 tests in `tests/cli/init.test.ts`
 
 - **VS Code extension** — `vscode-extension/` package with file decorations (`⚡` high-criticality, `⚠` stale), a hover provider showing purpose and score on import statements, and a `braito: Show Note for Current File` command that opens the `.md` sidecar in a webview panel
 - **`generate --dry-run`** — runs the full pipeline (scan, analyze, graph, cache check) without writing any files; prints a per-file summary showing which files would be written, their criticality scores, and whether LLM synthesis would be used; `saveAnalysisStore`, `saveCache`, `writeJsonNote`, `writeMarkdownNote`, and `writeIndexNote` are all skipped; `--dry-run` added to CLI parseArgs options and help text

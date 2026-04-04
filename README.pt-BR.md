@@ -64,6 +64,7 @@ bun src/cli/index.ts watch --root ./
 bun src/cli/index.ts mcp --root ./
 bun src/cli/index.ts mcp --root ./ --auto-generate
 bun src/cli/index.ts ui --root ./
+bun src/cli/index.ts init --agent --root ./
 bun test
 ```
 

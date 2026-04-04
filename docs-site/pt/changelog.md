@@ -5,14 +5,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Unreleased]
 
-### Added
-- **Slash commands para agentes** (comando `init --agent`) — gera arquivos de comandos nativos para assistentes de IA (`.claude/commands/`, `.cursor/commands/`, etc.) para que as ferramentas do braito fiquem disponíveis sem configuração manual do MCP
-
 ### Changed
 - **`purpose.observed`** — agora exibe assinaturas de função tipadas completas (`name(param: Tipo): ReturnType`) e a primeira linha do JSDoc, em vez de apenas listas de nomes de exports
 - **Contexto do prompt LLM** — substituiu o truncamento nas primeiras 200 linhas pela extração de esqueleto semântico: exports + JSDoc + comentários especiais (DECISION/INVARIANT/WHY/HACK)
 - **System prompt** — adicionados exemplos RUIM/BOM por campo para todos os seis campos da nota, evitando que o LLM produza resumos genéricos de listas de exports
 - **Constituição do projeto** (`braito.context.md`) — arquivo opcional na raiz do projeto injetado em todo prompt de síntese LLM; permite que times definam vocabulário de domínio, restrições arquiteturais e áreas de risco
+- **Slash commands para agentes** (`init --agent`) — gera `.claude/commands/braito-note.md`, `braito-impact.md`, `braito-search.md` no projeto alvo para que as ferramentas do braito fiquem disponíveis como slash commands nativos no Claude Code e Cursor
 - **i18n do site de docs** — tradução completa para português (pt-BR) de todas as 11 páginas com seletor de idioma no nav superior
 - **Changelog no site de docs** — página dedicada rastreando todas as mudanças notáveis
 

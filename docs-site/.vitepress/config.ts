@@ -24,6 +24,7 @@ const enSidebar = [
       { text: 'Web UI', link: '/guide/web-ui' },
       { text: 'Watch Mode', link: '/guide/watch-mode' },
       { text: 'CI Integration', link: '/guide/ci' },
+      { text: 'Agent Slash Commands', link: '/guide/agent-commands' },
     ],
   },
   {
@@ -48,6 +49,7 @@ const ptSidebar = [
       { text: 'Interface Web', link: '/pt/guide/web-ui' },
       { text: 'Modo Watch', link: '/pt/guide/watch-mode' },
       { text: 'Integração CI', link: '/pt/guide/ci' },
+      { text: 'Slash Commands para Agentes', link: '/pt/guide/agent-commands' },
     ],
   },
   {

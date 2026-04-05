@@ -9,6 +9,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Live pipeline execution panel** — "▶ Run generate" button triggers the full pipeline from the browser; a bottom log panel shows each step in real time with timestamps and emoji icons; auto-refreshes on completion; `--force` checkbox available
+- **Tests tab** — third tab in the file detail pane with coverage status badge, line coverage bar, related test files list, and actionable tip for uncovered files
+- **Test coverage stats strip** — global counts (covered / uncovered / avg coverage) above the file list, backed by `/api/stats`
+- **`debugSignals` in every note** — all raw pipeline signals now stored in each `.json` note, powering the Debug tab score breakdown
+
 ### Changed
 - **`purpose.observed`** — now shows full typed function signatures (`name(param: Type): ReturnType`) and first JSDoc line instead of bare export name lists
 - **LLM prompt context** — replaced first-200-lines truncation with semantic skeleton extraction: exports + JSDoc + special comments (DECISION/INVARIANT/WHY/HACK), giving the model the most informative content within the same token budget

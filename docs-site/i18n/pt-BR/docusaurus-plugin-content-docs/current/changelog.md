@@ -9,6 +9,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Painel de execução ao vivo** — botão "▶ Run generate" dispara o pipeline completo pelo browser; painel inferior mostra cada etapa em tempo real com timestamps e ícones emoji; atualiza automaticamente ao terminar; checkbox `--force` disponível
+- **Aba Tests** — terceira aba no painel de detalhes com badge de status de cobertura, barra de cobertura de linhas, lista de arquivos de teste relacionados, e dica de ação para arquivos sem testes
+- **Barra de estatísticas de cobertura** — contagens globais (covered / uncovered / avg coverage) acima da lista de arquivos, via `/api/stats`
+- **`debugSignals` em cada nota** — todos os sinais brutos do pipeline agora armazenados em cada `.json`, alimentando o score breakdown da aba Debug
+
 ### Changed
 - **`purpose.observed`** — agora exibe assinaturas de função tipadas completas (`name(param: Tipo): ReturnType`) e a primeira linha do JSDoc, em vez de apenas listas de nomes de exports
 - **Contexto do prompt LLM** — substituiu o truncamento nas primeiras 200 linhas pela extração de esqueleto semântico: exports + JSDoc + comentários especiais (DECISION/INVARIANT/WHY/HACK)

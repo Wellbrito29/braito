@@ -100,4 +100,24 @@ A log panel slides up from the bottom showing each step in real time:
 12:04:05 ⏭ Skipped 18 unchanged files (use --force to reprocess)
 ```
 
-Check **--force** to bypass the cache and reprocess all files. The file list and coverage stats refresh automatically when the run completes.
+Check **--force** to bypass the cache and reprocess all files. Check **--verbose** to see per-file signal detail (see below). The file list and coverage stats refresh automatically when the run completes.
+
+### Verbose mode
+
+When **--verbose** is checked, the log panel shows a detailed line for every processed file:
+
+```
+0.82  src/core/types/ai-note.ts  deps=0 consumers=8 churn=12  [no-tests LLM]
+0.71  src/core/output/buildBasicNote.ts  deps=6 consumers=3 churn=8  [ext-imports LLM]
+0.45  src/core/utils/logger.ts  deps=1 consumers=5 churn=3  []
+```
+
+Each line shows: criticality score · file path · dependency and consumer counts · churn · active signal flags.
+
+At the end of the run, verbose mode also prints:
+
+- **Top 5 files by consumers** — the most-imported files in the graph (high blast radius)
+- **Top 5 files by score** — the files with the highest criticality
+- **Files without tests** — count of untested files vs total
+
+Use verbose mode to understand why scores are high, spot bottlenecks, and decide where to add tests or reduce coupling.

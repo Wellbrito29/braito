@@ -10,7 +10,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- **Live pipeline execution panel** — "▶ Run generate" button triggers the full pipeline from the browser; a bottom log panel shows each step in real time with timestamps and emoji icons; auto-refreshes on completion; `--force` checkbox available
+- **Live pipeline execution panel** — "▶ Run generate" button triggers the full pipeline from the browser; a bottom log panel shows each step in real time with timestamps and emoji icons; auto-refreshes on completion; `--force` and `--verbose` checkboxes available
+- **`--verbose` flag for `generate`** — per-file log with score, dep/consumer counts, churn, signal flags; parse timing per file; top-5 consumers and top-5 by score printed at end; uncovered file count
+- **Phase timers** — scan, analyze, graph, and write phases each log elapsed time; graph step logs node + edge count; total run time logged at end
 - **Tests tab** — third tab in the file detail pane with coverage status badge, line coverage bar, related test files list, and actionable tip for uncovered files
 - **Test coverage stats strip** — global counts (covered / uncovered / avg coverage) above the file list, backed by `/api/stats`
 - **`debugSignals` in every note** — all raw pipeline signals now stored in each `.json` note, powering the Debug tab score breakdown

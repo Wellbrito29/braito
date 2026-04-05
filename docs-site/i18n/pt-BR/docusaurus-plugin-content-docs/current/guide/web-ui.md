@@ -100,4 +100,24 @@ Um painel de log sobe da parte inferior mostrando cada etapa em tempo real:
 12:04:05 ⏭ Skipped 18 unchanged files (use --force to reprocess)
 ```
 
-Marque **--force** para ignorar o cache e reprocessar todos os arquivos. A lista de arquivos e as estatísticas de cobertura atualizam automaticamente quando o run termina.
+Marque **--force** para ignorar o cache e reprocessar todos os arquivos. Marque **--verbose** para ver o detalhe de sinais por arquivo (veja abaixo). A lista de arquivos e as estatísticas de cobertura atualizam automaticamente quando o run termina.
+
+### Modo verbose
+
+Com **--verbose** marcado, o painel de log exibe uma linha detalhada para cada arquivo processado:
+
+```
+0.82  src/core/types/ai-note.ts  deps=0 consumers=8 churn=12  [no-tests LLM]
+0.71  src/core/output/buildBasicNote.ts  deps=6 consumers=3 churn=8  [ext-imports LLM]
+0.45  src/core/utils/logger.ts  deps=1 consumers=5 churn=3  []
+```
+
+Cada linha mostra: score de criticidade · caminho do arquivo · contagens de dependências e consumidores · churn · flags de sinais ativos.
+
+Ao final do run, o modo verbose também exibe:
+
+- **Top 5 arquivos por consumidores** — os arquivos mais importados do grafo (maior raio de impacto)
+- **Top 5 arquivos por score** — os arquivos com maior criticidade
+- **Arquivos sem testes** — contagem de arquivos não cobertos vs total
+
+Use o modo verbose para entender por que os scores estão altos, identificar gargalos e decidir onde adicionar testes ou reduzir acoplamento.

@@ -5,6 +5,23 @@ import { logger } from '../../core/utils/logger.ts'
 
 const DEFAULT_PORT = 7842
 
+// ---------------------------------------------------------------------------
+// Run state — tracks the last/active generate execution
+// ---------------------------------------------------------------------------
+
+type RunStatus = 'idle' | 'running' | 'done' | 'error'
+
+const runState = {
+  status: 'idle' as RunStatus,
+  startedAt: null as string | null,
+  finishedAt: null as string | null,
+  logs: [] as Array<{ ts: string; level: string; text: string }>,
+}
+
+function pushLog(level: string, text: string) {
+  runState.logs.push({ ts: new Date().toISOString(), level, text })
+}
+
 export async function runUi(args: { root?: string; port?: number }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -18,7 +35,7 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
 
   const server = Bun.serve({
     port,
-    fetch(req) {
+    async fetch(req) {
       const url = new URL(req.url)
 
       // API: GET /api/index
@@ -29,6 +46,70 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
       // API: GET /api/stats
       if (url.pathname === '/api/stats') {
         return computeStats(notesDir)
+      }
+
+      // API: POST /api/run  — start a generate run
+      if (url.pathname === '/api/run' && req.method === 'POST') {
+        if (runState.status === 'running') {
+          return new Response(JSON.stringify({ error: 'Already running' }), {
+            status: 409, headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        const body = await req.json().catch(() => ({})) as Record<string, unknown>
+        const force = body.force === true
+
+        // Fire-and-forget; logs captured via intercepted console
+        runState.status = 'running'
+        runState.startedAt = new Date().toISOString()
+        runState.finishedAt = null
+        runState.logs = []
+
+        const origLog = console.log
+        const origError = console.error
+        const origWarn = console.warn
+
+        const capture = (level: string) => (...args: unknown[]) => {
+          const text = args.join(' ').replace(/\x1b\[[0-9;]*m/g, '')
+          pushLog(level, text)
+        }
+        console.log = capture('info')
+        console.error = capture('error')
+        console.warn = capture('warn')
+
+        ;(async () => {
+          try {
+            const { runGenerate } = await import('./generate.ts')
+            await runGenerate({ root, force })
+            runState.status = 'done'
+          } catch (err: unknown) {
+            pushLog('error', String(err instanceof Error ? err.message : err))
+            runState.status = 'error'
+          } finally {
+            console.log = origLog
+            console.error = origError
+            console.warn = origWarn
+            runState.finishedAt = new Date().toISOString()
+          }
+        })()
+
+        return new Response(JSON.stringify({ started: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      // API: GET /api/run/status  — poll for log lines and status
+      if (url.pathname === '/api/run/status') {
+        const since = parseInt(url.searchParams.get('since') ?? '0', 10)
+        return new Response(
+          JSON.stringify({
+            status: runState.status,
+            startedAt: runState.startedAt,
+            finishedAt: runState.finishedAt,
+            logs: runState.logs.slice(since),
+            total: runState.logs.length,
+          }),
+          { headers: { 'Content-Type': 'application/json' } },
+        )
       }
 
       // API: GET /api/note?path=src/foo.ts
@@ -211,13 +292,49 @@ function renderHtml(): string {
     .test-status.uncovered{background:#2a1a1a;color:#ff6b6b}
     .related-test{padding:5px 0;border-bottom:1px solid #141414;font-size:12px;color:#c77bff;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .test-tip{margin-top:12px;padding:10px 12px;background:#111;border:1px solid #1e1e1e;border-radius:6px;font-size:12px;color:#555;border-left:3px solid #333}
+    .run-btn{padding:5px 14px;background:#1a2a1a;border:1px solid #2a4a2a;border-radius:5px;color:#6bcb77;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+    .run-btn:hover{background:#1e3a1e;border-color:#3a6a3a}
+    .run-btn:disabled{opacity:.4;cursor:not-allowed}
+    .run-panel{position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #222;z-index:100;display:none;flex-direction:column;max-height:40vh}
+    .run-panel.open{display:flex}
+    .run-header{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #1a1a1a;background:#0f0f0f}
+    .run-title{font-size:12px;font-weight:600;color:#888}
+    .run-status{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600}
+    .run-status.running{background:#1a2a1a;color:#6bcb77;animation:pulse 1s infinite}
+    .run-status.done{background:#1a2a1a;color:#6bcb77}
+    .run-status.error{background:#2a1a1a;color:#ff6b6b}
+    .run-status.idle{background:#1a1a1a;color:#555}
+    .run-close{margin-left:auto;font-size:16px;cursor:pointer;color:#444;padding:0 4px}
+    .run-close:hover{color:#888}
+    .run-log{flex:1;overflow-y:auto;padding:10px 16px;font-family:monospace;font-size:11px;line-height:1.6}
+    .log-line{display:flex;gap:10px;padding:1px 0}
+    .log-ts{color:#333;white-space:nowrap;flex-shrink:0}
+    .log-text.info{color:#999}
+    .log-text.warn{color:#f0a500}
+    .log-text.error{color:#ff6b6b}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
   </style>
 </head>
 <body>
   <header>
     <h1>braito</h1>
     <span class="subtitle">AI Notes</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <label style="font-size:11px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="forceCheck" style="cursor:pointer"> --force
+      </label>
+      <button class="run-btn" id="runBtn" onclick="startRun()">▶ Run generate</button>
+    </div>
   </header>
+  <div class="run-panel" id="runPanel">
+    <div class="run-header">
+      <span class="run-title">Pipeline execution</span>
+      <span class="run-status idle" id="runStatus">idle</span>
+      <span style="font-size:11px;color:#444" id="runTimer"></span>
+      <span class="run-close" onclick="document.getElementById('runPanel').classList.remove('open')">✕</span>
+    </div>
+    <div class="run-log" id="runLog"></div>
+  </div>
   <div class="container">
     <div class="sidebar">
       <input class="search" id="search" placeholder="Search files..." />
@@ -610,6 +727,101 @@ function renderHtml(): string {
       \`
       window.currentNote = note
       document.getElementById('tab-content').innerHTML = activeTab === 'debug' ? renderDebugTab(note) : activeTab === 'tests' ? renderTestsTab(note) : renderNoteTab(note)
+    }
+
+    // ── Run panel ────────────────────────────────────────────────────────────
+
+    let pollTimer = null
+    let logOffset = 0
+    let runStart = null
+
+    const STEP_ICONS = {
+      'Found': '📂',
+      'Analyzing': '🔍',
+      'Building dependency': '🕸',
+      'Writing notes': '✍',
+      'Generated': '✅',
+      'Skipped': '⏭',
+      'Cache': '💾',
+      'Filter': '🔎',
+      'Dry run': '👁',
+      'error': '❌',
+      'warn': '⚠',
+    }
+
+    function stepIcon(text, level) {
+      if (level === 'error') return '❌'
+      if (level === 'warn') return '⚠'
+      for (const [key, icon] of Object.entries(STEP_ICONS)) {
+        if (text.includes(key)) return icon
+      }
+      return '·'
+    }
+
+    function appendLogs(lines) {
+      const log = document.getElementById('runLog')
+      for (const l of lines) {
+        const div = document.createElement('div')
+        div.className = 'log-line'
+        const time = l.ts.slice(11, 19)
+        const icon = stepIcon(l.text, l.level)
+        div.innerHTML = \`<span class="log-ts">\${time}</span><span class="log-text \${l.level}">\${icon} \${escHtml(l.text)}</span>\`
+        log.appendChild(div)
+      }
+      log.scrollTop = log.scrollHeight
+    }
+
+    async function pollRun() {
+      const res = await fetch('/api/run/status?since=' + logOffset).catch(() => null)
+      if (!res) return
+      const data = await res.json()
+      if (data.logs && data.logs.length > 0) {
+        appendLogs(data.logs)
+        logOffset = data.total
+      }
+      const statusEl = document.getElementById('runStatus')
+      statusEl.textContent = data.status
+      statusEl.className = 'run-status ' + data.status
+      if (data.startedAt && runStart) {
+        const elapsed = ((Date.now() - runStart) / 1000).toFixed(1)
+        document.getElementById('runTimer').textContent = elapsed + 's'
+      }
+      if (data.status === 'done' || data.status === 'error') {
+        clearInterval(pollTimer)
+        pollTimer = null
+        document.getElementById('runBtn').disabled = false
+        document.getElementById('runBtn').textContent = '▶ Run generate'
+        if (data.status === 'done') {
+          // Refresh index after successful run
+          const r = await fetch('/api/index')
+          index = await r.json()
+          renderList()
+          await loadStats()
+        }
+      }
+    }
+
+    async function startRun() {
+      const force = document.getElementById('forceCheck').checked
+      const panel = document.getElementById('runPanel')
+      const log = document.getElementById('runLog')
+      const btn = document.getElementById('runBtn')
+
+      panel.classList.add('open')
+      log.innerHTML = ''
+      logOffset = 0
+      runStart = Date.now()
+      document.getElementById('runTimer').textContent = ''
+
+      const statusEl = document.getElementById('runStatus')
+      statusEl.textContent = 'running'
+      statusEl.className = 'run-status running'
+
+      btn.disabled = true
+      btn.textContent = '⏳ Running...'
+
+      await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ force }) })
+      pollTimer = setInterval(pollRun, 400)
     }
 
     document.getElementById('search').addEventListener('input', renderList)

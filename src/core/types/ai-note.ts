@@ -17,6 +17,22 @@ export type ChangelogEntry = {
   author: string
 }
 
+/** Raw pipeline signals persisted for the Debug tab in the UI */
+export type DebugSignals = {
+  reverseDepCount: number
+  directDepCount: number
+  hasHooks: boolean
+  hasExternalImports: boolean
+  hasEnvVars: boolean
+  hasApiCalls: boolean
+  hasTodoComments: boolean
+  hasTests: boolean
+  coveragePct: number | null
+  churnScore: number
+  authorCount: number
+  coChangedFiles: Array<{ path: string; count: number }>
+}
+
 export type AiFileNote = {
   schemaVersion: string
   filePath: string
@@ -28,6 +44,7 @@ export type AiFileNote = {
   impactValidation: StructuredListField
   recentChanges: ChangelogEntry[]
   criticalityScore: number
+  debugSignals: DebugSignals
   generatedAt: string
   model: string
 }

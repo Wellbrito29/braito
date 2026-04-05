@@ -1,5 +1,5 @@
 import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../types/file-analysis.ts'
-import type { AiFileNote, ChangelogEntry, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
+import type { AiFileNote, ChangelogEntry, DebugSignals, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
 import { SCHEMA_VERSION } from '../types/schema-version.ts'
 
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
@@ -214,6 +214,24 @@ export function buildBasicNote(
     },
     recentChanges,
     criticalityScore,
+    debugSignals: {
+      reverseDepCount: graph.reverseDependencies.length,
+      directDepCount: graph.directDependencies.length,
+      hasHooks: analysis.hooks.length > 0,
+      hasExternalImports: analysis.externalImports.length > 0,
+      hasEnvVars: analysis.envVars.length > 0,
+      hasApiCalls: analysis.apiCalls.length > 0,
+      hasTodoComments:
+        analysis.comments.todo.length +
+        analysis.comments.fixme.length +
+        analysis.comments.hack.length >
+        0,
+      hasTests: tests.relatedTests.length > 0,
+      coveragePct: tests.coveragePct ?? null,
+      churnScore: git.churnScore,
+      authorCount: git.authorCount,
+      coChangedFiles: git.coChangedFiles,
+    } satisfies DebugSignals,
     generatedAt: new Date().toISOString(),
     model: 'static',
   }

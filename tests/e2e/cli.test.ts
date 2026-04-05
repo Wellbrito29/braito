@@ -6,6 +6,7 @@ import os from 'node:os'
 import { runScan } from '../../src/cli/commands/scan.ts'
 import { runGenerate } from '../../src/cli/commands/generate.ts'
 import { handleRequest } from '../../src/cli/commands/mcp.ts'
+import { runInit } from '../../src/cli/commands/init.ts'
 
 // ---------------------------------------------------------------------------
 // Shared temp fixture
@@ -416,5 +417,423 @@ describe('mcp server (handleRequest)', () => {
     expect(res).not.toBeNull()
     expect(res!.error).toBeDefined()
     expect(res!.error!.code).toBe(-32601)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// debugSignals — emitted in every generated note
+// ---------------------------------------------------------------------------
+
+describe('debugSignals in generated notes', () => {
+  it('JSON sidecars contain a debugSignals object with all required fields', async () => {
+    const noteFile = path.join(tmpDir, '.ai-notes', 'src', 'index.ts.json')
+    const note = JSON.parse(fs.readFileSync(noteFile, 'utf-8'))
+    expect(note).toHaveProperty('debugSignals')
+    const s = note.debugSignals
+    expect(typeof s.reverseDepCount).toBe('number')
+    expect(typeof s.directDepCount).toBe('number')
+    expect(typeof s.hasHooks).toBe('boolean')
+    expect(typeof s.hasExternalImports).toBe('boolean')
+    expect(typeof s.hasEnvVars).toBe('boolean')
+    expect(typeof s.hasApiCalls).toBe('boolean')
+    expect(typeof s.hasTodoComments).toBe('boolean')
+    expect(typeof s.hasTests).toBe('boolean')
+    expect(s.coveragePct === null || typeof s.coveragePct === 'number').toBe(true)
+    expect(typeof s.churnScore).toBe('number')
+    expect(typeof s.authorCount).toBe('number')
+    expect(Array.isArray(s.coChangedFiles)).toBe(true)
+  })
+
+  it('index.ts is consumed by utils.ts so reverseDepCount >= 1', async () => {
+    const noteFile = path.join(tmpDir, '.ai-notes', 'src', 'index.ts.json')
+    const note = JSON.parse(fs.readFileSync(noteFile, 'utf-8'))
+    // utils.ts imports from ./index, so index.ts has at least one reverse dep
+    expect(note.debugSignals.reverseDepCount).toBeGreaterThanOrEqual(1)
+  })
+
+  it('utils.ts has no reverse dependents so reverseDepCount is 0', async () => {
+    const noteFile = path.join(tmpDir, '.ai-notes', 'src', 'utils.ts.json')
+    const note = JSON.parse(fs.readFileSync(noteFile, 'utf-8'))
+    expect(note.debugSignals.reverseDepCount).toBe(0)
+  })
+
+  it('utils.ts has at least 1 direct dependency (imports index.ts)', async () => {
+    const noteFile = path.join(tmpDir, '.ai-notes', 'src', 'utils.ts.json')
+    const note = JSON.parse(fs.readFileSync(noteFile, 'utf-8'))
+    expect(note.debugSignals.directDepCount).toBeGreaterThanOrEqual(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// generate --dry-run
+// ---------------------------------------------------------------------------
+
+describe('generate --dry-run', () => {
+  let dryTmpDir: string
+
+  beforeAll(async () => {
+    dryTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-dryrun-'))
+    fs.mkdirSync(path.join(dryTmpDir, 'src'))
+    fs.writeFileSync(
+      path.join(dryTmpDir, 'src', 'main.ts'),
+      `export function main() { return 42 }`,
+    )
+  })
+
+  afterAll(() => {
+    if (dryTmpDir) fs.rmSync(dryTmpDir, { recursive: true, force: true })
+  })
+
+  it('does not write .ai-notes/ directory when --dry-run is set', async () => {
+    await runGenerate({ root: dryTmpDir, dryRun: true })
+    expect(fs.existsSync(path.join(dryTmpDir, '.ai-notes'))).toBe(false)
+  })
+
+  it('does not write cache/hashes.json when --dry-run is set', async () => {
+    expect(fs.existsSync(path.join(dryTmpDir, 'cache', 'hashes.json'))).toBe(false)
+  })
+
+  it('prints a dry-run preview table to stdout', async () => {
+    const lines: string[] = []
+    const originalLog = console.log
+    console.log = (...args: unknown[]) => lines.push(args.join(' '))
+    try {
+      await runGenerate({ root: dryTmpDir, dryRun: true })
+    } finally {
+      console.log = originalLog
+    }
+    const out = lines.join('\n')
+    expect(out).toMatch(/dry.?run|DRY.?RUN|Dry.?Run|would write|Would write/i)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// init --agent command
+// ---------------------------------------------------------------------------
+
+describe('init --agent command', () => {
+  let initTmpDir: string
+
+  beforeAll(async () => {
+    initTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-init-'))
+    await runInit({ root: initTmpDir, agent: true })
+  })
+
+  afterAll(() => {
+    if (initTmpDir) fs.rmSync(initTmpDir, { recursive: true, force: true })
+  })
+
+  it('creates .claude/commands/ directory', () => {
+    expect(fs.existsSync(path.join(initTmpDir, '.claude', 'commands'))).toBe(true)
+  })
+
+  it('generates braito-note.md', () => {
+    const f = path.join(initTmpDir, '.claude', 'commands', 'braito-note.md')
+    expect(fs.existsSync(f)).toBe(true)
+    expect(fs.readFileSync(f, 'utf-8')).toContain('get_file_note')
+  })
+
+  it('generates braito-impact.md', () => {
+    const f = path.join(initTmpDir, '.claude', 'commands', 'braito-impact.md')
+    expect(fs.existsSync(f)).toBe(true)
+    expect(fs.readFileSync(f, 'utf-8')).toContain('get_impact')
+  })
+
+  it('generates braito-search.md', () => {
+    const f = path.join(initTmpDir, '.claude', 'commands', 'braito-search.md')
+    expect(fs.existsSync(f)).toBe(true)
+    expect(fs.readFileSync(f, 'utf-8')).toContain('search')
+  })
+
+  it('is idempotent — running twice does not throw and produces same files', async () => {
+    await runInit({ root: initTmpDir, agent: true })
+    const files = fs.readdirSync(path.join(initTmpDir, '.claude', 'commands'))
+    expect(files).toHaveLength(3)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// MCP server — additional tool coverage
+// ---------------------------------------------------------------------------
+
+describe('mcp server — extended tool tests', () => {
+  let extMcpDir: string
+
+  const MOCK_NOTE_A = {
+    schemaVersion: '1.0.0',
+    filePath: 'src/core/a.ts',
+    purpose: { observed: ['Handles authentication tokens'], inferred: [], confidence: 0.8, evidence: [] },
+    invariants: { observed: ['Token must not be null'], inferred: [], confidence: 0.7, evidence: [] },
+    sensitiveDependencies: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    importantDecisions: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    knownPitfalls: { observed: ['Token can expire unexpectedly'], inferred: [], confidence: 0.5, evidence: [] },
+    impactValidation: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    recentChanges: [],
+    criticalityScore: 0.8,
+    debugSignals: { reverseDepCount: 3, directDepCount: 1, hasHooks: false, hasExternalImports: false,
+      hasEnvVars: false, hasApiCalls: false, hasTodoComments: false, hasTests: false,
+      coveragePct: null, churnScore: 5, authorCount: 1, coChangedFiles: [] },
+    generatedAt: new Date().toISOString(),
+    model: 'static',
+  }
+
+  const MOCK_NOTE_B = {
+    schemaVersion: '1.0.0',
+    filePath: 'src/utils/b.ts',
+    purpose: { observed: ['Utility helpers for string formatting'], inferred: [], confidence: 0.5, evidence: [] },
+    invariants: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    sensitiveDependencies: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    importantDecisions: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    knownPitfalls: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    impactValidation: { observed: [], inferred: [], confidence: 0, evidence: [] },
+    recentChanges: [],
+    criticalityScore: 0.2,
+    debugSignals: { reverseDepCount: 0, directDepCount: 0, hasHooks: false, hasExternalImports: false,
+      hasEnvVars: false, hasApiCalls: false, hasTodoComments: false, hasTests: false,
+      coveragePct: null, churnScore: 1, authorCount: 1, coChangedFiles: [] },
+    generatedAt: new Date().toISOString(),
+    model: 'static',
+  }
+
+  const MOCK_INDEX = {
+    schemaVersion: '1.0.0',
+    generatedAt: new Date().toISOString(),
+    totalFiles: 2,
+    synthesizedFiles: 0,
+    staleFiles: 0,
+    entries: [
+      {
+        filePath: 'src/core/a.ts',
+        relativePath: 'src/core/a.ts',
+        domain: 'src/core',
+        criticalityScore: 0.8,
+        model: 'static',
+        purpose: 'Handles authentication tokens',
+        generatedAt: MOCK_NOTE_A.generatedAt,
+        stale: false,
+        dependents: ['src/utils/b.ts'],
+      },
+      {
+        filePath: 'src/utils/b.ts',
+        relativePath: 'src/utils/b.ts',
+        domain: 'src/utils',
+        criticalityScore: 0.2,
+        model: 'static',
+        purpose: 'Utility helpers for string formatting',
+        generatedAt: MOCK_NOTE_B.generatedAt,
+        stale: false,
+        dependents: [],
+      },
+    ],
+  }
+
+  beforeAll(() => {
+    extMcpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-mcp-ext-'))
+    fs.mkdirSync(path.join(extMcpDir, '.ai-notes', 'src', 'core'), { recursive: true })
+    fs.mkdirSync(path.join(extMcpDir, '.ai-notes', 'src', 'utils'), { recursive: true })
+    fs.writeFileSync(path.join(extMcpDir, '.ai-notes', 'src', 'core', 'a.ts.json'), JSON.stringify(MOCK_NOTE_A))
+    fs.writeFileSync(path.join(extMcpDir, '.ai-notes', 'src', 'utils', 'b.ts.json'), JSON.stringify(MOCK_NOTE_B))
+    fs.writeFileSync(path.join(extMcpDir, '.ai-notes', 'index.json'), JSON.stringify(MOCK_INDEX))
+  })
+
+  afterAll(() => {
+    if (extMcpDir) fs.rmSync(extMcpDir, { recursive: true, force: true })
+  })
+
+  it('search_by_criticality returns only files above threshold', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 10,
+      method: 'tools/call',
+      params: { name: 'search_by_criticality', arguments: { threshold: 0.5, limit: 10 } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    expect(res!.result).toBeDefined()
+    const results = JSON.parse((res!.result as any).content[0].text)
+    expect(Array.isArray(results)).toBe(true)
+    expect(results.length).toBe(1)
+    expect(results[0].relativePath).toBe('src/core/a.ts')
+    expect(results[0].criticalityScore).toBeGreaterThanOrEqual(0.5)
+  })
+
+  it('search_by_criticality with low threshold returns all files', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 11,
+      method: 'tools/call',
+      params: { name: 'search_by_criticality', arguments: { threshold: 0.1 } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    const results = JSON.parse((res!.result as any).content[0].text)
+    expect(results.length).toBe(2)
+  })
+
+  it('get_architecture_context returns summary, domains, and topCriticalFiles', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 12,
+      method: 'tools/call',
+      params: { name: 'get_architecture_context', arguments: { top_n: 5 } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    expect(res!.result).toBeDefined()
+    const ctx = JSON.parse((res!.result as any).content[0].text)
+    expect(ctx).toHaveProperty('summary')
+    expect(ctx).toHaveProperty('domains')
+    expect(ctx).toHaveProperty('topCriticalFiles')
+    expect(ctx.summary.totalFiles).toBe(2)
+    expect(Array.isArray(ctx.domains)).toBe(true)
+    expect(ctx.domains.some((d: { name: string }) => d.name === 'src/core')).toBe(true)
+  })
+
+  it('get_impact returns BFS dependents for a file', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 13,
+      method: 'tools/call',
+      params: { name: 'get_impact', arguments: { file_path: 'src/core/a.ts', depth: 2 } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    expect(res!.result).toBeDefined()
+    const impact = JSON.parse((res!.result as any).content[0].text)
+    expect(impact.file).toBe('src/core/a.ts')
+    expect(typeof impact.totalAffected).toBe('number')
+    expect(Array.isArray(impact.dependents)).toBe(true)
+    // src/utils/b.ts is a dependent of src/core/a.ts
+    expect(impact.dependents.some((d: { relativePath: string }) => d.relativePath === 'src/utils/b.ts')).toBe(true)
+  })
+
+  it('get_impact returns zero dependents for a leaf file', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 14,
+      method: 'tools/call',
+      params: { name: 'get_impact', arguments: { file_path: 'src/utils/b.ts' } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    const impact = JSON.parse((res!.result as any).content[0].text)
+    expect(impact.totalAffected).toBe(0)
+    expect(impact.dependents).toHaveLength(0)
+  })
+
+  it('search returns files matching query in purpose/pitfalls', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 15,
+      method: 'tools/call',
+      params: { name: 'search', arguments: { query: 'authentication' } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    expect(res!.result).toBeDefined()
+    const result = JSON.parse((res!.result as any).content[0].text)
+    expect(result.totalResults).toBeGreaterThanOrEqual(1)
+    expect(result.results[0].relativePath).toBe('src/core/a.ts')
+    expect(result.results[0].matches.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('search returns empty results for a query that matches nothing', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 16,
+      method: 'tools/call',
+      params: { name: 'search', arguments: { query: 'xyzzy_no_match_expected' } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    const result = JSON.parse((res!.result as any).content[0].text)
+    expect(result.totalResults).toBe(0)
+    expect(result.results).toHaveLength(0)
+  })
+
+  it('search returns error for empty query', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 17,
+      method: 'tools/call',
+      params: { name: 'search', arguments: { query: '' } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    expect(res!.error).toBeDefined()
+    expect(res!.error!.code).toBe(-32602)
+  })
+
+  it('get_domain returns files for a known domain sorted by criticality', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 18,
+      method: 'tools/call',
+      params: { name: 'get_domain', arguments: { domain: 'src/core' } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    expect(res!.result).toBeDefined()
+    const result = JSON.parse((res!.result as any).content[0].text)
+    expect(result.domain).toBe('src/core')
+    expect(result.fileCount).toBe(1)
+    expect(result.files[0].relativePath).toBe('src/core/a.ts')
+  })
+
+  it('get_domain returns error for unknown domain', async () => {
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 19,
+      method: 'tools/call',
+      params: { name: 'get_domain', arguments: { domain: 'nonexistent/domain' } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    expect(res!.error).toBeDefined()
+    expect(res!.error!.code).toBe(-32602)
+    expect(res!.error!.message).toContain('not found')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// loadProjectContext integration
+// ---------------------------------------------------------------------------
+
+describe('loadProjectContext integration', () => {
+  let ctxTmpDir: string
+
+  beforeAll(async () => {
+    ctxTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-ctx-'))
+    fs.mkdirSync(path.join(ctxTmpDir, 'src'))
+    fs.writeFileSync(
+      path.join(ctxTmpDir, 'src', 'service.ts'),
+      `export function fetchData(url: string) { return fetch(url) }`,
+    )
+  })
+
+  afterAll(() => {
+    if (ctxTmpDir) fs.rmSync(ctxTmpDir, { recursive: true, force: true })
+  })
+
+  it('runs generate successfully without braito.context.md', async () => {
+    await runGenerate({ root: ctxTmpDir })
+    const notesDir = path.join(ctxTmpDir, '.ai-notes')
+    expect(fs.existsSync(notesDir)).toBe(true)
+    expect(fs.existsSync(path.join(notesDir, 'index.json'))).toBe(true)
+  })
+
+  it('logs context loaded message when braito.context.md is present', async () => {
+    fs.writeFileSync(
+      path.join(ctxTmpDir, 'braito.context.md'),
+      `# Project Context\nThis is an e2e test project.`,
+    )
+    const lines: string[] = []
+    const originalLog = console.log
+    console.log = (...args: unknown[]) => lines.push(args.join(' '))
+    try {
+      await runGenerate({ root: ctxTmpDir, force: true })
+    } finally {
+      console.log = originalLog
+    }
+    const out = lines.join('\n')
+    expect(out).toContain('braito.context.md')
+  })
+
+  it('braito.context.md content does not break the pipeline — notes are still generated', async () => {
+    const noteFile = path.join(ctxTmpDir, '.ai-notes', 'src', 'service.ts.json')
+    expect(fs.existsSync(noteFile)).toBe(true)
+    const note = JSON.parse(fs.readFileSync(noteFile, 'utf-8'))
+    expect(note).toHaveProperty('filePath')
+    expect(note).toHaveProperty('criticalityScore')
   })
 })

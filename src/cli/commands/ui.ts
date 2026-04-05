@@ -57,6 +57,7 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
         }
         const body = await req.json().catch(() => ({})) as Record<string, unknown>
         const force = body.force === true
+        const verbose = body.verbose === true
 
         // Fire-and-forget; logs captured via intercepted console
         runState.status = 'running'
@@ -79,7 +80,7 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
         ;(async () => {
           try {
             const { runGenerate } = await import('./generate.ts')
-            await runGenerate({ root, force })
+            await runGenerate({ root, force, verbose })
             runState.status = 'done'
           } catch (err: unknown) {
             pushLog('error', String(err instanceof Error ? err.message : err))
@@ -322,6 +323,9 @@ function renderHtml(): string {
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
       <label style="font-size:11px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer">
         <input type="checkbox" id="forceCheck" style="cursor:pointer"> --force
+      </label>
+      <label style="font-size:11px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="verboseCheck" style="cursor:pointer"> --verbose
       </label>
       <button class="run-btn" id="runBtn" onclick="startRun()">▶ Run generate</button>
     </div>
@@ -820,7 +824,8 @@ function renderHtml(): string {
       btn.disabled = true
       btn.textContent = '⏳ Running...'
 
-      await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ force }) })
+      const verbose = document.getElementById('verboseCheck').checked
+      await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ force, verbose }) })
       pollTimer = setInterval(pollRun, 400)
     }
 

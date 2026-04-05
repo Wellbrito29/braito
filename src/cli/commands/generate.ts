@@ -38,16 +38,19 @@ export async function runGenerate(args: {
   diff?: boolean
   dryRun?: boolean
   language?: string
+  verbose?: boolean
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
+  const t0 = Date.now()
 
   logger.info(`Generating notes for ${root}`)
   logger.debug(`Config: llm=${config.llm?.provider ?? 'none'}, output=${config.output}, staleThreshold=${config.staleThresholdDays}d`)
 
   // 1. Scan
+  const tScan = Date.now()
   const files = await scanRepository(config)
-  logger.info(`Found ${files.length} files`)
+  logger.info(`Found ${files.length} files  [${Date.now() - tScan}ms]`)
 
   // 2. Load caches
   const noteHashStore = args.force ? new Map() : await loadCache(root)
@@ -57,6 +60,7 @@ export async function runGenerate(args: {
   // 3. Pre-compute hashes and parse files incrementally
   //    Files whose hash matches the stored note hash reuse their cached StaticFileAnalysis,
   //    skipping the expensive ts-morph parse step.
+  const tAnalyze = Date.now()
   logger.info('Analyzing files...')
   const fileHashes = new Map<string, string>()
   const analyses: StaticFileAnalysis[] = []
@@ -71,32 +75,47 @@ export async function runGenerate(args: {
     const noteHash = noteHashStore.get(file.relativePath)
 
     if (!args.force && cachedAnalysis && noteHash === hash) {
-      // File unchanged and note is current — reuse cached AST analysis
       analyses.push(cachedAnalysis)
       analysisHits++
       logger.debug(`Cache hit: ${file.relativePath}`)
     } else {
       logger.debug(`Parsing: ${file.relativePath}`)
+      const tFile = Date.now()
       const analysis = parseFile(file.path)
       analyses.push(analysis)
       analysisStore.set(file.relativePath, analysis)
+      if (args.verbose) logger.info(`  parsed  ${file.relativePath}  [${Date.now() - tFile}ms]`)
     }
     analysisProgress.tick(file.relativePath)
   }
 
   if (analysisHits > 0) logger.info(`Reused ${analysisHits} cached analyses (skipped ts-morph parse)`)
+  logger.info(`Analyze phase done  [${Date.now() - tAnalyze}ms]`)
 
   // 4. Persist updated analysis cache (skip in dry-run — no files should be written)
   if (!args.dryRun) await saveAnalysisStore(root, analysisStore)
 
   // 5. Build dependency graphs
   //    Aliases are loaded from tsconfig.json paths + bundler configs (Vite, Webpack, Metro).
+  const tGraph = Date.now()
   logger.info('Building dependency graph...')
   const aliases = loadBundlerAliases(root)
   logger.debug(`Bundler aliases loaded: ${Object.keys(aliases).length} entries`)
   const depGraph = buildDependencyGraph(analyses, root, aliases)
   const revGraph = buildReverseDependencyGraph(depGraph)
-  logger.debug(`Dependency graph: ${depGraph.size} nodes`)
+  const totalEdges = [...depGraph.values()].reduce((s, v) => s + v.length, 0)
+  logger.info(`Graph: ${depGraph.size} nodes, ${totalEdges} edges  [${Date.now() - tGraph}ms]`)
+  if (args.verbose) {
+    const topConsumers = [...revGraph.entries()]
+      .map(([fp, deps]) => ({ fp: path.relative(root, fp), n: deps.length }))
+      .filter((e) => e.n > 0)
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 5)
+    if (topConsumers.length) {
+      logger.info('  Top files by consumers:')
+      for (const e of topConsumers) logger.info(`    ${e.n} consumers  ←  ${e.fp}`)
+    }
+  }
 
   // Detect circular imports and warn
   const cycles = detectCycles(depGraph)
@@ -139,6 +158,7 @@ export async function runGenerate(args: {
   }
 
   // 8. Generate and write notes
+  const tWrite = Date.now()
   if (!args.dryRun) logger.info('Writing notes...')
   let written = 0
   let skipped = 0
@@ -191,9 +211,27 @@ export async function runGenerate(args: {
       const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
       let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
-      logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
-
       const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)
+
+      if (args.verbose) {
+        const s = note.debugSignals
+        const flags = [
+          s.hasHooks && 'hooks',
+          s.hasExternalImports && 'ext-imports',
+          s.hasEnvVars && 'env',
+          s.hasApiCalls && 'api-calls',
+          !s.hasTests && 'no-tests',
+          s.hasTodoComments && 'todo',
+          wouldUseLlm && 'LLM',
+        ].filter(Boolean).join(' ')
+        logger.info(
+          `  ${note.criticalityScore.toFixed(2)}  ${file.relativePath}` +
+          `  deps=${s.directDepCount} consumers=${s.reverseDepCount} churn=${s.churnScore}` +
+          (flags ? `  [${flags}]` : ''),
+        )
+      } else {
+        logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
+      }
 
       if (args.dryRun) {
         dryRunEntries.push({ relativePath: file.relativePath, score: note.criticalityScore, useLlm: wouldUseLlm, wouldSkip: false })
@@ -265,11 +303,25 @@ export async function runGenerate(args: {
   const index = buildIndex(notes, root, config.staleThresholdDays, revGraph)
   await writeIndexNote(index, root, config.output)
 
+  logger.info(`Write phase done  [${Date.now() - tWrite}ms]`)
   logger.success(`Generated ${written} notes in ${config.output}/`)
   if (skipped > 0) logger.info(`Skipped ${skipped} unchanged files (use --force to reprocess)`)
   if (provider) logger.info(`LLM synthesized: ${synthesized} files`)
   if (index.staleFiles > 0) {
     logger.warn(`${index.staleFiles} note(s) are older than ${config.staleThresholdDays} days — run with --force to refresh`)
+  }
+  logger.info(`Total time  [${Date.now() - t0}ms]`)
+
+  if (args.verbose && notes.length > 0) {
+    const sorted = [...notes].sort((a, b) => b.criticalityScore - a.criticalityScore)
+    logger.info('Top 5 files by criticality score:')
+    for (const n of sorted.slice(0, 5)) {
+      logger.info(`  ${n.criticalityScore.toFixed(2)}  ${path.relative(root, n.filePath)}`)
+    }
+    const noTests = notes.filter((n) => !n.debugSignals?.hasTests)
+    if (noTests.length > 0) {
+      logger.info(`Files without tests: ${noTests.length}/${notes.length}`)
+    }
   }
 
   if (args.diff) {

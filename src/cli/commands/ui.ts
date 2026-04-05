@@ -26,6 +26,11 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
         return serveJson(path.join(notesDir, 'index.json'))
       }
 
+      // API: GET /api/stats
+      if (url.pathname === '/api/stats') {
+        return computeStats(notesDir)
+      }
+
       // API: GET /api/note?path=src/foo.ts
       if (url.pathname === '/api/note') {
         const filePath = url.searchParams.get('path')
@@ -54,6 +59,31 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
 
   // Keep alive
   await new Promise(() => {})
+}
+
+function computeStats(notesDir: string): Response {
+  const stats = { total: 0, withTests: 0, withoutTests: 0, coverageSum: 0, coverageCount: 0 }
+  function walk(dir: string) {
+    if (!fs.existsSync(dir)) return
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) { walk(path.join(dir, entry.name)); continue }
+      if (!entry.name.endsWith('.json') || entry.name === 'index.json') continue
+      try {
+        const note = JSON.parse(fs.readFileSync(path.join(dir, entry.name), 'utf-8'))
+        const s = note.debugSignals
+        if (!s) continue
+        stats.total++
+        if (s.hasTests) stats.withTests++
+        else stats.withoutTests++
+        if (s.coveragePct != null) { stats.coverageSum += s.coveragePct; stats.coverageCount++ }
+      } catch { /* skip malformed */ }
+    }
+  }
+  walk(notesDir)
+  const avgCoverage = stats.coverageCount > 0 ? stats.coverageSum / stats.coverageCount : null
+  return new Response(JSON.stringify({ ...stats, avgCoverage }), {
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 function serveJson(filePath: string): Response {
@@ -163,6 +193,24 @@ function renderHtml(): string {
     .filter-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
     .filter-label{font-size:12px;color:#666;white-space:nowrap}
     select{background:#1a1a1a;border:1px solid #333;color:#ccc;padding:4px 8px;border-radius:4px;font-size:12px}
+    .stats-strip{display:flex;gap:0;margin-bottom:12px;border:1px solid #1e1e1e;border-radius:6px;overflow:hidden}
+    .stat-cell{flex:1;padding:7px 6px;text-align:center;border-right:1px solid #1e1e1e;background:#111}
+    .stat-cell:last-child{border-right:none}
+    .stat-val{font-size:14px;font-weight:700}
+    .stat-val.green{color:#6bcb77}
+    .stat-val.red{color:#ff6b6b}
+    .stat-val.blue{color:#4a9eff}
+    .stat-lbl{font-size:10px;color:#555;margin-top:1px}
+    .cov-bar-track{height:8px;background:#1a1a1a;border-radius:4px;overflow:hidden;margin:6px 0}
+    .cov-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+    .cov-high{background:#6bcb77}
+    .cov-mid{background:#ffd93d}
+    .cov-low{background:#ff6b6b}
+    .test-status{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:600;margin-bottom:12px}
+    .test-status.covered{background:#1a2a1a;color:#6bcb77}
+    .test-status.uncovered{background:#2a1a1a;color:#ff6b6b}
+    .related-test{padding:5px 0;border-bottom:1px solid #141414;font-size:12px;color:#c77bff;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .test-tip{margin-top:12px;padding:10px 12px;background:#111;border:1px solid #1e1e1e;border-radius:6px;font-size:12px;color:#555;border-left:3px solid #333}
   </style>
 </head>
 <body>
@@ -173,6 +221,12 @@ function renderHtml(): string {
   <div class="container">
     <div class="sidebar">
       <input class="search" id="search" placeholder="Search files..." />
+      <div class="stats-strip" id="stats-strip" style="display:none">
+        <div class="stat-cell"><div class="stat-val blue" id="stat-total">—</div><div class="stat-lbl">files</div></div>
+        <div class="stat-cell"><div class="stat-val green" id="stat-covered">—</div><div class="stat-lbl">covered</div></div>
+        <div class="stat-cell"><div class="stat-val red" id="stat-uncovered">—</div><div class="stat-lbl">uncovered</div></div>
+        <div class="stat-cell"><div class="stat-val" id="stat-avg" style="color:#ffd93d">—</div><div class="stat-lbl">avg cov</div></div>
+      </div>
       <div class="filter-bar">
         <span class="filter-label">Min score:</span>
         <select id="scoreFilter">
@@ -198,6 +252,20 @@ function renderHtml(): string {
       const res = await fetch('/api/index')
       index = await res.json()
       renderList()
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats')
+        const s = await res.json()
+        if (!s || s.total === 0) return
+        document.getElementById('stat-total').textContent = s.total
+        document.getElementById('stat-covered').textContent = s.withTests
+        document.getElementById('stat-uncovered').textContent = s.withoutTests
+        document.getElementById('stat-avg').textContent =
+          s.avgCoverage != null ? (s.avgCoverage * 100).toFixed(0) + '%' : 'n/a'
+        document.getElementById('stats-strip').style.display = 'flex'
+      } catch {}
     }
 
     function scoreClass(s) {
@@ -443,12 +511,67 @@ function renderHtml(): string {
       \`
     }
 
+    // ── Tests tab ────────────────────────────────────────────────────────────
+
+    function renderTestsTab(note) {
+      const s = note.debugSignals || {}
+      const hasTests = !!s.hasTests
+      const covPct = s.coveragePct != null ? s.coveragePct : null
+
+      // Extract related test files from impactValidation.observed
+      const related = (note.impactValidation?.observed || [])
+        .filter(l => /related test|\.test\.|\.spec\.|__tests__/i.test(l))
+        .map(l => l.replace(/^Related test:\s*/i, ''))
+
+      const statusHtml = \`<div class="test-status \${hasTests ? 'covered' : 'uncovered'}">
+        \${hasTests ? '✓ Covered' : '✗ No tests found'}
+      </div>\`
+
+      let covHtml = ''
+      if (covPct != null) {
+        const pct = (covPct * 100).toFixed(1)
+        const fillClass = covPct >= 0.7 ? 'cov-high' : covPct >= 0.4 ? 'cov-mid' : 'cov-low'
+        covHtml = \`<div class="debug-section">
+          <h4>Line coverage</h4>
+          <div style="font-size:22px;font-weight:700;color:\${covPct>=0.7?'#6bcb77':covPct>=0.4?'#ffd93d':'#ff6b6b'}">\${pct}%</div>
+          <div class="cov-bar-track"><div class="cov-bar-fill \${fillClass}" style="width:\${Math.min(covPct*100,100)}%"></div></div>
+        </div>\`
+      }
+
+      const relHtml = related.length
+        ? \`<div class="debug-section"><h4>\${related.length} related test file\${related.length>1?'s':''}</h4>
+            \${related.map(t => \`<div class="related-test" title="\${escHtml(t)}">\${escHtml(t)}</div>\`).join('')}
+          </div>\`
+        : ''
+
+      const tipHtml = !hasTests
+        ? \`<div class="test-tip">
+            No test file detected for this file. Adding tests will reduce its criticality penalty (+0.05–0.15).
+            Run <code style="color:#ccc">bun test</code> after adding tests, then re-generate notes with
+            <code style="color:#ccc">bun src/cli/index.ts generate --root ./ --force</code>.
+          </div>\`
+        : ''
+
+      const rawHtml = \`<div class="debug-section" style="margin-top:12px">
+        <h4>Raw signals</h4>
+        <table class="evidence-table"><tbody>
+          <tr><td style="color:#888">hasTests</td><td>\${hasTests}</td></tr>
+          <tr><td style="color:#888">coveragePct</td><td>\${covPct != null ? (covPct*100).toFixed(1)+'%' : 'n/a'}</td></tr>
+          <tr><td style="color:#888">churnScore</td><td>\${s.churnScore ?? '—'}</td></tr>
+          <tr><td style="color:#888">authorCount</td><td>\${s.authorCount ?? '—'}</td></tr>
+        </tbody></table>
+      </div>\`
+
+      return statusHtml + covHtml + relHtml + tipHtml + rawHtml
+    }
+
     // ── Tab switching & detail render ────────────────────────────────────────
 
     function switchTab(tab, note) {
       activeTab = tab
       document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab))
-      document.getElementById('tab-content').innerHTML = tab === 'debug' ? renderDebugTab(note) : renderNoteTab(note)
+      const content = tab === 'debug' ? renderDebugTab(note) : tab === 'tests' ? renderTestsTab(note) : renderNoteTab(note)
+      document.getElementById('tab-content').innerHTML = content
     }
 
     function toggleJson(note) {
@@ -479,18 +602,20 @@ function renderHtml(): string {
         <div class="tab-bar">
           <div class="tab \${activeTab==='note'?'active':''}" data-tab="note" onclick="switchTab('note', currentNote)">Note</div>
           <div class="tab \${activeTab==='debug'?'active':''}" data-tab="debug" onclick="switchTab('debug', currentNote)">Debug</div>
+          <div class="tab \${activeTab==='tests'?'active':''}" data-tab="tests" onclick="switchTab('tests', currentNote)">Tests</div>
           <button class="tab-action" id="json-btn" onclick="toggleJson(currentNote)">View raw JSON</button>
         </div>
         <div id="tab-content"></div>
         <pre class="json-pre" id="json-pre"></pre>
       \`
       window.currentNote = note
-      document.getElementById('tab-content').innerHTML = activeTab === 'debug' ? renderDebugTab(note) : renderNoteTab(note)
+      document.getElementById('tab-content').innerHTML = activeTab === 'debug' ? renderDebugTab(note) : activeTab === 'tests' ? renderTestsTab(note) : renderNoteTab(note)
     }
 
     document.getElementById('search').addEventListener('input', renderList)
     document.getElementById('scoreFilter').addEventListener('change', renderList)
     loadIndex()
+    loadStats()
   </script>
 </body>
 </html>`

@@ -23,9 +23,11 @@ bun src/cli/index.ts generate --root ./ --force                    # bypass cach
 bun src/cli/index.ts generate --root ./ --filter src/core/**       # scope to subdirectory
 bun src/cli/index.ts generate --root ./ --diff                     # show field-level diff
 bun src/cli/index.ts generate --root ./ --dry-run                  # preview without writing
+bun src/cli/index.ts generate --root ./ --verbose                  # per-file signal detail + phase timers
 bun src/cli/index.ts watch --root ./                               # watch mode — regenerates on file change
 bun src/cli/index.ts mcp --root ./                                 # MCP server (JSON-RPC 2.0 over stdio)
 bun src/cli/index.ts mcp --root ./ --auto-generate                 # generate notes if missing, then start MCP
+bun src/cli/index.ts init --agent                                  # generate .claude/commands/ slash command files
 bun src/cli/index.ts ui --root ./                                  # local web UI at http://localhost:7842
 bun test                                                           # run all test suites
 ```
@@ -73,8 +75,24 @@ type AiFileNote = {
   knownPitfalls: StructuredListField
   impactValidation: StructuredListField
   criticalityScore: number   // 0–1, heuristic based on consumers, churn, hooks, tests
+  debugSignals: DebugSignals // all raw pipeline signals — powers UI debug tab
   generatedAt: string
   model: string              // "static" | "<llm-model-name>"
+}
+
+type DebugSignals = {
+  reverseDepCount: number
+  directDepCount: number
+  hasHooks: boolean
+  hasExternalImports: boolean
+  hasEnvVars: boolean
+  hasApiCalls: boolean
+  hasTodoComments: boolean
+  hasTests: boolean
+  coveragePct: number | null
+  churnScore: number
+  authorCount: number
+  coChangedFiles: Array<{ path: string; count: number }>
 }
 
 type StructuredListField = {
@@ -190,9 +208,11 @@ bun src/cli/index.ts generate --root ./ --force                    # ignorar cac
 bun src/cli/index.ts generate --root ./ --filter src/core/**       # escopo para subdiretório
 bun src/cli/index.ts generate --root ./ --diff                     # mostrar diferença campo a campo
 bun src/cli/index.ts generate --root ./ --dry-run                  # visualizar sem gravar arquivos
+bun src/cli/index.ts generate --root ./ --verbose                  # detalhe por arquivo + timers por fase
 bun src/cli/index.ts watch --root ./                               # watch mode — regenera ao detectar mudanças
 bun src/cli/index.ts mcp --root ./                                 # servidor MCP (JSON-RPC 2.0 via stdio)
 bun src/cli/index.ts mcp --root ./ --auto-generate                 # gera notas se não existirem e inicia MCP
+bun src/cli/index.ts init --agent                                  # gera arquivos slash command em .claude/commands/
 bun src/cli/index.ts ui --root ./                                  # interface web local em http://localhost:7842
 bun test                                                           # executar todos os testes
 ```
@@ -240,6 +260,7 @@ type AiFileNote = {
   knownPitfalls: StructuredListField
   impactValidation: StructuredListField
   criticalityScore: number   // 0–1, heurística baseada em consumidores, churn, hooks, testes
+  debugSignals: DebugSignals // todos os sinais brutos do pipeline — alimenta a aba Debug da UI
   generatedAt: string
   model: string              // "static" | "<nome-do-modelo-llm>"
 }

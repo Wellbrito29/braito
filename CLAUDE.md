@@ -15,22 +15,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### CLI Commands
 
 ```bash
-bun install                                                        # install dependencies
-bun src/cli/index.ts scan --root ./                                # discover and list eligible files
-bun src/cli/index.ts scan --root ./ --format json                  # machine-readable output
-bun src/cli/index.ts generate --root ./                            # full pipeline — writes .ai-notes/
-bun src/cli/index.ts generate --root ./ --force                    # bypass cache, reprocess all files
-bun src/cli/index.ts generate --root ./ --filter src/core/**       # scope to subdirectory
-bun src/cli/index.ts generate --root ./ --diff                     # show field-level diff
-bun src/cli/index.ts generate --root ./ --dry-run                  # preview without writing
-bun src/cli/index.ts generate --root ./ --verbose                  # per-file signal detail + phase timers
-bun src/cli/index.ts watch --root ./                               # watch mode — regenerates on file change
-bun src/cli/index.ts mcp --root ./                                 # MCP server (JSON-RPC 2.0 over stdio)
-bun src/cli/index.ts mcp --root ./ --auto-generate                 # generate notes if missing, then start MCP
-bun src/cli/index.ts init --agent                                  # generate .claude/commands/ slash command files
-bun src/cli/index.ts ui --root ./                                  # local web UI at http://localhost:7842
-bun test                                                           # run all test suites
+bun install          # install dependencies
+bun test             # run all test suites
 ```
+
+Entry point: `bun src/cli/index.ts <command> --root ./`
+
+| Command | Key flags | Purpose |
+|---|---|---|
+| `scan` | `--format json` | Discover and list eligible files |
+| `generate` | `--force` `--filter <glob>` `--diff` `--dry-run` `--verbose` | Full pipeline — writes `.ai-notes/` |
+| `watch` | — | Regenerate on file change |
+| `mcp` | `--auto-generate` | MCP server (JSON-RPC 2.0 over stdio) |
+| `init` | `--agent` | Generate `.claude/commands/` slash command files |
+| `ui` | `--port <n>` | Local web UI at http://localhost:7842 |
 
 ### Architecture
 
@@ -200,22 +198,20 @@ Tools: `get_file_note`, `search_by_criticality`, `get_index`, `get_architecture_
 ### Comandos CLI
 
 ```bash
-bun install                                                        # instalar dependências
-bun src/cli/index.ts scan --root ./                                # descobrir arquivos elegíveis
-bun src/cli/index.ts scan --root ./ --format json                  # saída legível por máquina
-bun src/cli/index.ts generate --root ./                            # pipeline completo — grava .ai-notes/
-bun src/cli/index.ts generate --root ./ --force                    # ignorar cache, reprocessar tudo
-bun src/cli/index.ts generate --root ./ --filter src/core/**       # escopo para subdiretório
-bun src/cli/index.ts generate --root ./ --diff                     # mostrar diferença campo a campo
-bun src/cli/index.ts generate --root ./ --dry-run                  # visualizar sem gravar arquivos
-bun src/cli/index.ts generate --root ./ --verbose                  # detalhe por arquivo + timers por fase
-bun src/cli/index.ts watch --root ./                               # watch mode — regenera ao detectar mudanças
-bun src/cli/index.ts mcp --root ./                                 # servidor MCP (JSON-RPC 2.0 via stdio)
-bun src/cli/index.ts mcp --root ./ --auto-generate                 # gera notas se não existirem e inicia MCP
-bun src/cli/index.ts init --agent                                  # gera arquivos slash command em .claude/commands/
-bun src/cli/index.ts ui --root ./                                  # interface web local em http://localhost:7842
-bun test                                                           # executar todos os testes
+bun install          # instalar dependências
+bun test             # executar todos os testes
 ```
+
+Entry point: `bun src/cli/index.ts <command> --root ./`
+
+| Comando | Flags principais | Propósito |
+|---|---|---|
+| `scan` | `--format json` | Descobrir e listar arquivos elegíveis |
+| `generate` | `--force` `--filter <glob>` `--diff` `--dry-run` `--verbose` | Pipeline completo — grava `.ai-notes/` |
+| `watch` | — | Regenerar ao detectar mudanças |
+| `mcp` | `--auto-generate` | Servidor MCP (JSON-RPC 2.0 via stdio) |
+| `init` | `--agent` | Gerar arquivos slash command em `.claude/commands/` |
+| `ui` | `--port <n>` | Interface web local em http://localhost:7842 |
 
 ### Arquitetura
 

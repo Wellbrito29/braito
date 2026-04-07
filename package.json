@@ -7,9 +7,16 @@
     "ai-notes": "./src/cli/index.ts"
   },
   "scripts": {
-    "scan": "bun src/cli/index.ts scan",
-    "generate": "bun src/cli/index.ts generate",
-    "test": "bun test"
+    "scan":          "bun src/cli/index.ts scan --root .",
+    "generate":      "bun src/cli/index.ts generate --root .",
+    "generate:force": "bun src/cli/index.ts generate --root . --force",
+    "generate:dry":  "bun src/cli/index.ts generate --root . --dry-run",
+    "generate:v":    "bun src/cli/index.ts generate --root . --verbose",
+    "watch":         "bun src/cli/index.ts watch --root .",
+    "mcp":           "bun src/cli/index.ts mcp --root .",
+    "ui":            "bun src/cli/index.ts ui --root .",
+    "init:agent":    "bun src/cli/index.ts init --agent --root .",
+    "test":          "bun test"
   },
   "dependencies": {
     "ts-morph": "^25.0.0",

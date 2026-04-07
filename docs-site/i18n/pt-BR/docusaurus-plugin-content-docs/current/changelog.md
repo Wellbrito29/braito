@@ -15,6 +15,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Timers por fase** — scan, analyze, graph e write registram tempo decorrido; etapa de grafo registra contagem de nós + arestas; tempo total ao final
 - **Aba Tests** — terceira aba no painel de detalhes com badge de status de cobertura, barra de cobertura de linhas, lista de arquivos de teste relacionados, e dica de ação para arquivos sem testes
 - **Barra de estatísticas de cobertura** — contagens globais (covered / uncovered / avg coverage) acima da lista de arquivos, via `/api/stats`
+- **Scripts `package.json`** — `bun run scan/generate/generate:force/generate:dry/generate:v/watch/mcp/ui/init:agent` substituem as invocações verbosas `bun src/cli/index.ts …`
 - **`debugSignals` em cada nota** — todos os sinais brutos do pipeline agora armazenados em cada `.json`, alimentando o score breakdown da aba Debug
 
 ### Changed

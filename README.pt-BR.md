@@ -53,18 +53,15 @@ repo → scanner → analisador AST → motor de grafo → inteligência git
 
 ```bash
 bun install
-bun src/cli/index.ts scan --root ./
-bun src/cli/index.ts generate --root ./
-bun src/cli/index.ts generate --root ./ --force
-bun src/cli/index.ts generate --root ./ --filter src/core/**
-bun src/cli/index.ts generate --root ./ --language pt-BR
-bun src/cli/index.ts generate --root ./ --diff
-bun src/cli/index.ts generate --root ./ --dry-run
-bun src/cli/index.ts watch --root ./
-bun src/cli/index.ts mcp --root ./
-bun src/cli/index.ts mcp --root ./ --auto-generate
-bun src/cli/index.ts ui --root ./
-bun src/cli/index.ts init --agent --root ./
+bun run scan              # descobrir arquivos
+bun run generate          # pipeline completo → .ai-notes/
+bun run generate:force    # ignorar cache
+bun run generate:dry      # visualizar sem gravar
+bun run generate:v        # verbose — sinais por arquivo + timers
+bun run watch             # regenerar ao detectar mudanças
+bun run ui                # interface web em http://localhost:7842
+bun run mcp               # servidor MCP (Cursor / Claude Code)
+bun run init:agent        # gerar slash commands em .claude/commands/
 bun test
 ```
 

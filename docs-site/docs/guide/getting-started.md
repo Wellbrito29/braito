@@ -23,11 +23,8 @@ bun install
 ## First run
 
 ```bash
-# List all eligible files in your project
-bun src/cli/index.ts scan --root /path/to/your/project
-
-# Generate notes for all files (static-only, no LLM)
-bun src/cli/index.ts generate --root /path/to/your/project
+bun run scan        # list all eligible files
+bun run generate    # generate notes (static-only, no LLM)
 ```
 
 This creates a `.ai-notes/` directory with one `.json` + `.md` sidecar per file, plus an `index.json` and `index.md` summary.
@@ -49,28 +46,25 @@ export default {
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-bun src/cli/index.ts generate --root ./
+bun run generate
 ```
 
 Files with `criticalityScore >= llmThreshold` are sent to the LLM. All others get a fast static note.
 
 ## CLI commands
 
-| Command | Description |
-|---|---|
-| `scan --root ./` | Discover and list eligible files |
-| `scan --root ./ --format json` | Machine-readable file list |
-| `generate --root ./` | Full pipeline — writes `.ai-notes/` |
-| `generate --root ./ --force` | Bypass cache, reprocess all files |
-| `generate --root ./ --filter src/core/**` | Scope to a subdirectory |
-| `generate --root ./ --language pt-BR` | LLM output in a specific language |
-| `generate --root ./ --diff` | Show field-level diff between runs |
-| `generate --root ./ --dry-run` | Preview without writing files |
-| `watch --root ./` | Watch mode — regenerate on file change |
-| `mcp --root ./` | Start MCP server (JSON-RPC 2.0 over stdio) |
-| `mcp --root ./ --auto-generate` | Generate notes if missing, then start MCP |
-| `ui --root ./` | Local web UI at `http://localhost:7842` |
-| `init --agent --root ./` | Generate AI assistant slash command files |
+| Script | Equivalent flags | Description |
+|---|---|---|
+| `bun run scan` | `--format json` | Discover and list eligible files |
+| `bun run generate` | `--filter` `--diff` `--language` | Full pipeline — writes `.ai-notes/` |
+| `bun run generate:force` | — | Bypass cache, reprocess all files |
+| `bun run generate:dry` | — | Preview without writing files |
+| `bun run generate:v` | — | Per-file signal detail + phase timers |
+| `bun run watch` | — | Regenerate on file change |
+| `bun run mcp` | `--auto-generate` | MCP server (JSON-RPC 2.0 over stdio) |
+| `bun run ui` | `--port <n>` | Local web UI at `http://localhost:7842` |
+| `bun run init:agent` | — | Generate `.claude/commands/` slash command files |
+| `bun test` | — | Run all test suites |
 
 ## Generated output
 

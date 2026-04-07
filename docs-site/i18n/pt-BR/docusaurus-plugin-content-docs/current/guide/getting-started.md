@@ -20,11 +20,8 @@ bun install
 ## Primeira execução
 
 ```bash
-# Listar todos os arquivos elegíveis do seu projeto
-bun src/cli/index.ts scan --root /caminho/para/seu/projeto
-
-# Gerar notas para todos os arquivos (apenas estático, sem LLM)
-bun src/cli/index.ts generate --root /caminho/para/seu/projeto
+bun run scan        # listar todos os arquivos elegíveis
+bun run generate    # gerar notas (apenas estático, sem LLM)
 ```
 
 Isso cria um diretório `.ai-notes/` com um sidecar `.json` + `.md` por arquivo, mais um `index.json` e `index.md` de resumo.
@@ -46,27 +43,25 @@ export default {
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-bun src/cli/index.ts generate --root ./
+bun run generate
 ```
 
 Arquivos com `criticalityScore >= llmThreshold` são enviados ao LLM. Os demais recebem uma nota estática rápida.
 
 ## Comandos CLI
 
-| Comando | Descrição |
-|---|---|
-| `scan --root ./` | Descobrir e listar arquivos elegíveis |
-| `scan --root ./ --format json` | Lista legível por máquina |
-| `generate --root ./` | Pipeline completo — grava `.ai-notes/` |
-| `generate --root ./ --force` | Ignorar cache, reprocessar tudo |
-| `generate --root ./ --filter src/core/**` | Escopo para um subdiretório |
-| `generate --root ./ --language pt-BR` | Saída LLM em um idioma específico |
-| `generate --root ./ --diff` | Mostrar diferença campo a campo entre execuções |
-| `generate --root ./ --dry-run` | Visualizar sem gravar arquivos |
-| `watch --root ./` | Watch mode — regenerar ao detectar mudanças |
-| `mcp --root ./` | Iniciar servidor MCP (JSON-RPC 2.0 via stdio) |
-| `mcp --root ./ --auto-generate` | Gerar notas se não existirem e iniciar MCP |
-| `ui --root ./` | Interface web local em `http://localhost:7842` |
+| Script | Flags extras | Descrição |
+|---|---|---|
+| `bun run scan` | `--format json` | Descobrir e listar arquivos elegíveis |
+| `bun run generate` | `--filter` `--diff` `--language` | Pipeline completo — grava `.ai-notes/` |
+| `bun run generate:force` | — | Ignorar cache, reprocessar tudo |
+| `bun run generate:dry` | — | Visualizar sem gravar arquivos |
+| `bun run generate:v` | — | Detalhe por arquivo + timers por fase |
+| `bun run watch` | — | Regenerar ao detectar mudanças |
+| `bun run mcp` | `--auto-generate` | Servidor MCP (JSON-RPC 2.0 via stdio) |
+| `bun run ui` | `--port <n>` | Interface web local em `http://localhost:7842` |
+| `bun run init:agent` | — | Gerar arquivos slash command em `.claude/commands/` |
+| `bun test` | — | Executar todos os testes |
 
 ## Saída gerada
 

@@ -15,6 +15,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Phase timers** — scan, analyze, graph, and write phases each log elapsed time; graph step logs node + edge count; total run time logged at end
 - **Tests tab** — third tab in the file detail pane with coverage status badge, line coverage bar, related test files list, and actionable tip for uncovered files
 - **Test coverage stats strip** — global counts (covered / uncovered / avg coverage) above the file list, backed by `/api/stats`
+- **`package.json` run scripts** — `bun run scan/generate/generate:force/generate:dry/generate:v/watch/mcp/ui/init:agent` replace verbose `bun src/cli/index.ts …` invocations
 - **`debugSignals` in every note** — all raw pipeline signals now stored in each `.json` note, powering the Debug tab score breakdown
 
 ### Changed

@@ -6,6 +6,7 @@ import { runGenerate } from './commands/generate.ts'
 import { runWatch } from './commands/watch.ts'
 import { runMcp } from './commands/mcp.ts'
 import { runUi } from './commands/ui.ts'
+import { runUpdate } from './commands/update.ts'
 
 const [, , command, ...rest] = process.argv
 
@@ -48,6 +49,10 @@ switch (command) {
     await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff, cascade: values.cascade, dryRun: (values as Record<string, unknown>)['dry-run'] as boolean | undefined })
     break
 
+  case 'update':
+    await runUpdate({ root: values.root, diff: values.diff })
+    break
+
   case 'watch':
     await runWatch({ root: values.root })
     break
@@ -72,6 +77,7 @@ Usage:
 Commands:
   scan      Discover and list eligible files
   generate  Analyze files and write .ai-notes/ sidecars
+  update    Re-run generate only for stale notes (faster than full generate)
   watch     Watch for changes and regenerate notes incrementally
   mcp       Start the MCP server (JSON-RPC 2.0 over stdio)
   ui        Start the local web UI to browse notes

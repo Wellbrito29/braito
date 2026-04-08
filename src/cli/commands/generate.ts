@@ -42,6 +42,7 @@ export async function runGenerate(args: {
   diff?: boolean
   dryRun?: boolean
   cascade?: boolean
+  forceFiles?: Set<string>
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -207,7 +208,7 @@ export async function runGenerate(args: {
 
       // Skip if the note is already up to date for this file
       // Exception: cascade mode forces dependents of changed files to be reprocessed
-      if (!args.force && !cascadeForceSet.has(file.relativePath) && noteHashStore.get(file.relativePath) === currentHash) {
+      if (!args.force && !cascadeForceSet.has(file.relativePath) && !args.forceFiles?.has(file.relativePath) && noteHashStore.get(file.relativePath) === currentHash) {
         if (args.dryRun) {
           dryRunEntries.push({ relativePath: file.relativePath, score: 0, useLlm: false, wouldSkip: true })
         }

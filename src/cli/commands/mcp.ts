@@ -299,17 +299,40 @@ export async function handleRequest(
 
     if (name === 'get_impact') {
       const filePath = args.file_path as string
-      const depth = Math.min(Math.max(1, (args.depth as number | undefined) ?? 2), 5)
+      const depth = Math.min(Math.max(1, (args.depth as number | undefined) ?? 2), 10)
       const includeNotes = (args.include_notes as boolean | undefined) ?? false
       const indexPath = path.resolve(root, outputDir, 'index.json')
+      const graphPath = path.resolve(root, outputDir, 'graph.json')
       if (!fs.existsSync(indexPath)) {
         return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
       }
       try {
         const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
         const entries = index.entries as Array<{ relativePath: string; criticalityScore: number; domain: string; dependents: string[] }>
+        const entryMap = new Map(entries.map((e) => [e.relativePath, e]))
 
-        // BFS traversal up to `depth` levels
+        // Build reverse adjacency from graph.json (full transitive) or fall back to index dependents
+        const reverseAdj = new Map<string, string[]>()
+        if (fs.existsSync(graphPath)) {
+          type GraphEdge = { from: string; to: string }
+          const graph = JSON.parse(fs.readFileSync(graphPath, 'utf-8')) as { edges: GraphEdge[] }
+          for (const edge of graph.edges) {
+            const rev = reverseAdj.get(edge.to) ?? []
+            rev.push(edge.from)
+            reverseAdj.set(edge.to, rev)
+          }
+        } else {
+          // Fallback: reconstruct reverse adj from index dependents (shallow)
+          for (const entry of entries) {
+            for (const dep of (entry.dependents ?? [])) {
+              const rev = reverseAdj.get(dep) ?? []
+              rev.push(entry.relativePath)
+              reverseAdj.set(dep, rev)
+            }
+          }
+        }
+
+        // BFS traversal up to `depth` levels using full reverse adjacency
         const visited = new Set<string>()
         const levels: Array<{ relativePath: string; criticalityScore: number; domain: string; level: number; note?: unknown }> = []
         let frontier = [filePath]
@@ -318,21 +341,22 @@ export async function handleRequest(
         for (let level = 1; level <= depth; level++) {
           const next: string[] = []
           for (const current of frontier) {
-            const entry = entries.find((e) => e.relativePath === current)
-            if (!entry) continue
-            for (const dep of (entry.dependents ?? [])) {
-              if (!visited.has(dep)) {
-                visited.add(dep)
-                const depEntry = entries.find((e) => e.relativePath === dep)
-                if (depEntry) {
-                  const item: (typeof levels)[number] = { relativePath: dep, criticalityScore: depEntry.criticalityScore, domain: depEntry.domain, level }
-                  if (includeNotes) {
-                    const notePath = path.resolve(root, outputDir, dep + '.json')
-                    try { item.note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { /* no note */ }
-                  }
-                  levels.push(item)
-                  next.push(dep)
+            for (const dependent of (reverseAdj.get(current) ?? [])) {
+              if (!visited.has(dependent)) {
+                visited.add(dependent)
+                const depEntry = entryMap.get(dependent)
+                const item: (typeof levels)[number] = {
+                  relativePath: dependent,
+                  criticalityScore: depEntry?.criticalityScore ?? 0,
+                  domain: depEntry?.domain ?? path.dirname(dependent),
+                  level,
                 }
+                if (includeNotes) {
+                  const notePath = path.resolve(root, outputDir, dependent + '.json')
+                  try { item.note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { /* no note */ }
+                }
+                levels.push(item)
+                next.push(dependent)
               }
             }
           }
@@ -340,8 +364,9 @@ export async function handleRequest(
           if (frontier.length === 0) break
         }
 
+        const graphSource = fs.existsSync(graphPath) ? 'graph.json' : 'index (shallow)'
         levels.sort((a, b) => a.level - b.level || b.criticalityScore - a.criticalityScore)
-        const result = { file: filePath, totalAffected: levels.length, dependents: levels }
+        const result = { file: filePath, totalAffected: levels.length, graphSource, dependents: levels }
         return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
       } catch {
         return errorResponse(id, -32603, 'Failed to compute impact.')

@@ -18,6 +18,7 @@ import { writeIndexNote } from '../../core/output/writeIndexNote.ts'
 import { diffNotes, renderDiff } from '../../core/output/diffNotes.ts'
 import { buildOverview } from '../../core/output/buildOverview.ts'
 import { writeOverview } from '../../core/output/writeOverview.ts'
+import { writeGraph } from '../../core/output/writeGraph.ts'
 import { createProvider } from '../../core/llm/provider/factory.ts'
 import { synthesizeFileNote } from '../../core/llm/synthesizeFileNote.ts'
 import { synthesizeOverview } from '../../core/llm/synthesizeOverview.ts'
@@ -255,6 +256,9 @@ export async function runGenerate(args: {
           timeoutMs,
         )
         synthesized++
+        logger.info(`✓ LLM: ${file.relativePath}`)
+      } else {
+        logger.info(`✓ static: ${file.relativePath}`)
       }
 
       const diff = (args.diff && oldNote) ? diffNotes(oldNote, note) : undefined
@@ -324,6 +328,12 @@ export async function runGenerate(args: {
   // 11. Build and write index
   const index = buildIndex(notes, root, config.staleThresholdDays, revGraph)
   await writeIndexNote(index, root, config.output)
+
+  // 11b. Persist dependency graph to graph.json
+  const nodeMetaMap = new Map(
+    index.entries.map((e) => [e.relativePath, { domain: e.domain, criticalityScore: e.criticalityScore }]),
+  )
+  await writeGraph(depGraph, nodeMetaMap, root, config.output)
 
   // 11. Build and write repo overview
   let overview = buildOverview(index, cycles.length)

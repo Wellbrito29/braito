@@ -32,6 +32,11 @@ export const aiNotesConfigSchema = z.object({
     .int('staleThresholdDays must be an integer')
     .positive('staleThresholdDays must be > 0')
     .optional(),
+  maxSourceLines: z
+    .number()
+    .int('maxSourceLines must be an integer')
+    .positive('maxSourceLines must be > 0')
+    .optional(),
 })
 
 export type ValidatedConfig = z.infer<typeof aiNotesConfigSchema>

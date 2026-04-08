@@ -39,6 +39,7 @@ export const goAnalyzer: LanguageAnalyzer = {
       externalImports: extractExternalImports(filePath, content),
       exports: extractExports(content),
       symbols: extractSymbols(content),
+      signatures: [],
       hooks: [],
       envVars: extractEnvVars(content),
       apiCalls: extractApiCalls(content),

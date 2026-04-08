@@ -11,6 +11,7 @@ export const pythonAnalyzer: LanguageAnalyzer = {
       externalImports: extractExternalImports(content),
       exports: extractExports(content),
       symbols: extractSymbols(content),
+      signatures: [],
       hooks: [],
       envVars: extractEnvVars(content),
       apiCalls: extractApiCalls(content),

@@ -5,6 +5,7 @@ import type { StaticFileAnalysis } from '../types/file-analysis.ts'
 import { extractImports } from './analyzers/ts/extractImports.ts'
 import { extractExports } from './analyzers/ts/extractExports.ts'
 import { extractSymbols } from './analyzers/ts/extractSymbols.ts'
+import { extractSignatures } from './analyzers/ts/extractSignatures.ts'
 import { extractHooks } from './analyzers/ts/extractHooks.ts'
 import { extractComments } from './analyzers/ts/extractComments.ts'
 import { getAnalyzer } from './analyzerRegistry.ts'
@@ -39,6 +40,7 @@ export function parseFile(filePath: string): StaticFileAnalysis {
     const imports = extractImports(sourceFile)
     const exports = extractExports(sourceFile)
     const symbols = extractSymbols(sourceFile)
+    const signatures = extractSignatures(sourceFile)
     const hooks = extractHooks(sourceFile)
     const comments = extractComments(sourceFile)
 
@@ -54,6 +56,7 @@ export function parseFile(filePath: string): StaticFileAnalysis {
       externalImports: imports.external,
       exports,
       symbols,
+      signatures,
       hooks,
       envVars: extractEnvVars(sourceFile.getFullText()),
       apiCalls: extractApiCalls(sourceFile.getFullText()),
@@ -74,6 +77,7 @@ function emptyAnalysis(filePath: string): StaticFileAnalysis {
     externalImports: [],
     exports: [],
     symbols: [],
+    signatures: [],
     hooks: [],
     envVars: [],
     apiCalls: [],

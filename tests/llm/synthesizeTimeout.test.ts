@@ -7,7 +7,9 @@ import type { AiFileNote } from '../../src/core/types/ai-note.ts'
 function makeStaticNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
   const empty = { observed: [], inferred: [], confidence: 0, evidence: [] }
   return {
+    schemaVersion: '1.0.0',
     filePath: '/project/src/useSearch.ts',
+    summary: 'Exports React hooks for search.',
     purpose: { observed: ['Exports hooks: useSearch'], inferred: [], confidence: 0.6, evidence: [] },
     invariants: empty,
     sensitiveDependencies: empty,
@@ -25,9 +27,9 @@ function makeCtx(staticNote: AiFileNote) {
   const analysis: StaticFileAnalysis = {
     filePath: staticNote.filePath,
     imports: [], localImports: [], externalImports: [],
-    exports: ['useSearch'], symbols: ['useSearch'], hooks: ['useSearch'],
+    exports: ['useSearch'], symbols: ['useSearch'], signatures: [], hooks: ['useSearch'],
     envVars: [], apiCalls: [],
-    comments: { todo: [], fixme: [], hack: [] },
+    comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
     hasSideEffects: false,
   }
   const graph: GraphSignals = { filePath: staticNote.filePath, directDependencies: [], reverseDependencies: [] }

@@ -250,8 +250,18 @@ export async function runGenerate(args: {
 
       if (wouldUseLlm) {
         logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)})`)
+
+        // Build a map of local import path → exports[] for richer prompt context
+        const localImportExports = new Map<string, string[]>()
+        for (const dep of graph.directDependencies) {
+          const depAnalysis = analyses.find((a) => a.filePath === dep)
+          if (depAnalysis && depAnalysis.exports.length > 0) {
+            localImportExports.set(path.relative(root, dep), depAnalysis.exports)
+          }
+        }
+
         note = await synthesizeFileNote(
-          { analysis, graph, tests, git: gitSignals, staticNote: note },
+          { analysis, graph, tests, git: gitSignals, staticNote: note, maxSourceLines: config.maxSourceLines, localImportExports },
           provider!,
           temperature,
           timeoutMs,

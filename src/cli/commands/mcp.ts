@@ -322,13 +322,9 @@ export async function handleRequest(
             reverseAdj.set(edge.to, rev)
           }
         } else {
-          // Fallback: reconstruct reverse adj from index dependents (shallow)
+          // Fallback: index.dependents already maps file → "files that depend on it"
           for (const entry of entries) {
-            for (const dep of (entry.dependents ?? [])) {
-              const rev = reverseAdj.get(dep) ?? []
-              rev.push(entry.relativePath)
-              reverseAdj.set(dep, rev)
-            }
+            reverseAdj.set(entry.relativePath, entry.dependents ?? [])
           }
         }
 

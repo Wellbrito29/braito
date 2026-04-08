@@ -33,5 +33,6 @@ export function withDefaults(partial: Partial<AiNotesConfig> & { root: string })
     tsconfigPath: partial.tsconfigPath,
     llm: partial.llm,
     staleThresholdDays: partial.staleThresholdDays ?? DEFAULT_STALE_THRESHOLD_DAYS,
+    maxSourceLines: partial.maxSourceLines,
   }
 }

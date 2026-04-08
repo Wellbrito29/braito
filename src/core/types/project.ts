@@ -25,4 +25,5 @@ export type AiNotesConfig = {
   tsconfigPath?: string
   llm?: LLMConfig
   staleThresholdDays?: number
+  maxSourceLines?: number
 }

@@ -5,6 +5,7 @@ export type StaticFileAnalysis = {
   externalImports: string[]
   exports: string[]
   symbols: string[]
+  signatures: string[]
   hooks: string[]
   envVars: string[]
   apiCalls: string[]

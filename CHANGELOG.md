@@ -4,6 +4,9 @@ All notable changes to braito will be documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **Absolute paths in Impact Validation** — `getCoChangedFiles` was calling `path.resolve(root, p)` on paths already returned as relative by `git diff-tree`, producing absolute paths in `impactValidation.observed` and `knownPitfalls.observed`; fixed by keeping the git-relative path as-is
+
 ### Added
 - **Live pipeline execution panel in Web UI** — "▶ Run generate" button in the header triggers `runGenerate` from the browser; a fixed bottom panel shows each pipeline step in real time (scan, analyze, graph, write) with timestamps, emoji icons, and color-coded levels; auto-refreshes the file list and stats strip on completion; `--force` and `--verbose` checkboxes in header; new `POST /api/run` and `GET /api/run/status` endpoints back the feature
 - **`--verbose` flag for `generate`** — per-file log line showing criticality score, dep count, consumer count, churn, and active signal flags (`hooks`, `env`, `api-calls`, `no-tests`, `LLM`, `todo`); per-file parse timing; top-5 files by consumers from graph; top-5 files by score at end; uncovered file count summary

@@ -1,6 +1,7 @@
 import path from 'node:path'
 import fs from 'node:fs'
 import { loadConfig } from '../../core/config/loadConfig.ts'
+import { extractBusinessRules } from '../../core/business/extractBusinessRules.ts'
 
 // ---------------------------------------------------------------------------
 // MCP server — JSON-RPC 2.0 over stdio
@@ -75,7 +76,7 @@ const TOOLS = [
   {
     name: 'get_impact',
     description:
-      'Get the blast radius of a file — which files directly or transitively depend on it. Useful before making changes to understand what could break.',
+      'Get the blast radius of a file — which files directly or transitively depend on it, with their AI notes. Use this before making changes to understand what could break and review the logic of each dependent.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -86,6 +87,10 @@ const TOOLS = [
         depth: {
           type: 'number',
           description: 'How many levels of transitive dependents to include. Default: 2',
+        },
+        include_notes: {
+          type: 'boolean',
+          description: 'Include the full AI note for each dependent file. Default: false',
         },
       },
       required: ['file_path'],
@@ -123,6 +128,27 @@ const TOOLS = [
         },
       },
       required: ['domain'],
+    },
+  },
+  {
+    name: 'get_overview',
+    description:
+      'Get the repository-level overview — a high-level description of what the project does, its main domains, most critical files, and entry points. Read this first to orient yourself in a new codebase.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_business_rules',
+    description:
+      'Extract business rules, domain constraints, and policy enforcement patterns from a source file. Returns numeric limits, permission guards, schema validations, and business constants found via static analysis.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Path to the source file, relative to the project root.',
+        },
+      },
+      required: ['path'],
     },
   },
 ]
@@ -289,34 +315,60 @@ export async function handleRequest(
 
     if (name === 'get_impact') {
       const filePath = args.file_path as string
-      const depth = Math.min(Math.max(1, (args.depth as number | undefined) ?? 2), 5)
+      const depth = Math.min(Math.max(1, (args.depth as number | undefined) ?? 2), 10)
+      const includeNotes = (args.include_notes as boolean | undefined) ?? false
       const indexPath = path.resolve(root, outputDir, 'index.json')
+      const graphPath = path.resolve(root, outputDir, 'graph.json')
       if (!fs.existsSync(indexPath)) {
         return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
       }
       try {
         const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
         const entries = index.entries as Array<{ relativePath: string; criticalityScore: number; domain: string; dependents: string[] }>
+        const entryMap = new Map(entries.map((e) => [e.relativePath, e]))
 
-        // BFS traversal up to `depth` levels
+        // Build reverse adjacency from graph.json (full transitive) or fall back to index dependents
+        const reverseAdj = new Map<string, string[]>()
+        if (fs.existsSync(graphPath)) {
+          type GraphEdge = { from: string; to: string }
+          const graph = JSON.parse(fs.readFileSync(graphPath, 'utf-8')) as { edges: GraphEdge[] }
+          for (const edge of graph.edges) {
+            const rev = reverseAdj.get(edge.to) ?? []
+            rev.push(edge.from)
+            reverseAdj.set(edge.to, rev)
+          }
+        } else {
+          // Fallback: index.dependents already maps file → "files that depend on it"
+          for (const entry of entries) {
+            reverseAdj.set(entry.relativePath, entry.dependents ?? [])
+          }
+        }
+
+        // BFS traversal up to `depth` levels using full reverse adjacency
         const visited = new Set<string>()
-        const levels: Array<{ relativePath: string; criticalityScore: number; domain: string; level: number }> = []
+        const levels: Array<{ relativePath: string; criticalityScore: number; domain: string; level: number; note?: unknown }> = []
         let frontier = [filePath]
         visited.add(filePath)
 
         for (let level = 1; level <= depth; level++) {
           const next: string[] = []
           for (const current of frontier) {
-            const entry = entries.find((e) => e.relativePath === current)
-            if (!entry) continue
-            for (const dep of (entry.dependents ?? [])) {
-              if (!visited.has(dep)) {
-                visited.add(dep)
-                const depEntry = entries.find((e) => e.relativePath === dep)
-                if (depEntry) {
-                  levels.push({ relativePath: dep, criticalityScore: depEntry.criticalityScore, domain: depEntry.domain, level })
-                  next.push(dep)
+            for (const dependent of (reverseAdj.get(current) ?? [])) {
+              if (!visited.has(dependent)) {
+                visited.add(dependent)
+                const depEntry = entryMap.get(dependent)
+                const item: (typeof levels)[number] = {
+                  relativePath: dependent,
+                  criticalityScore: depEntry?.criticalityScore ?? 0,
+                  domain: depEntry?.domain ?? path.dirname(dependent),
+                  level,
                 }
+                if (includeNotes) {
+                  const notePath = path.resolve(root, outputDir, dependent + '.json')
+                  try { item.note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { /* no note */ }
+                }
+                levels.push(item)
+                next.push(dependent)
               }
             }
           }
@@ -324,8 +376,9 @@ export async function handleRequest(
           if (frontier.length === 0) break
         }
 
+        const graphSource = fs.existsSync(graphPath) ? 'graph.json' : 'index (shallow)'
         levels.sort((a, b) => a.level - b.level || b.criticalityScore - a.criticalityScore)
-        const result = { file: filePath, totalAffected: levels.length, dependents: levels }
+        const result = { file: filePath, totalAffected: levels.length, graphSource, dependents: levels }
         return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
       } catch {
         return errorResponse(id, -32603, 'Failed to compute impact.')
@@ -409,6 +462,76 @@ export async function handleRequest(
       }
     }
 
+    if (name === 'get_overview') {
+      const overviewPath = path.resolve(root, outputDir, 'overview.json')
+      if (!fs.existsSync(overviewPath)) {
+        return errorResponse(id, -32602, "Overview not found. Run 'generate' first.")
+      }
+      try {
+        const overview = fs.readFileSync(overviewPath, 'utf-8')
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: overview }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to read overview.')
+      }
+    }
+
+    if (name === 'get_business_rules') {
+      const filePath = args.path as string
+      if (!filePath) return errorResponse(id, -32602, 'path must not be empty.')
+
+      const absolutePath = path.resolve(root, filePath)
+      // Path traversal guard
+      if (!path.normalize(absolutePath).startsWith(path.normalize(root) + path.sep) &&
+          path.normalize(absolutePath) !== path.normalize(root)) {
+        return errorResponse(id, -32602, 'Invalid file path.')
+      }
+
+      if (!fs.existsSync(absolutePath)) {
+        return errorResponse(id, -32602, `File not found: '${filePath}'.`)
+      }
+
+      let sourceText: string
+      try {
+        sourceText = fs.readFileSync(absolutePath, 'utf-8')
+      } catch {
+        return errorResponse(id, -32603, 'Failed to read source file.')
+      }
+
+      const rules = extractBusinessRules(filePath, sourceText)
+
+      // Optional LLM synthesis for a 2-3 sentence summary
+      let summary: string | undefined
+      const config = await loadConfig(root)
+      if (config.llm && rules.length > 0) {
+        try {
+          const { createProvider } = await import('../../core/llm/provider/factory.ts')
+          const provider = createProvider(config.llm)
+          const temperature = config.llm.temperature ?? 0.2
+          const timeoutMs = config.llm.timeoutMs ?? 30_000
+          const prompt = `Given these business rules extracted from ${filePath}:\n${JSON.stringify(rules, null, 2)}\n\nWrite a 2-3 sentence summary of the domain policies this file enforces. Focus on the constraints, limits, and invariants it is responsible for.`
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('LLM summary timed out')), timeoutMs)
+          )
+          const response = await Promise.race([
+            provider.complete({ system: 'You are a code analyst. Be concise and precise.', user: prompt, temperature }),
+            timeoutPromise,
+          ])
+          summary = response.content.trim()
+        } catch {
+          // LLM is optional — silently fall back to static-only result
+        }
+      }
+
+      const result: Record<string, unknown> = {
+        path: filePath,
+        ruleCount: rules.length,
+        rules,
+      }
+      if (summary !== undefined) result.summary = summary
+
+      return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
+    }
+
     return errorResponse(id, -32601, `Unknown tool: ${name}`)
   }
 
@@ -432,7 +555,7 @@ export async function runMcp(args: { root?: string; autoGenerate?: boolean }): P
   }
 
   process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
-  process.stderr.write(`Tools: get_file_note | search_by_criticality | get_index | get_architecture_context\n`)
+  process.stderr.write(`Tools: get_overview | get_file_note | get_index | get_impact | search | get_domain | search_by_criticality | get_business_rules\n`)
 
   let buffer = ''
 

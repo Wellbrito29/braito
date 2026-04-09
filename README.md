@@ -193,9 +193,15 @@ Available tools:
 
 | Tool | Description |
 |---|---|
+| `get_overview` | High-level project overview — domains, entry points, most critical files |
 | `get_file_note` | Get the full note for a specific file |
-| `search_by_criticality` | List files above a criticality threshold |
 | `get_index` | Get the full ranked index |
+| `get_impact` | Blast radius of a file — transitive dependents with optional notes |
+| `search` | Full-text search across all note fields |
+| `get_domain` | All files in a domain, sorted by criticality |
+| `search_by_criticality` | List files above a criticality threshold |
+| `get_architecture_context` | Synthesized architectural overview — top files, domain breakdown, stats |
+| `get_business_rules` | Extract business rules, domain constraints, and policy enforcement patterns from a source file |
 
 Add to your MCP client config (e.g. Cursor `~/.cursor/mcp.json`):
 

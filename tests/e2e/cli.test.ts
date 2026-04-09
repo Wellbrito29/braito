@@ -337,7 +337,7 @@ describe('mcp server (handleRequest)', () => {
     expect(res).not.toBeNull()
     const tools = (res!.result as any).tools
     expect(Array.isArray(tools)).toBe(true)
-    expect(tools).toHaveLength(8)
+    expect(tools).toHaveLength(9)
     const names = tools.map((t: { name: string }) => t.name)
     expect(names).toContain('get_file_note')
     expect(names).toContain('search_by_criticality')

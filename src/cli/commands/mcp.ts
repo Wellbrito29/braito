@@ -1,6 +1,7 @@
 import path from 'node:path'
 import fs from 'node:fs'
 import { loadConfig } from '../../core/config/loadConfig.ts'
+import { extractBusinessRules } from '../../core/business/extractBusinessRules.ts'
 
 // ---------------------------------------------------------------------------
 // MCP server — JSON-RPC 2.0 over stdio
@@ -134,6 +135,21 @@ const TOOLS = [
     description:
       'Get the repository-level overview — a high-level description of what the project does, its main domains, most critical files, and entry points. Read this first to orient yourself in a new codebase.',
     inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_business_rules',
+    description:
+      'Extract business rules, domain constraints, and policy enforcement patterns from a source file. Returns numeric limits, permission guards, schema validations, and business constants found via static analysis.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Path to the source file, relative to the project root.',
+        },
+      },
+      required: ['path'],
+    },
   },
 ]
 
@@ -459,6 +475,63 @@ export async function handleRequest(
       }
     }
 
+    if (name === 'get_business_rules') {
+      const filePath = args.path as string
+      if (!filePath) return errorResponse(id, -32602, 'path must not be empty.')
+
+      const absolutePath = path.resolve(root, filePath)
+      // Path traversal guard
+      if (!path.normalize(absolutePath).startsWith(path.normalize(root) + path.sep) &&
+          path.normalize(absolutePath) !== path.normalize(root)) {
+        return errorResponse(id, -32602, 'Invalid file path.')
+      }
+
+      if (!fs.existsSync(absolutePath)) {
+        return errorResponse(id, -32602, `File not found: '${filePath}'.`)
+      }
+
+      let sourceText: string
+      try {
+        sourceText = fs.readFileSync(absolutePath, 'utf-8')
+      } catch {
+        return errorResponse(id, -32603, 'Failed to read source file.')
+      }
+
+      const rules = extractBusinessRules(filePath, sourceText)
+
+      // Optional LLM synthesis for a 2-3 sentence summary
+      let summary: string | undefined
+      const config = await loadConfig(root)
+      if (config.llm && rules.length > 0) {
+        try {
+          const { createProvider } = await import('../../core/llm/provider/factory.ts')
+          const provider = createProvider(config.llm)
+          const temperature = config.llm.temperature ?? 0.2
+          const timeoutMs = config.llm.timeoutMs ?? 30_000
+          const prompt = `Given these business rules extracted from ${filePath}:\n${JSON.stringify(rules, null, 2)}\n\nWrite a 2-3 sentence summary of the domain policies this file enforces. Focus on the constraints, limits, and invariants it is responsible for.`
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('LLM summary timed out')), timeoutMs)
+          )
+          const response = await Promise.race([
+            provider.complete({ system: 'You are a code analyst. Be concise and precise.', user: prompt, temperature }),
+            timeoutPromise,
+          ])
+          summary = response.content.trim()
+        } catch {
+          // LLM is optional — silently fall back to static-only result
+        }
+      }
+
+      const result: Record<string, unknown> = {
+        path: filePath,
+        ruleCount: rules.length,
+        rules,
+      }
+      if (summary !== undefined) result.summary = summary
+
+      return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
+    }
+
     return errorResponse(id, -32601, `Unknown tool: ${name}`)
   }
 
@@ -482,7 +555,7 @@ export async function runMcp(args: { root?: string; autoGenerate?: boolean }): P
   }
 
   process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
-  process.stderr.write(`Tools: get_overview | get_file_note | get_index | get_impact | search | get_domain | search_by_criticality\n`)
+  process.stderr.write(`Tools: get_overview | get_file_note | get_index | get_impact | search | get_domain | search_by_criticality | get_business_rules\n`)
 
   let buffer = ''
 

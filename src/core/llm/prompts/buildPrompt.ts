@@ -15,10 +15,28 @@ export type PromptContext = {
 
 type FileType = 'hook' | 'type-definition' | 'service' | 'utility'
 
+const TYPE_FILE_PATTERNS = [
+  /\.types\.tsx?$/,
+  /\.type\.tsx?$/,
+  /\.dto\.tsx?$/,
+  /\.interface\.tsx?$/,
+  /\.interfaces\.tsx?$/,
+  /\.enum\.tsx?$/,
+  /\.enums\.tsx?$/,
+  /\.model\.tsx?$/,
+  /\.models\.tsx?$/,
+  /\.schema\.tsx?$/,
+  /\.schemas\.tsx?$/,
+]
+
+export function isTypeFile(filePath: string): boolean {
+  const fp = filePath.toLowerCase()
+  return TYPE_FILE_PATTERNS.some((pattern) => pattern.test(fp))
+}
+
 function detectFileType(analysis: StaticFileAnalysis): FileType {
   if (analysis.hooks.length > 0) return 'hook'
-  const fp = analysis.filePath.toLowerCase()
-  if (fp.endsWith('.types.ts') || fp.endsWith('.dto.ts') || fp.endsWith('.interface.ts')) return 'type-definition'
+  if (isTypeFile(analysis.filePath)) return 'type-definition'
   if (analysis.exports.some((e) => /Service|Provider|Repository|Store|Manager$/i.test(e))) return 'service'
   if (analysis.apiCalls.length > 0) return 'service'
   return 'utility'
@@ -35,12 +53,31 @@ function specializedInstructions(type: FileType): string {
 - Documente side effects: quais APIs externas ou efeitos colaterais são disparados`
 
     case 'type-definition':
-      return `Este arquivo define tipos, interfaces ou DTOs. Para cada tipo exportado:
-- Descreva o propósito do tipo e em qual contexto ele é usado
-- Liste cada campo com seu tipo e o que ele representa
-- Indique quais campos são obrigatórios vs opcionais
-- Aponte restrições ou invariantes (ex: IDs sempre positivos, datas em UTC)
-- Identifique relações entre tipos (composição, herança)`
+      return `Este arquivo é um arquivo de definição de tipos — interfaces, DTOs, enums ou type aliases.
+
+Para cada tipo exportado, descreva individualmente:
+
+INTERFACES e objetos:
+- Nome e propósito: o que esse tipo modela no domínio?
+- Cada campo: nome, tipo TypeScript, o que representa, se é obrigatório ou opcional
+- Restrições implícitas: IDs sempre positivos, datas em UTC, arrays nunca vazios, etc.
+- Relações com outros tipos: composição, herança (extends), tipos de campo que referenciam outras interfaces
+
+ENUMS:
+- O conceito que o enum representa
+- Cada valor: seu significado semântico e quando é usado
+- Se os valores têm ordem ou hierarquia
+
+TYPE ALIASES:
+- O que o tipo representa e por que ele existe como alias (em vez de usar o tipo primitivo diretamente)
+- Union types: o que cada variante representa
+- Mapped/utility types: o que a transformação produz
+
+PARA TODOS OS TIPOS:
+- JSDoc existente deve ser incorporado fielmente
+- "purpose.inferred": um item por tipo exportado, descrevendo o conceito de domínio que modela
+- "knownPitfalls.inferred": campos opcionais que callers frequentemente esquecem de checar, tipos de campo que parecem um mas são outro, armadilhas de serialização (datas como string vs Date)
+- "importantDecisions.inferred": por que o tipo tem essa forma — campos que parecem desnecessários mas têm razão, herança vs composição, discriminated unions vs simples objetos`
 
     case 'service':
       return `Este arquivo implementa um service, provider ou repositório. Descreva:
@@ -127,6 +164,18 @@ export function buildPrompt(ctx: PromptContext): string {
       .join('\n')
   })()
 
+  if (fileType === 'type-definition') {
+    return buildTypeFilePrompt({
+      analysis,
+      graph,
+      git,
+      staticNote,
+      sourceCode,
+      jsdoc,
+      specializedInstr: specializedInstructions(fileType),
+    })
+  }
+
   return `Analise o arquivo abaixo e gere uma nota operacional em português brasileiro.
 
 Arquivo: ${analysis.filePath}
@@ -185,6 +234,91 @@ Instruções por campo:
 - "importantDecisions.inferred": tradeoffs visíveis no código, padrões não óbvios, por que algo foi feito de determinada forma
 - "sensitiveDependencies.inferred": dependências externas críticas, APIs que podem falhar, env vars sem fallback
 - "impactValidation.inferred": o que quebraria se este arquivo mudar — consumidores, integrações, contratos
+evidence items: { "type": "code"|"git"|"test"|"graph"|"comment"|"doc", "detail": "string" }
+Retorne APENAS o objeto JSON, sem markdown.`
+}
+
+type TypeFilePromptArgs = {
+  analysis: StaticFileAnalysis
+  graph: GraphSignals
+  git: GitSignals
+  staticNote: AiFileNote
+  sourceCode: string
+  jsdoc: string[]
+  specializedInstr: string
+}
+
+function buildTypeFilePrompt({
+  analysis,
+  graph,
+  git,
+  staticNote,
+  sourceCode,
+  jsdoc,
+  specializedInstr,
+}: TypeFilePromptArgs): string {
+  const consumers = graph.reverseDependencies.slice(0, 10).join('\n') || 'nenhum'
+  const gitSignals = JSON.stringify(
+    {
+      churnScore: git.churnScore,
+      recentCommitMessages: git.recentCommitMessages,
+      coChangedFiles: git.coChangedFiles.slice(0, 5),
+      authorCount: git.authorCount,
+    },
+    null,
+    2,
+  )
+
+  return `Analise o arquivo de definição de tipos abaixo e gere uma nota operacional detalhada em português brasileiro.
+
+Arquivo: ${analysis.filePath}
+Tipo de arquivo: type-definition (interfaces, DTOs, enums, type aliases)
+
+${specializedInstr}
+
+---
+
+Tipos e interfaces exportados (nomes):
+${analysis.exports.length > 0 ? analysis.exports.join(', ') : 'nenhum'}
+
+Assinaturas completas dos tipos exportados:
+${analysis.signatures.length > 0 ? analysis.signatures.join('\n') : 'nenhuma extraída'}
+
+JSDoc existente no arquivo (fonte primária de verdade — incorpore fielmente):
+${jsdoc.length > 0 ? jsdoc.join('\n\n') : 'nenhum'}
+
+Consumidores deste arquivo (arquivos que importam estes tipos):
+${consumers}
+
+Sinais do Git:
+${gitSignals}
+
+Já observado estaticamente (não repita):
+${JSON.stringify({ purpose: staticNote.purpose.observed, knownPitfalls: staticNote.knownPitfalls.observed }, null, 2)}
+
+Código-fonte completo:
+\`\`\`typescript
+${sourceCode}
+\`\`\`
+
+Retorne um objeto JSON com estes campos:
+{
+  "summary": "2-3 frases descrevendo: (1) quais conceitos de domínio este arquivo modela, (2) quais são os tipos principais e seus campos/valores mais importantes, (3) onde esses tipos são usados no sistema. Mencione nomes reais de interfaces, campos e enums. OBRIGATÓRIO.",
+  "purpose": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
+  "invariants": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
+  "sensitiveDependencies": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
+  "importantDecisions": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
+  "knownPitfalls": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] },
+  "impactValidation": { "observed": [], "inferred": [], "confidence": 0.0, "evidence": [] }
+}
+
+Instruções por campo (arquivo de tipos):
+- "purpose.inferred": um item por tipo/interface/enum exportado. Para interfaces: liste os campos principais com tipo e propósito (ex: "UserProfile — modela o perfil público de um usuário; campos: id: string (UUID), name: string (nome de exibição), avatarUrl?: string (URL opcional da foto)"). Para enums: descreva cada valor e quando é usado. Para type aliases: explique o que o tipo representa.
+- "invariants.inferred": constraints implícitas nos tipos — campos que não podem ser nulos mesmo sendo tipados como opcionais, IDs que devem ser positivos, datas que devem estar em UTC, arrays que não podem estar vazios, valores de enum que têm ordem semântica, etc.
+- "knownPitfalls.inferred": campos opcionais que callers frequentemente esquecem de checar, tipos que parecem primitivos mas têm semântica especial (ex: string que é sempre um UUID), diferenças entre null e undefined, problemas de serialização (Date vs string), discriminated unions mal usadas.
+- "importantDecisions.inferred": por que o tipo tem essa forma — campos que parecem redundantes mas têm razão, escolha entre herança vs composição, discriminated unions vs simples string, por que certos campos são opcionais vs obrigatórios.
+- "sensitiveDependencies.inferred": tipos que dependem de contratos externos (APIs, banco), tipos que mudam com frequência e impactam muitos consumidores, relações de tipo que criam acoplamento forte.
+- "impactValidation.inferred": quais consumidores quebrariam se um campo mudar de tipo ou nome, quais campos são parte do contrato público vs implementação interna, impacto de adicionar campos obrigatórios.
 evidence items: { "type": "code"|"git"|"test"|"graph"|"comment"|"doc", "detail": "string" }
 Retorne APENAS o objeto JSON, sem markdown.`
 }

@@ -14,11 +14,11 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **LLM analysis improvements** — múltiplas melhorias implementadas: assinaturas completas via ts-morph, conteúdo dos testes, exports dos imports, JSDoc, prompts especializados por tipo de arquivo, instruções ricas por campo, limite de linhas configurável
 
-- [ ] **Richer notes for type/interface files** — notes on `.types.ts` and `.dto.ts` files are too shallow (only list exports). Prompt should extract and describe each exported interface's fields, purpose, and constraints. Consider a specialized prompt path for pure type files (no function bodies, only interfaces/enums/types).
+- [x] **Richer notes for type/interface files** — notes on `.types.ts` and `.dto.ts` files are too shallow (only list exports). Prompt should extract and describe each exported interface's fields, purpose, and constraints. Consider a specialized prompt path for pure type files (no function bodies, only interfaces/enums/types).
 
-- [ ] **Absolute paths in Impact Validation** — co-changed files in `impactValidation.observed` still surface as absolute paths in some cases. Trace where `git.coChangedFiles[].path` is set and ensure `path.relative(root, ...)` is applied consistently before building the note.
+- [x] **Absolute paths in Impact Validation** — co-changed files in `impactValidation.observed` still surface as absolute paths in some cases. Trace where `git.coChangedFiles[].path` is set and ensure `path.relative(root, ...)` is applied consistently before building the note.
 
-- [ ] **Business rules extraction** — nova tool MCP `get_business_rules(path)` que analisa um arquivo e retorna políticas de domínio identificadas: limites numéricos, guards de permissão, validações de schema, constantes de negócio; combina heurísticas estáticas (constantes `MAX_`/`MIN_`, comparações com literais, `throw` em condicionais) com síntese LLM
+- [x] **Business rules extraction** — nova tool MCP `get_business_rules(path)` que analisa um arquivo e retorna políticas de domínio identificadas: limites numéricos, guards de permissão, validações de schema, constantes de negócio; combina heurísticas estáticas (constantes `MAX_`/`MIN_`, comparações com literais, `throw` em condicionais) com síntese LLM
 
 ---
 

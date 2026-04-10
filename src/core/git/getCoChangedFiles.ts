@@ -49,7 +49,7 @@ export function getCoChangedFiles(filePath: string, root: string): CoChangedFile
     return [...frequency.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, TOP_N)
-      .map(([p, count]) => ({ path: path.resolve(root, p), count }))
+      .map(([p, count]) => ({ path: p, count }))
   } catch {
     return []
   }

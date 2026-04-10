@@ -8,6 +8,7 @@ import { extractExportDetails } from './analyzers/ts/extractExportDetails.ts'
 import { extractSymbols } from './analyzers/ts/extractSymbols.ts'
 import { extractHooks } from './analyzers/ts/extractHooks.ts'
 import { extractComments } from './analyzers/ts/extractComments.ts'
+import { extractSignatures } from './analyzers/ts/extractSignatures.ts'
 import { getAnalyzer } from './analyzerRegistry.ts'
 import { logger } from '../utils/logger.ts'
 
@@ -43,6 +44,7 @@ export function parseFile(filePath: string): StaticFileAnalysis {
     const symbols = extractSymbols(sourceFile)
     const hooks = extractHooks(sourceFile)
     const comments = extractComments(sourceFile)
+    const signatures = extractSignatures(sourceFile)
 
     const hasSideEffects =
       imports.external.some((s) =>
@@ -62,6 +64,7 @@ export function parseFile(filePath: string): StaticFileAnalysis {
       apiCalls: extractApiCalls(sourceFile.getFullText()),
       comments,
       hasSideEffects,
+      signatures,
     }
   } catch (err) {
     logger.warn(`Failed to parse ${filePath}: ${(err as Error).message}`)
@@ -83,6 +86,7 @@ function emptyAnalysis(filePath: string): StaticFileAnalysis {
     apiCalls: [],
     comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
     hasSideEffects: false,
+    signatures: [],
   }
 }
 

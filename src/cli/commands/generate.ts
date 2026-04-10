@@ -23,6 +23,7 @@ import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisStore.ts'
 import { concurrentMap } from '../../core/utils/concurrentMap.ts'
+import { writeGraph } from '../../core/output/writeGraph.ts'
 import { logger } from '../../core/utils/logger.ts'
 import { ProgressBar } from '../../core/utils/progress.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
@@ -39,6 +40,7 @@ export async function runGenerate(args: {
   dryRun?: boolean
   language?: string
   verbose?: boolean
+  forceFiles?: Set<string>
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -180,7 +182,7 @@ export async function runGenerate(args: {
       const currentHash = fileHashes.get(file.relativePath)!
 
       // Skip if the note is already up to date for this file
-      if (!args.force && noteHashStore.get(file.relativePath) === currentHash) {
+      if (!args.force && !args.forceFiles?.has(file.relativePath) && noteHashStore.get(file.relativePath) === currentHash) {
         if (args.dryRun) {
           dryRunEntries.push({ relativePath: file.relativePath, score: 0, useLlm: false, wouldSkip: true })
         }
@@ -240,8 +242,16 @@ export async function runGenerate(args: {
 
       if (wouldUseLlm) {
         logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)})`)
+        // Build a map of local import path → exports[] for richer prompt context
+        const localImportExports = new Map<string, string[]>()
+        for (const dep of graph.directDependencies) {
+          const depAnalysis = analyses.find((a) => a.filePath === dep)
+          if (depAnalysis && depAnalysis.exports.length > 0) {
+            localImportExports.set(path.relative(root, dep), depAnalysis.exports)
+          }
+        }
         note = await synthesizeFileNote(
-          { analysis, graph, tests, git: gitSignals, staticNote: note },
+          { analysis, graph, tests, git: gitSignals, staticNote: note, maxSourceLines: config.maxSourceLines, localImportExports },
           provider!,
           temperature,
           timeoutMs,
@@ -302,6 +312,12 @@ export async function runGenerate(args: {
   // 10. Build and write index
   const index = buildIndex(notes, root, config.staleThresholdDays, revGraph)
   await writeIndexNote(index, root, config.output)
+
+  // 11. Persist dependency graph to graph.json
+  const nodeMetaMap = new Map(
+    index.entries.map((e) => [e.relativePath, { domain: e.domain, criticalityScore: e.criticalityScore }]),
+  )
+  await writeGraph(depGraph, nodeMetaMap, root, config.output)
 
   logger.info(`Write phase done  [${Date.now() - tWrite}ms]`)
   logger.success(`Generated ${written} notes in ${config.output}/`)

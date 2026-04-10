@@ -24,6 +24,7 @@ export type StaticFileAnalysis = {
     decision: string[]
   }
   hasSideEffects: boolean
+  signatures: string[]
 }
 
 export type GraphSignals = {

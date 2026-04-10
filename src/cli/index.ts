@@ -7,6 +7,7 @@ import { runWatch } from './commands/watch.ts'
 import { runMcp } from './commands/mcp.ts'
 import { runUi } from './commands/ui.ts'
 import { runInit } from './commands/init.ts'
+import { runUpdate } from './commands/update.ts'
 
 const [, , command, ...rest] = process.argv
 
@@ -56,6 +57,10 @@ switch (command) {
 
   case 'mcp':
     await runMcp({ root: values.root, autoGenerate: (values as Record<string, unknown>)['auto-generate'] as boolean | undefined })
+    break
+
+  case 'update':
+    await runUpdate({ root: values.root, diff: values.diff })
     break
 
   case 'init':

@@ -70,6 +70,24 @@ Exibe sinais de cobertura de testes para o arquivo selecionado:
 
 Arquivos sem testes e com consumidores têm penalidade de criticidade maior (+0.15 vs +0.05), tornando a aba Tests um guia útil de onde adicionar testes primeiro.
 
+### Aba Graph
+
+Grafo interativo de dependências force-directed com D3.js:
+
+| Recurso | Descrição |
+|---|---|
+| **Cores dos nós** | Cada domínio recebe uma cor única de uma paleta de 12 cores |
+| **Tamanho dos nós** | Proporcional ao `criticalityScore` (raio de 4–16px) |
+| **Arestas direcionais** | Setas indicam direção de importação (importador → importado) |
+| **Hover** | Destaca o nó e seus vizinhos diretos; escurece o restante; tooltip mostra caminho, score e domínio |
+| **Click** | Carrega a nota do arquivo clicado no painel de detalhes |
+| **Drag** | Reposicione nós individuais na simulação de forças |
+| **Zoom/Pan** | Scroll para zoom, arrastar fundo para pan |
+| **Filtro por score mínimo** | Slider para ocultar nós abaixo de um threshold — útil para grafos grandes com 300+ nós |
+| **Labels** | Nomes de arquivo exibidos para nós com score >= 0.5 |
+
+O grafo carrega dados de `GET /api/graph`, que serve `.ai-notes/graph.json` (gerado durante `generate`). Fallback para construir o grafo a partir do `index.json` se `graph.json` não estiver disponível.
+
 ### Estatísticas de cobertura de testes
 
 Uma barra de estatísticas acima da lista de arquivos mostra a cobertura global de testes:

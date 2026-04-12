@@ -10,6 +10,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Python/Go `exportDetails` and `signatures`** — both analyzers now extract rich export metadata: Python extracts function signatures with params/return types, class definitions with bases, and docstrings; Go extracts function signatures including methods with receivers, struct fields, and interface methods; Python respects `__all__` and handles multiline imports; Go captures exported methods with receivers
+- **BM25 search index** — `generate` builds `.ai-notes/search-index.json` using MiniSearch; the MCP `search` tool uses BM25 ranked full-text search with fuzzy matching and prefix support; falls back to linear scan when index is absent
+- **Graph UI tab** — interactive D3.js force-directed dependency graph visualization in the `ui` command; nodes colored by domain, sized by criticality; directed edges; click-to-detail, zoom/pan/drag, hover neighbor highlight, score filter slider
+- **Governance-aware analysis** — new `src/core/governance/` module detects project docs (`Docs/`, `Workflows/`, `Quality/`) and injects `evidence.type: 'doc'` into file notes; new `get_governance_context` MCP tool; `get_architecture_context` enriched with governance summary
+- **`get_business_rules` MCP tool** — statically extracts business rules, domain constraints, and policy enforcement patterns from source files
+- **Graph persistence** — `generate` writes `.ai-notes/graph.json` with nodes and edges; `get_impact` uses it for full transitive BFS
+- **`update` command** — re-runs `generate` only for stale files in `index.json`
+- **LLM analysis enrichment** — full type signatures via ts-morph, related test content in prompts, JSDoc extraction, specialized per-file-type prompts
+- **Richer notes for type/interface files** — dedicated prompt path for `*.types.ts`, `*.dto.ts`, etc.
 - **Live pipeline execution panel** — "▶ Run generate" button triggers the full pipeline from the browser; a bottom log panel shows each step in real time with timestamps and emoji icons; auto-refreshes on completion; `--force` and `--verbose` checkboxes available
 - **`--verbose` flag for `generate`** — per-file log with score, dep/consumer counts, churn, signal flags; parse timing per file; top-5 consumers and top-5 by score printed at end; uncovered file count
 - **Phase timers** — scan, analyze, graph, and write phases each log elapsed time; graph step logs node + edge count; total run time logged at end
@@ -17,6 +26,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Test coverage stats strip** — global counts (covered / uncovered / avg coverage) above the file list, backed by `/api/stats`
 - **`package.json` run scripts** — `bun run scan/generate/generate:force/generate:dry/generate:v/watch/mcp/ui/init:agent` replace verbose `bun src/cli/index.ts …` invocations
 - **`debugSignals` in every note** — all raw pipeline signals now stored in each `.json` note, powering the Debug tab score breakdown
+
+### Fixed
+- **Missing `signatures` field in Python/Go analyzers** — LLM prompts no longer show "none extracted" for Python/Go files
+- **Absolute paths in Impact Validation** — co-changed files now use relative paths consistently
+
+### Removed
+- **`get_overview` MCP tool** — removed orphan tool; `get_architecture_context` provides equivalent and richer functionality
 
 ### Changed
 - **`purpose.observed`** — now shows full typed function signatures (`name(param: Type): ReturnType`) and first JSDoc line instead of bare export name lists

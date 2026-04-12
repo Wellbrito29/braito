@@ -91,8 +91,9 @@ Grava `.ai-notes/<caminho>.json`, `.ai-notes/<caminho>.md`, `index.json`, `index
 |---|---|---|
 | CLI | `src/cli/` | Orquestração dos comandos — `scan`, `generate`, `watch`, `mcp`, `ui` |
 | Core | `src/core/` | Toda a lógica de negócio |
-| Output | `src/core/output/` | Serialização JSON/Markdown, construção do índice |
+| Output | `src/core/output/` | Serialização JSON/Markdown, construção do índice, índice de busca BM25 |
 | Cache | `src/core/cache/` | SHA-1 por arquivo, pular inalterados, detecção de notas antigas |
+| Governance | `src/core/governance/` | Detectar docs do projeto (Docs/, Workflows/, Quality/); injetar evidência `doc` nas notas |
 
 ## Decisão arquitetural principal
 

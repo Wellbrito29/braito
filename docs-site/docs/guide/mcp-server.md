@@ -66,8 +66,10 @@ The MCP server can run outside an IDE too — any client that speaks JSON-RPC 2.
 | `get_index` | Complete ranked index of all notes |
 | `get_architecture_context` | Synthesized overview — top critical files, domain breakdown, invariants |
 | `get_impact` | Blast-radius of a file — which files depend on it (BFS, configurable depth) |
-| `search` | Full-text search across all note fields |
+| `search` | BM25 ranked full-text search across all note fields (fuzzy + prefix) |
 | `get_domain` | All files in a specific domain, sorted by criticality |
+| `get_business_rules` | Extract business rules, domain constraints, and policy enforcement patterns from a source file |
+| `get_governance_context` | Detected governance docs (Docs/, Workflows/, Quality/), style, domain mappings, and constraints |
 
 ## Tool details
 

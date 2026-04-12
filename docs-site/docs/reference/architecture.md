@@ -91,8 +91,9 @@ Writes `.ai-notes/<path>.json`, `.ai-notes/<path>.md`, `index.json`, `index.md`.
 |---|---|---|
 | CLI | `src/cli/` | Command orchestration — `scan`, `generate`, `watch`, `mcp`, `ui` |
 | Core | `src/core/` | All business logic |
-| Output | `src/core/output/` | JSON/Markdown serialization, index building |
+| Output | `src/core/output/` | JSON/Markdown serialization, index building, BM25 search index |
 | Cache | `src/core/cache/` | SHA-1 per file, skip unchanged, stale detection |
+| Governance | `src/core/governance/` | Detect project docs (Docs/, Workflows/, Quality/); inject `doc` evidence into notes |
 
 ## Key architectural decision
 

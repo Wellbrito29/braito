@@ -146,8 +146,10 @@ bun src/cli/index.ts mcp --root ./
 | `get_index` | Obtém o índice completo ranqueado |
 | `get_architecture_context` | Visão geral sintetizada — arquivos mais críticos, breakdown por domínio, invariantes |
 | `get_impact` | Raio de impacto de um arquivo — quais arquivos dependem dele (BFS, profundidade configurável) |
-| `search` | Busca de texto completo em todos os campos de notas |
+| `search` | Busca BM25 ranqueada em todos os campos de notas (fuzzy + prefix) |
 | `get_domain` | Todos os arquivos em um domínio específico, ordenados por criticidade |
+| `get_business_rules` | Extrai regras de negócio, restrições de domínio e padrões de validação de um arquivo |
+| `get_governance_context` | Documentos de governança detectados (Docs/, Workflows/, Quality/), estilo, mapeamentos de domínio |
 
 Adicione à configuração do cliente MCP (ex: `~/.cursor/mcp.json` ou `~/.claude/config.json`):
 
@@ -170,6 +172,8 @@ Adicione à configuração do cliente MCP (ex: `~/.cursor/mcp.json` ou `~/.claud
 bun src/cli/index.ts ui --root ./
 # → http://localhost:7842
 ```
+
+Navegue pelas notas agrupadas por domínio com quatro abas por arquivo: **Note** (purpose, invariantes, pitfalls, decisões), **Debug** (breakdown de score, evidências), **Tests** (cobertura, testes relacionados) e **Graph** (visualização interativa de grafo de dependências com D3.js, zoom, drag, highlight de vizinhos e filtro por score).
 
 ---
 
@@ -195,7 +199,8 @@ O diretório `vscode-extension/` contém uma extensão nativa para VS Code:
 | Tests | `src/core/tests/` | Descoberta de testes; integração lcov/c8 |
 | Cache | `src/core/cache/` | SHA-1 por arquivo, detecção de notas antigas |
 | LLM | `src/core/llm/` | Abstração de provider, retry/timeout, construtor de prompt, validação Zod |
-| Output | `src/core/output/` | Serialização JSON/Markdown, índice agrupado por domínio |
+| Output | `src/core/output/` | Serialização JSON/Markdown, índice agrupado por domínio, índice de busca BM25 |
+| Governance | `src/core/governance/` | Detectar docs do projeto (Docs/, Workflows/, Quality/); injetar evidência `doc` |
 
 ---
 

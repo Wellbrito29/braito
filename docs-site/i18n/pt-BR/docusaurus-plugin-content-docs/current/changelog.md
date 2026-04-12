@@ -10,6 +10,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **`exportDetails` e `signatures` para Python/Go** — ambos os analisadores agora extraem metadados ricos: Python extrai assinaturas de funções com params/return types, classes com bases, e docstrings; Go extrai assinaturas de funções com receivers, campos de structs e métodos de interfaces; Python respeita `__all__` e trata imports multiline; Go captura métodos exportados com receivers
+- **Índice de busca BM25** — `generate` constrói `.ai-notes/search-index.json` via MiniSearch; a ferramenta MCP `search` usa busca ranqueada com fuzzy matching e prefix; fallback para scan linear quando índice ausente
+- **Aba Graph na UI** — visualização interativa de grafo de dependências com D3.js force-directed; nós coloridos por domínio, dimensionados por criticidade; arestas direcionais; click-to-detail, zoom/pan/drag, highlight de vizinhos, filtro por score
+- **Análise com governança** — novo módulo `src/core/governance/` detecta docs do projeto (`Docs/`, `Workflows/`, `Quality/`) e injeta `evidence.type: 'doc'` nas notas; nova ferramenta MCP `get_governance_context`; `get_architecture_context` enriquecido com resumo de governança
+- **Ferramenta MCP `get_business_rules`** — extrai estaticamente regras de negócio, restrições de domínio e padrões de validação
+- **Persistência do grafo** — `generate` grava `.ai-notes/graph.json` com nós e arestas; `get_impact` usa para BFS transitivo completo
+- **Comando `update`** — re-executa `generate` apenas para arquivos stale no `index.json`
+- **Enriquecimento da análise LLM** — assinaturas tipadas completas via ts-morph, conteúdo de testes nos prompts, extração de JSDoc, prompts especializados por tipo de arquivo
+- **Notas mais ricas para arquivos de tipo/interface** — caminho de prompt dedicado para `*.types.ts`, `*.dto.ts`, etc.
 - **Painel de execução ao vivo** — botão "▶ Run generate" dispara o pipeline completo pelo browser; painel inferior mostra cada etapa em tempo real com timestamps e ícones emoji; atualiza automaticamente ao terminar; checkboxes `--force` e `--verbose` disponíveis
 - **Flag `--verbose` no `generate`** — linha por arquivo com score, contagens de deps/consumidores, churn e flags de sinais; timing de parse por arquivo; top-5 consumidores e top-5 por score ao final; contagem de arquivos sem testes
 - **Timers por fase** — scan, analyze, graph e write registram tempo decorrido; etapa de grafo registra contagem de nós + arestas; tempo total ao final
@@ -17,6 +26,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Barra de estatísticas de cobertura** — contagens globais (covered / uncovered / avg coverage) acima da lista de arquivos, via `/api/stats`
 - **Scripts `package.json`** — `bun run scan/generate/generate:force/generate:dry/generate:v/watch/mcp/ui/init:agent` substituem as invocações verbosas `bun src/cli/index.ts …`
 - **`debugSignals` em cada nota** — todos os sinais brutos do pipeline agora armazenados em cada `.json`, alimentando o score breakdown da aba Debug
+
+### Fixed
+- **Campo `signatures` ausente nos analisadores Python/Go** — prompts LLM não mostram mais "nenhuma extraída" para arquivos Python/Go
+- **Caminhos absolutos no Impact Validation** — arquivos co-modificados agora usam caminhos relativos consistentemente
+
+### Removed
+- **Ferramenta MCP `get_overview`** — removida ferramenta órfã; `get_architecture_context` oferece funcionalidade equivalente e mais rica
 
 ### Changed
 - **`purpose.observed`** — agora exibe assinaturas de função tipadas completas (`name(param: Tipo): ReturnType`) e a primeira linha do JSDoc, em vez de apenas listas de nomes de exports

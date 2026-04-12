@@ -70,6 +70,24 @@ Shows test coverage signals for the selected file:
 
 Uncovered files with consumers incur a higher criticality penalty (+0.15 vs +0.05), making the Tests tab a useful guide for where to add tests first.
 
+### Graph tab
+
+Interactive force-directed dependency graph powered by D3.js:
+
+| Feature | Description |
+|---|---|
+| **Node colors** | Each domain gets a unique color from a 12-color palette |
+| **Node size** | Proportional to `criticalityScore` (range: 4–16px radius) |
+| **Directed edges** | Arrow markers show import direction (importer → imported) |
+| **Hover** | Highlights the hovered node and its direct neighbors; dims everything else; tooltip shows path, score, and domain |
+| **Click** | Loads the clicked file's note in the detail panel |
+| **Drag** | Reposition individual nodes in the force simulation |
+| **Zoom/Pan** | Mouse wheel to zoom, drag background to pan |
+| **Min-score filter** | Slider to hide nodes below a criticality threshold — useful for large graphs with 300+ nodes |
+| **Labels** | File names shown for nodes with score >= 0.5 |
+
+The graph loads data from `GET /api/graph`, which serves `.ai-notes/graph.json` (generated during `generate`). Falls back to building the graph from `index.json` dependents if `graph.json` is not available.
+
 ### Test coverage stats
 
 A stats strip above the file list shows global test coverage at a glance:

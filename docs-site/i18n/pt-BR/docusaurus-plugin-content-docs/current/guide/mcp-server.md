@@ -70,8 +70,10 @@ O servidor MCP também pode rodar fora de uma IDE — qualquer cliente que fale 
 | `get_index` | Índice completo ranqueado de todas as notas |
 | `get_architecture_context` | Visão geral sintetizada — arquivos mais críticos, breakdown por domínio, invariantes |
 | `get_impact` | Raio de impacto de um arquivo — quais arquivos dependem dele (BFS, profundidade configurável) |
-| `search` | Busca de texto completo em todos os campos de notas |
+| `search` | Busca BM25 ranqueada em todos os campos de notas (fuzzy + prefix) |
 | `get_domain` | Todos os arquivos em um domínio específico, ordenados por criticidade |
+| `get_business_rules` | Extrai regras de negócio, restrições de domínio e padrões de validação de um arquivo |
+| `get_governance_context` | Documentos de governança detectados (Docs/, Workflows/, Quality/), estilo, mapeamentos de domínio |
 
 ## Detalhes das ferramentas
 

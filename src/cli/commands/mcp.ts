@@ -131,12 +131,6 @@ const TOOLS = [
     },
   },
   {
-    name: 'get_overview',
-    description:
-      'Get the repository-level overview — a high-level description of what the project does, its main domains, most critical files, and entry points. Read this first to orient yourself in a new codebase.',
-    inputSchema: { type: 'object', properties: {} },
-  },
-  {
     name: 'get_business_rules',
     description:
       'Extract business rules, domain constraints, and policy enforcement patterns from a source file. Returns numeric limits, permission guards, schema validations, and business constants found via static analysis.',
@@ -462,19 +456,6 @@ export async function handleRequest(
       }
     }
 
-    if (name === 'get_overview') {
-      const overviewPath = path.resolve(root, outputDir, 'overview.json')
-      if (!fs.existsSync(overviewPath)) {
-        return errorResponse(id, -32602, "Overview not found. Run 'generate' first.")
-      }
-      try {
-        const overview = fs.readFileSync(overviewPath, 'utf-8')
-        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: overview }] } }
-      } catch {
-        return errorResponse(id, -32603, 'Failed to read overview.')
-      }
-    }
-
     if (name === 'get_business_rules') {
       const filePath = args.path as string
       if (!filePath) return errorResponse(id, -32602, 'path must not be empty.')
@@ -555,7 +536,7 @@ export async function runMcp(args: { root?: string; autoGenerate?: boolean }): P
   }
 
   process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
-  process.stderr.write(`Tools: get_overview | get_file_note | get_index | get_impact | search | get_domain | search_by_criticality | get_business_rules\n`)
+  process.stderr.write(`Tools: get_file_note | get_index | get_architecture_context | get_impact | search | get_domain | search_by_criticality | get_business_rules\n`)
 
   let buffer = ''
 

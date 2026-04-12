@@ -17,6 +17,7 @@ export const pythonAnalyzer: LanguageAnalyzer = {
       apiCalls: extractApiCalls(content),
       comments: extractComments(content),
       hasSideEffects: hasSideEffects(content),
+      signatures: [],
     }
   },
 }

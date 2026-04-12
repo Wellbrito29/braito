@@ -141,7 +141,6 @@ bun src/cli/index.ts mcp --root ./
 
 | Tool | Description |
 |---|---|
-| `get_overview` | High-level project overview — domains, entry points, most critical files |
 | `get_file_note` | Get the full note for a specific file |
 | `get_index` | Get the full ranked index |
 | `get_impact` | Blast radius of a file — transitive dependents with optional notes |

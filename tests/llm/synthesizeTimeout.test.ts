@@ -29,6 +29,7 @@ function makeCtx(staticNote: AiFileNote) {
     envVars: [], apiCalls: [],
     comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
     hasSideEffects: false,
+    signatures: [],
   }
   const graph: GraphSignals = { filePath: staticNote.filePath, directDependencies: [], reverseDependencies: [] }
   const tests: TestSignals = { filePath: staticNote.filePath, relatedTests: [] }

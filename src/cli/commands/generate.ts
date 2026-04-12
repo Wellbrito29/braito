@@ -319,6 +319,16 @@ export async function runGenerate(args: {
   )
   await writeGraph(depGraph, nodeMetaMap, root, config.output)
 
+  // 12. Build search index for BM25 full-text search
+  const { buildSearchIndex } = await import('../../core/output/buildSearchIndex.ts')
+  const notesMap = new Map<string, typeof notes[number]>()
+  for (const note of notes) {
+    notesMap.set(path.relative(root, note.filePath), note)
+  }
+  const searchIndexJson = buildSearchIndex(notesMap)
+  const searchIndexPath = path.join(root, config.output, 'search-index.json')
+  await fs.writeFile(searchIndexPath, searchIndexJson)
+
   logger.info(`Write phase done  [${Date.now() - tWrite}ms]`)
   logger.success(`Generated ${written} notes in ${config.output}/`)
   if (skipped > 0) logger.info(`Skipped ${skipped} unchanged files (use --force to reprocess)`)

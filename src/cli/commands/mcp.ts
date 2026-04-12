@@ -380,14 +380,54 @@ export async function handleRequest(
     }
 
     if (name === 'search') {
-      const query = (args.query as string).toLowerCase().trim()
+      const query = (args.query as string).trim()
       const limit = (args.limit as number | undefined) ?? 20
       if (!query) return errorResponse(id, -32602, 'query must not be empty.')
+
+      // Try BM25 search index first, fall back to linear substring scan
+      const searchIndexPath = path.resolve(root, outputDir, 'search-index.json')
+      if (fs.existsSync(searchIndexPath)) {
+        try {
+          const { loadSearchIndex } = await import('../../core/output/buildSearchIndex.ts')
+          const json = fs.readFileSync(searchIndexPath, 'utf-8')
+          const ms = loadSearchIndex(json)
+          const hits = ms.search(query, { prefix: true, fuzzy: 0.2 }).slice(0, limit)
+
+          // Enrich with criticality from index
+          const indexPath = path.resolve(root, outputDir, 'index.json')
+          let entryMap = new Map<string, { criticalityScore: number; domain: string }>()
+          if (fs.existsSync(indexPath)) {
+            const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+            entryMap = new Map(
+              (index.entries as Array<{ relativePath: string; criticalityScore: number; domain: string }>)
+                .map((e) => [e.relativePath, { criticalityScore: e.criticalityScore, domain: e.domain }]),
+            )
+          }
+
+          const results = hits.map((h) => {
+            const meta = entryMap.get(h.id) ?? { criticalityScore: 0, domain: '' }
+            return {
+              relativePath: h.id,
+              score: h.score,
+              criticalityScore: meta.criticalityScore,
+              domain: meta.domain,
+              matchedFields: Object.keys(h.match),
+            }
+          })
+
+          return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ query, searchMethod: 'bm25', totalResults: results.length, results }, null, 2) }] } }
+        } catch {
+          // Fall through to linear scan
+        }
+      }
+
+      // Fallback: linear substring scan (no search index available)
       const indexPath = path.resolve(root, outputDir, 'index.json')
       if (!fs.existsSync(indexPath)) {
         return errorResponse(id, -32602, "Index not found. Run 'generate' first.")
       }
       try {
+        const queryLower = query.toLowerCase()
         const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
         const entries = index.entries as Array<{ relativePath: string; criticalityScore: number; domain: string }>
         const SEARCH_FIELDS = ['purpose', 'invariants', 'knownPitfalls', 'importantDecisions', 'sensitiveDependencies', 'impactValidation']
@@ -404,14 +444,19 @@ export async function handleRequest(
           try { note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { continue }
 
           const matches: Array<{ field: string; text: string }> = []
-          type NoteField = { observed?: string[]; inferred?: string[] }
+          type NoteField = { observed?: string[]; inferred?: string[]; evidence?: Array<{ detail: string }> }
 
           for (const field of SEARCH_FIELDS) {
             const f = note[field] as NoteField | undefined
             if (!f) continue
             for (const text of [...(f.observed ?? []), ...(f.inferred ?? [])]) {
-              if (text.toLowerCase().includes(query)) {
+              if (text.toLowerCase().includes(queryLower)) {
                 matches.push({ field, text })
+              }
+            }
+            for (const e of f.evidence ?? []) {
+              if (e.detail.toLowerCase().includes(queryLower)) {
+                matches.push({ field: `${field}.evidence`, text: e.detail })
               }
             }
           }
@@ -424,7 +469,7 @@ export async function handleRequest(
         }
 
         results.sort((a, b) => b.criticalityScore - a.criticalityScore)
-        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ query, totalResults: results.length, results }, null, 2) }] } }
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ query, searchMethod: 'substring', totalResults: results.length, results }, null, 2) }] } }
       } catch {
         return errorResponse(id, -32603, 'Failed to search notes.')
       }

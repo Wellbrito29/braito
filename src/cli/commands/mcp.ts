@@ -145,6 +145,12 @@ const TOOLS = [
       required: ['path'],
     },
   },
+  {
+    name: 'get_governance_context',
+    description:
+      'Get the governance context for the project — detected documentation artifacts (Docs/, Workflows/, Quality/), governance style, domain mappings, and constraints extracted from project docs. Returns null if no governance docs are detected.',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ]
 
 function send(msg: JsonRpcResponse): void {
@@ -290,7 +296,7 @@ export async function handleRequest(
           .sort((a, b) => b.avgCriticality - a.avgCriticality)
 
         const entries = index.entries as Array<{ criticalityScore: number }>
-        const context = {
+        const context: Record<string, unknown> = {
           summary: {
             totalFiles: entries.length,
             staleNotes: index.staleFiles ?? 0,
@@ -300,6 +306,20 @@ export async function handleRequest(
           domains,
           topCriticalFiles: topFiles,
         }
+
+        // Enrich with governance context if available
+        try {
+          const { loadGovernanceContext } = await import('../../core/governance/loadGovernanceContext.ts')
+          const governance = loadGovernanceContext(root)
+          if (governance) {
+            context.governance = {
+              style: governance.model.style,
+              documentCount: governance.model.docs.length,
+              documents: governance.model.docs.map((d) => ({ path: d.path, category: d.category, title: d.title })),
+              summary: governance.promptSummary.slice(0, 1000),
+            }
+          }
+        } catch { /* governance is optional */ }
 
         return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(context, null, 2) }] } }
       } catch {
@@ -558,6 +578,33 @@ export async function handleRequest(
       return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
     }
 
+    if (name === 'get_governance_context') {
+      try {
+        const { loadGovernanceContext } = await import('../../core/governance/loadGovernanceContext.ts')
+        const governance = loadGovernanceContext(root)
+        if (!governance) {
+          return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ detected: false, message: 'No governance documents found. Place docs in Docs/, Workflows/, Quality/ or similar directories.' }, null, 2) }] } }
+        }
+
+        const result = {
+          detected: true,
+          style: governance.model.style,
+          documentCount: governance.model.docs.length,
+          documents: governance.model.docs.map((d) => ({
+            path: d.path,
+            category: d.category,
+            title: d.title,
+            sectionCount: d.sections.size,
+          })),
+          domainMappings: governance.model.domainMappings,
+          promptSummary: governance.promptSummary,
+        }
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to load governance context.')
+      }
+    }
+
     return errorResponse(id, -32601, `Unknown tool: ${name}`)
   }
 
@@ -581,7 +628,7 @@ export async function runMcp(args: { root?: string; autoGenerate?: boolean }): P
   }
 
   process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
-  process.stderr.write(`Tools: get_file_note | get_index | get_architecture_context | get_impact | search | get_domain | search_by_criticality | get_business_rules\n`)
+  process.stderr.write(`Tools: get_file_note | get_index | get_architecture_context | get_impact | search | get_domain | search_by_criticality | get_business_rules | get_governance_context\n`)
 
   let buffer = ''
 

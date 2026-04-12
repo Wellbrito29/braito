@@ -152,6 +152,14 @@ export async function runGenerate(args: {
   const language = args.language ?? config.language ?? 'en'
   const projectContext = loadProjectContext(root)
   if (projectContext) logger.info('braito.context.md loaded — injecting project context into LLM prompts')
+
+  // Load governance context (optional — from Docs/, Workflows/, Quality/, etc.)
+  const { loadGovernanceContext: loadGov } = await import('../../core/governance/loadGovernanceContext.ts')
+  const governanceContext = loadGov(root)
+  if (governanceContext) {
+    logger.info(`Governance docs detected (${governanceContext.model.style}): ${governanceContext.model.docs.length} documents`)
+  }
+
   // Use concurrency cap from config when LLM is active; fall back to 1 (sequential) otherwise
   const concurrency = provider ? (llmConfig?.concurrency ?? 5) : 1
 
@@ -212,7 +220,7 @@ export async function runGenerate(args: {
       const coveragePct = coverageMap?.get(file.relativePath)
       const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
-      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles)
+      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext)
       const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)
 
       if (args.verbose) {

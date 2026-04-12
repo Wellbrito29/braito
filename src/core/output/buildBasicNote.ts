@@ -1,5 +1,7 @@
+import path from 'node:path'
 import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../types/file-analysis.ts'
 import type { AiFileNote, ChangelogEntry, DebugSignals, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
+import type { GovernanceContext } from '../governance/types.ts'
 import { SCHEMA_VERSION } from '../types/schema-version.ts'
 
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
@@ -12,6 +14,7 @@ export function buildBasicNote(
   tests: TestSignals,
   git: GitSignals,
   cycleFiles?: Set<string>,
+  governance?: GovernanceContext | null,
 ): AiFileNote {
   const purposeObserved: string[] = []
   const purposeEvidence: EvidenceItem[] = []
@@ -173,6 +176,29 @@ export function buildBasicNote(
     }
   }
 
+  // Inject governance evidence if available
+  if (governance) {
+    const relPath = analysis.filePath.startsWith('/') ? path.relative(path.dirname(analysis.filePath.split('/src/')[0] || analysis.filePath), analysis.filePath) : analysis.filePath
+    const fileInfo = governance.fileGovernance.get(relPath) ??
+      governance.fileGovernance.get(analysis.filePath) ??
+      findGovernanceByPrefix(governance, relPath)
+
+    if (fileInfo) {
+      for (const docPath of fileInfo.governingDocs) {
+        purposeObserved.push(`Governed by: ${docPath}`)
+        purposeEvidence.push({ type: 'doc', detail: `Governance document: ${docPath}` })
+      }
+      for (const constraint of fileInfo.constraints) {
+        invariantsObserved.push(`Doc constraint: ${constraint}`)
+        invariantsEvidence.push({ type: 'doc', detail: constraint })
+      }
+      for (const decision of fileInfo.decisions) {
+        decisionsObserved.push(`Doc decision: ${decision}`)
+        decisionsEvidence.push({ type: 'doc', detail: decision })
+      }
+    }
+  }
+
   return {
     schemaVersion: SCHEMA_VERSION,
     filePath: analysis.filePath,
@@ -275,4 +301,17 @@ function computeCriticality(
   if (git.authorCount > 3) score += 0.05
 
   return Math.min(parseFloat(score.toFixed(2)), 1)
+}
+
+/** Find governance info by matching any prefix of the file path */
+function findGovernanceByPrefix(governance: GovernanceContext, relPath: string): import('../governance/types.ts').FileGovernanceInfo | undefined {
+  for (const [key, info] of governance.fileGovernance) {
+    if (relPath.includes(key) || key.includes(relPath)) return info
+  }
+  for (const mapping of governance.model.domainMappings) {
+    if (relPath.startsWith(mapping.pattern)) {
+      return { governingDocs: [mapping.docPath], constraints: [], decisions: [] }
+    }
+  }
+  return undefined
 }

@@ -95,6 +95,106 @@ describe('goAnalyzer', () => {
   })
 })
 
+describe('goAnalyzer — exportDetails and signatures', () => {
+  it('extracts function signatures with params and return types', () => {
+    const code = `
+package main
+
+func BuildGraph(root string, files []File) (Graph, error) {
+    return nil, nil
+}
+`.trim()
+    const result = goAnalyzer.analyze('/project/graph.go', code)
+    expect(result.exportDetails).toHaveLength(1)
+    expect(result.exportDetails[0].name).toBe('BuildGraph')
+    expect(result.exportDetails[0].signature).toBe('func BuildGraph(root string, files []File) (Graph, error)')
+    expect(result.exportDetails[0].kind).toBe('function')
+  })
+
+  it('extracts methods with receiver as exported', () => {
+    const code = `
+package server
+
+func (s *Server) Start(port int) error {
+    return nil
+}
+
+func (s *Server) stop() {
+}
+`.trim()
+    const result = goAnalyzer.analyze('/project/server.go', code)
+    expect(result.exports).toContain('Start')
+    expect(result.exports).not.toContain('stop')
+    const detail = result.exportDetails.find((d) => d.name === 'Start')
+    expect(detail).toBeDefined()
+    expect(detail!.signature).toContain('(s *Server)')
+    expect(detail!.kind).toBe('function')
+  })
+
+  it('extracts struct with fields', () => {
+    const code = `
+package config
+
+type Config struct {
+    Port    int
+    Host    string
+    Debug   bool
+}
+`.trim()
+    const result = goAnalyzer.analyze('/project/config.go', code)
+    const detail = result.exportDetails.find((d) => d.name === 'Config')
+    expect(detail).toBeDefined()
+    expect(detail!.kind).toBe('type')
+    expect(detail!.signature).toContain('Port int')
+    expect(detail!.signature).toContain('Host string')
+  })
+
+  it('extracts interface with methods', () => {
+    const code = `
+package repo
+
+type Repository interface {
+    FindByID(id string) (*Entity, error)
+    Save(entity *Entity) error
+}
+`.trim()
+    const result = goAnalyzer.analyze('/project/repo.go', code)
+    const detail = result.exportDetails.find((d) => d.name === 'Repository')
+    expect(detail).toBeDefined()
+    expect(detail!.kind).toBe('type')
+    expect(detail!.signature).toContain('FindByID')
+    expect(detail!.signature).toContain('Save')
+  })
+
+  it('populates signatures from exportDetails', () => {
+    const code = `
+package main
+
+func Hello() string { return "hi" }
+
+type Msg struct {
+    Text string
+}
+`.trim()
+    const result = goAnalyzer.analyze('/project/main.go', code)
+    expect(result.signatures.length).toBeGreaterThan(0)
+    expect(result.signatures.some((s) => s.includes('Hello'))).toBe(true)
+    expect(result.signatures.some((s) => s.includes('Msg'))).toBe(true)
+  })
+
+  it('extracts function with single return type', () => {
+    const code = `
+package util
+
+func Format(s string) string {
+    return s
+}
+`.trim()
+    const result = goAnalyzer.analyze('/project/util.go', code)
+    expect(result.exportDetails[0].signature).toBe('func Format(s string) string')
+  })
+})
+
 describe('goAnalyzer — go.mod module-relative import detection', () => {
   let tmpDir: string
   let goFile: string

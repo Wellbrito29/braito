@@ -63,4 +63,122 @@ describe('pythonAnalyzer', () => {
     const result = pythonAnalyzer.analyze('/project/src/loader.py', SAMPLE)
     expect(result.hooks).toHaveLength(0)
   })
+
+  it('returns signatures array', () => {
+    const result = pythonAnalyzer.analyze('/project/src/loader.py', SAMPLE)
+    expect(result.signatures).toBeDefined()
+    expect(result.signatures.length).toBeGreaterThan(0)
+  })
+})
+
+describe('pythonAnalyzer — exportDetails', () => {
+  it('extracts function signatures with params and return type', () => {
+    const code = `
+def add(a: int, b: int) -> int:
+    return a + b
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/math.py', code)
+    expect(result.exportDetails).toHaveLength(1)
+    expect(result.exportDetails[0].name).toBe('add')
+    expect(result.exportDetails[0].signature).toBe('def add(a: int, b: int) -> int')
+    expect(result.exportDetails[0].kind).toBe('function')
+  })
+
+  it('extracts async function signatures', () => {
+    const code = `
+async def fetch(url: str) -> dict:
+    pass
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/api.py', code)
+    expect(result.exportDetails).toHaveLength(1)
+    expect(result.exportDetails[0].signature).toBe('async def fetch(url: str) -> dict')
+    expect(result.exportDetails[0].kind).toBe('function')
+  })
+
+  it('extracts class with bases and docstring', () => {
+    const code = `
+class UserService(BaseService):
+    """Handles user CRUD operations"""
+    def create(self):
+        pass
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/service.py', code)
+    const cls = result.exportDetails.find((d) => d.name === 'UserService')
+    expect(cls).toBeDefined()
+    expect(cls!.signature).toBe('class UserService(BaseService)')
+    expect(cls!.kind).toBe('class')
+    expect(cls!.docComment).toBe('Handles user CRUD operations')
+  })
+
+  it('extracts function docstrings', () => {
+    const code = `
+def process(data: list) -> bool:
+    """Process the incoming data batch"""
+    return True
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/proc.py', code)
+    expect(result.exportDetails[0].docComment).toBe('Process the incoming data batch')
+  })
+
+  it('populates signatures from exportDetails', () => {
+    const code = `
+def foo(x: int) -> str:
+    pass
+
+class Bar:
+    pass
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/mod.py', code)
+    expect(result.signatures).toContain('def foo(x: int) -> str')
+    expect(result.signatures).toContain('class Bar')
+  })
+})
+
+describe('pythonAnalyzer — __all__', () => {
+  it('filters exports when __all__ is defined', () => {
+    const code = `
+__all__ = ['public_func']
+
+def public_func():
+    pass
+
+def hidden_func():
+    pass
+
+class HiddenClass:
+    pass
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/mod.py', code)
+    expect(result.exports).toContain('public_func')
+    expect(result.exports).not.toContain('hidden_func')
+    expect(result.exports).not.toContain('HiddenClass')
+    expect(result.exportDetails).toHaveLength(1)
+    expect(result.exportDetails[0].name).toBe('public_func')
+  })
+})
+
+describe('pythonAnalyzer — multiline imports', () => {
+  it('extracts imports from multiline from...import blocks', () => {
+    const code = `
+from collections import (
+    OrderedDict,
+    defaultdict,
+)
+from os import path
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/util.py', code)
+    expect(result.imports).toContain('collections')
+    expect(result.imports).toContain('os')
+  })
+
+  it('extracts relative multiline imports as local', () => {
+    const code = `
+from .models import (
+    User,
+    Role,
+)
+`.trim()
+    const result = pythonAnalyzer.analyze('/project/views.py', code)
+    expect(result.localImports).toContain('.models')
+  })
 })

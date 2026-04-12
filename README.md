@@ -144,11 +144,12 @@ bun src/cli/index.ts mcp --root ./
 | `get_file_note` | Get the full note for a specific file |
 | `get_index` | Get the full ranked index |
 | `get_impact` | Blast radius of a file — transitive dependents with optional notes |
-| `search` | Full-text search across all note fields |
+| `search` | BM25 ranked full-text search across all note fields (fuzzy + prefix) |
 | `get_domain` | All files in a domain, sorted by criticality |
 | `search_by_criticality` | List files above a criticality threshold |
 | `get_architecture_context` | Synthesized architectural overview — top files, domain breakdown, stats |
 | `get_business_rules` | Extract business rules, domain constraints, and policy enforcement patterns from a source file |
+| `get_governance_context` | Detected governance docs (Docs/, Workflows/, Quality/), style, domain mappings, and constraints |
 
 Add to your MCP client config (e.g. `~/.cursor/mcp.json` or `~/.claude/config.json`):
 
@@ -171,6 +172,8 @@ Add to your MCP client config (e.g. `~/.cursor/mcp.json` or `~/.claude/config.js
 bun src/cli/index.ts ui --root ./
 # → http://localhost:7842
 ```
+
+Browse notes grouped by domain with four tabs per file: **Note** (purpose, invariants, pitfalls, decisions), **Debug** (score breakdown, evidence trail), **Tests** (coverage, related tests), and **Graph** (interactive D3.js force-directed dependency visualization with zoom, drag, neighbor highlight, and score filter).
 
 ---
 
@@ -196,7 +199,8 @@ The `vscode-extension/` directory contains a native VS Code extension:
 | Tests | `src/core/tests/` | Test discovery; lcov/c8 coverage integration |
 | Cache | `src/core/cache/` | SHA-1 per file, stale detection |
 | LLM | `src/core/llm/` | Provider abstraction, retry/timeout, prompt builder, Zod validation |
-| Output | `src/core/output/` | JSON/Markdown serialization, domain-grouped index |
+| Output | `src/core/output/` | JSON/Markdown serialization, domain-grouped index, BM25 search index |
+| Governance | `src/core/governance/` | Detect project docs (Docs/, Workflows/, Quality/); inject `doc` evidence |
 
 ---
 

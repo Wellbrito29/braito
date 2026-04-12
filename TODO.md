@@ -24,15 +24,15 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 ## Medium-term
 
-- [ ] **Graph persistence** — write `.ai-notes/graph.json` with nodes + edges during `generate`; enables graph-based UI without re-computing dependencies at query time
+- [x] **Graph persistence** — write `.ai-notes/graph.json` with nodes + edges during `generate`; enables graph-based UI without re-computing dependencies at query time
 
-- [ ] **Graph UI tab** — add a "Graph" view to the `ui` command using D3.js force-directed layout; nodes colored by domain/criticality, edges from dependency graph, click-to-detail
+- [x] **Graph UI tab** — interactive D3.js force-directed layout in the `ui` command; nodes by domain/criticality, directed edges, zoom/pan/drag, hover neighbor highlight, click-to-detail, score filter slider
 
-- [ ] **`get_impact` transitive depth** — currently BFS reads `dependents[]` from index; for deeper accuracy, fall back to `graph.json` when available
+- [x] **`get_impact` transitive depth** — BFS uses `graph.json` for full transitive traversal; falls back to index.dependents
 
 - [ ] **Multi-repo MCP** — allow a single MCP server instance to serve notes for multiple roots via a `--roots` flag or registry file; mirrors GitNexus multi-repo model
 
-- [ ] **Semantic search** — index `purpose.inferred` and `knownPitfalls.inferred` fields with BM25 or local embeddings (transformers.js); expose via upgraded `search` MCP tool
+- [x] **Semantic search** — BM25 search index via MiniSearch; `generate` builds `.ai-notes/search-index.json`; MCP `search` tool uses ranked full-text search with fuzzy and prefix support
 
 ---
 
@@ -40,8 +40,14 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [ ] **rd-autonomous-agents integration** — implement the 8-step guide in `RD_AGENT_TODO.md`; wire braito MCP into Architect and Developer agents as pre-context injection
 
-- [ ] **Python/Go language parity** — bring Python and Go analyzers to feature parity with the TypeScript analyzer (hooks detection, env var extraction, comment pattern matching)
+- [x] **Python/Go language parity** — Python and Go analyzers now extract `exportDetails` with full signatures, docstrings, `__all__` filtering (Python), multiline imports (Python), and exported methods with receivers (Go)
 
 - [ ] **VS Code extension publish** — package and publish `vscode-extension/` to the VS Code Marketplace; add auto-generate on workspace open if `.ai-notes/` is missing
 
 - [ ] **GitHub Action for target repos** — publish a reusable `braito-generate` composite action so any repo can add a one-liner to generate notes on push
+
+- [x] **Governance-aware analysis** — `src/core/governance/` module detects project docs (Docs/, Workflows/, Quality/) and injects `doc` evidence into file notes; `get_governance_context` MCP tool exposes detected governance model
+
+- [ ] **Divergence detection** — cross-reference governance docs (architecture, contracts) against actual code structure and flag mismatches as `knownPitfalls`
+
+- [ ] **Embedding-based semantic search** — optional `@huggingface/transformers` for true semantic search when BM25 is insufficient

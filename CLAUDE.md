@@ -49,6 +49,7 @@ repo → scanner → static analyzer → graph engine → git intelligence
 | Core | `src/core/` | All business logic |
 | Output | `src/core/output/` | JSON/Markdown serialization, sidecar writing, index building |
 | Cache | `src/core/cache/` | SHA-1 hash per file, skip unchanged files, stale detection |
+| Governance | `src/core/governance/` | Detect and load project documentation artifacts; inject `doc` evidence into notes |
 
 #### Core modules
 
@@ -138,7 +139,7 @@ Exposes braito notes as tools for AI assistants (Cursor, Claude Code, custom age
 bun src/cli/index.ts mcp --root ./
 ```
 
-Tools: `get_file_note`, `search_by_criticality`, `get_index`, `get_architecture_context`, `get_impact`, `search`, `get_domain`.
+Tools: `get_file_note`, `search_by_criticality`, `get_index`, `get_architecture_context`, `get_impact`, `search`, `get_domain`, `get_business_rules`, `get_governance_context`.
 
 ### CI
 
@@ -232,6 +233,7 @@ repo → scanner → analisador estático → grafo de dependências → sinais 
 | Core | `src/core/` | Toda a lógica de negócio |
 | Output | `src/core/output/` | Serialização JSON/Markdown, escrita de sidecars, construção do índice |
 | Cache | `src/core/cache/` | SHA-1 por arquivo, pular arquivos inalterados, detecção de notas antigas |
+| Governance | `src/core/governance/` | Detectar e carregar artefatos de documentação do projeto; injetar evidência `doc` nas notas |
 
 #### Módulos principais
 
@@ -306,7 +308,7 @@ Expõe as notas do braito como ferramentas para assistentes de IA (Cursor, Claud
 bun src/cli/index.ts mcp --root ./
 ```
 
-Ferramentas: `get_file_note`, `search_by_criticality`, `get_index`, `get_architecture_context`, `get_impact`, `search`, `get_domain`.
+Ferramentas: `get_file_note`, `search_by_criticality`, `get_index`, `get_architecture_context`, `get_impact`, `search`, `get_domain`, `get_business_rules`, `get_governance_context`.
 
 ### CI
 

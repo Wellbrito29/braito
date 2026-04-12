@@ -128,6 +128,54 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
         return serveJson(resolved)
       }
 
+      // API: GET /api/graph — serve graph.json or build from index
+      if (url.pathname === '/api/graph') {
+        const graphPath = path.join(notesDir, 'graph.json')
+        if (fs.existsSync(graphPath)) {
+          try {
+            const graph = JSON.parse(fs.readFileSync(graphPath, 'utf-8'))
+            const nodes = (graph.nodes || []).map((n: { path: string; domain: string; criticalityScore: number }) => ({
+              id: n.path, domain: n.domain, score: n.criticalityScore,
+            }))
+            const links = (graph.edges || []).map((e: { from: string; to: string }) => ({
+              source: e.from, target: e.to,
+            }))
+            return new Response(JSON.stringify({ nodes, links }), {
+              headers: { 'Content-Type': 'application/json' },
+            })
+          } catch {
+            return new Response(JSON.stringify({ error: 'Failed to parse graph.json' }), {
+              status: 500, headers: { 'Content-Type': 'application/json' },
+            })
+          }
+        }
+        const indexPath = path.join(notesDir, 'index.json')
+        if (fs.existsSync(indexPath)) {
+          try {
+            const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+            const nodes = (index.entries || []).map((e: { relativePath: string; domain: string; criticalityScore: number }) => ({
+              id: e.relativePath, domain: e.domain, score: e.criticalityScore,
+            }))
+            const links: Array<{ source: string; target: string }> = []
+            for (const entry of index.entries || []) {
+              for (const dep of entry.dependents || []) {
+                links.push({ source: entry.relativePath, target: dep })
+              }
+            }
+            return new Response(JSON.stringify({ nodes, links }), {
+              headers: { 'Content-Type': 'application/json' },
+            })
+          } catch {
+            return new Response(JSON.stringify({ error: 'Failed to build graph from index' }), {
+              status: 500, headers: { 'Content-Type': 'application/json' },
+            })
+          }
+        }
+        return new Response(JSON.stringify({ error: 'No graph or index found' }), {
+          status: 404, headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
       // UI: everything else serves the SPA shell
       return new Response(renderHtml(), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -195,6 +243,7 @@ function renderHtml(): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>braito — AI Notes</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;background:#0f0f0f;color:#e0e0e0;min-height:100vh}
@@ -691,8 +740,9 @@ function renderHtml(): string {
     function switchTab(tab, note) {
       activeTab = tab
       document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab))
-      const content = tab === 'debug' ? renderDebugTab(note) : tab === 'tests' ? renderTestsTab(note) : renderNoteTab(note)
+      const content = tab === 'debug' ? renderDebugTab(note) : tab === 'tests' ? renderTestsTab(note) : tab === 'graph' ? '' : renderNoteTab(note)
       document.getElementById('tab-content').innerHTML = content
+      if (tab === 'graph') renderGraphTab()
     }
 
     function toggleJson(note) {
@@ -707,6 +757,185 @@ function renderHtml(): string {
         pre.classList.remove('visible')
         btn.textContent = 'View raw JSON'
       }
+    }
+
+    // ── Graph tab ──────────────────────────────────────────────────────────
+
+    let graphData = null
+    const domainColors = {}
+    const colorScale = ['#4a9eff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#ff922b','#20c997','#e599f7','#74c0fc','#f06595','#a9e34b','#3bc9db']
+    let colorIdx = 0
+
+    function getDomainColor(domain) {
+      if (!domainColors[domain]) {
+        domainColors[domain] = colorScale[colorIdx % colorScale.length]
+        colorIdx++
+      }
+      return domainColors[domain]
+    }
+
+    async function loadGraphData() {
+      if (graphData) return graphData
+      try {
+        const res = await fetch('/api/graph')
+        graphData = await res.json()
+      } catch {
+        graphData = { nodes: [], links: [] }
+      }
+      return graphData
+    }
+
+    async function renderGraphTab() {
+      const container = document.getElementById('tab-content')
+      if (!container) return
+      container.innerHTML = '<div style="color:#444;text-align:center;padding:40px">Loading graph...</div>'
+
+      const data = await loadGraphData()
+      if (!data.nodes || data.nodes.length === 0) {
+        container.innerHTML = '<div style="color:#666;text-align:center;padding:40px">No graph data available. Run generate first.</div>'
+        return
+      }
+
+      const filterId = 'graph-filter'
+      container.innerHTML = '<div style="padding:8px 0 4px;display:flex;align-items:center;gap:12px">' +
+        '<label style="font-size:12px;color:#888">Min score:</label>' +
+        '<input type="range" id="' + filterId + '" min="0" max="100" value="0" style="width:120px">' +
+        '<span id="graph-filter-val" style="font-size:12px;color:#aaa">0.00</span>' +
+        '<span style="font-size:11px;color:#555;margin-left:auto" id="graph-stats"></span>' +
+        '</div>' +
+        '<div id="graph-svg-wrap" style="width:100%;height:calc(100vh - 220px);background:#111;border:1px solid #1e1e1e;border-radius:6px;overflow:hidden;position:relative"></div>'
+
+      const wrap = document.getElementById('graph-svg-wrap')
+      const width = wrap.clientWidth
+      const height = wrap.clientHeight
+
+      let minScore = 0
+      let nodes = data.nodes.map(n => ({...n}))
+      let nodeIds = new Set(nodes.map(n => n.id))
+      let links = data.links.filter(l => nodeIds.has(l.source) && nodeIds.has(l.target)).map(l => ({...l}))
+
+      function buildGraph(threshold) {
+        nodes = data.nodes.filter(n => n.score >= threshold).map(n => ({...n}))
+        nodeIds = new Set(nodes.map(n => n.id))
+        links = data.links.filter(l => nodeIds.has(typeof l.source === 'object' ? l.source.id : l.source) && nodeIds.has(typeof l.target === 'object' ? l.target.id : l.target)).map(l => ({source: typeof l.source === 'object' ? l.source.id : l.source, target: typeof l.target === 'object' ? l.target.id : l.target}))
+        document.getElementById('graph-stats').textContent = nodes.length + ' nodes, ' + links.length + ' edges'
+      }
+
+      buildGraph(0)
+
+      d3.select('#graph-svg-wrap').selectAll('svg').remove()
+      const svg = d3.select('#graph-svg-wrap').append('svg')
+        .attr('width', width).attr('height', height)
+        .style('background', '#111')
+
+      const g = svg.append('g')
+
+      const zoom = d3.zoom().scaleExtent([0.1, 5]).on('zoom', (e) => g.attr('transform', e.transform))
+      svg.call(zoom)
+
+      svg.append('defs').append('marker')
+        .attr('id', 'arrow').attr('viewBox', '0 -5 10 10')
+        .attr('refX', 20).attr('refY', 0)
+        .attr('markerWidth', 6).attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#333')
+
+      const rScale = d3.scaleLinear().domain([0, 1]).range([4, 16])
+
+      const linkG = g.append('g')
+      const nodeG = g.append('g')
+
+      function render() {
+        linkG.selectAll('line').remove()
+        const linkEls = linkG.selectAll('line').data(links).join('line')
+          .attr('stroke', '#222').attr('stroke-width', 0.5).attr('marker-end', 'url(#arrow)')
+          .style('opacity', 0.3)
+
+        nodeG.selectAll('circle').remove()
+        nodeG.selectAll('text').remove()
+        const nodeEls = nodeG.selectAll('circle').data(nodes, d => d.id).join('circle')
+          .attr('r', d => rScale(d.score))
+          .attr('fill', d => getDomainColor(d.domain))
+          .attr('stroke', '#000').attr('stroke-width', 0.5)
+          .style('cursor', 'pointer')
+          .style('opacity', 0.85)
+
+        const labelEls = nodeG.selectAll('text').data(nodes.filter(n => n.score >= 0.5), d => d.id).join('text')
+          .text(d => d.id.split('/').pop().replace(/\\.\\w+$/, ''))
+          .attr('font-size', 9).attr('fill', '#888').attr('dx', d => rScale(d.score) + 3).attr('dy', 3)
+          .style('pointer-events', 'none')
+
+        const tooltip = d3.select('#graph-svg-wrap').selectAll('.graph-tip').data([0]).join('div')
+          .attr('class', 'graph-tip')
+          .style('position', 'absolute').style('background', '#1a1a1a').style('border', '1px solid #333')
+          .style('padding', '6px 10px').style('border-radius', '4px').style('font-size', '11px')
+          .style('color', '#ccc').style('pointer-events', 'none').style('display', 'none').style('z-index', '10')
+          .style('max-width', '300px').style('white-space', 'nowrap').style('overflow', 'hidden').style('text-overflow', 'ellipsis')
+
+        nodeEls.on('mouseover', (e, d) => {
+          tooltip.style('display', 'block')
+            .html('<strong>' + d.id + '</strong><br>Score: ' + d.score.toFixed(2) + ' | Domain: ' + d.domain)
+          const neighbors = new Set()
+          links.forEach(l => {
+            const sid = typeof l.source === 'object' ? l.source.id : l.source
+            const tid = typeof l.target === 'object' ? l.target.id : l.target
+            if (sid === d.id) neighbors.add(tid)
+            if (tid === d.id) neighbors.add(sid)
+          })
+          neighbors.add(d.id)
+          nodeEls.style('opacity', n => neighbors.has(n.id) ? 1 : 0.15)
+          linkEls.style('opacity', l => {
+            const sid = typeof l.source === 'object' ? l.source.id : l.source
+            const tid = typeof l.target === 'object' ? l.target.id : l.target
+            return (sid === d.id || tid === d.id) ? 0.6 : 0.05
+          })
+        }).on('mousemove', (e) => {
+          const rect = wrap.getBoundingClientRect()
+          tooltip.style('left', (e.clientX - rect.left + 12) + 'px').style('top', (e.clientY - rect.top - 10) + 'px')
+        }).on('mouseout', () => {
+          tooltip.style('display', 'none')
+          nodeEls.style('opacity', 0.85)
+          linkEls.style('opacity', 0.3)
+        }).on('click', (e, d) => {
+          loadNote(d.id)
+          activeTab = 'graph'
+        })
+
+        nodeEls.call(d3.drag()
+          .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y })
+          .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y })
+          .on('end', (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null })
+        )
+
+        const sim = d3.forceSimulation(nodes)
+          .force('link', d3.forceLink(links).id(d => d.id).distance(60))
+          .force('charge', d3.forceManyBody().strength(-150))
+          .force('center', d3.forceCenter(width / 2, height / 2))
+          .force('collision', d3.forceCollide().radius(d => rScale(d.score) + 2))
+          .on('tick', () => {
+            linkEls.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+              .attr('x2', d => d.target.x).attr('y2', d => d.target.y)
+            nodeEls.attr('cx', d => d.x).attr('cy', d => d.y)
+            labelEls.attr('x', d => d.x).attr('y', d => d.y)
+          })
+
+        if (selected) {
+          nodeEls.attr('stroke', d => d.id === selected ? '#4a9eff' : '#000')
+            .attr('stroke-width', d => d.id === selected ? 2.5 : 0.5)
+        }
+
+        return sim
+      }
+
+      let currentSim = render()
+
+      document.getElementById(filterId).addEventListener('input', function() {
+        const val = this.value / 100
+        document.getElementById('graph-filter-val').textContent = val.toFixed(2)
+        if (currentSim) currentSim.stop()
+        buildGraph(val)
+        currentSim = render()
+      })
     }
 
     function renderDetail(note, relPath) {
@@ -724,13 +953,19 @@ function renderHtml(): string {
           <div class="tab \${activeTab==='note'?'active':''}" data-tab="note" onclick="switchTab('note', currentNote)">Note</div>
           <div class="tab \${activeTab==='debug'?'active':''}" data-tab="debug" onclick="switchTab('debug', currentNote)">Debug</div>
           <div class="tab \${activeTab==='tests'?'active':''}" data-tab="tests" onclick="switchTab('tests', currentNote)">Tests</div>
+          <div class="tab \${activeTab==='graph'?'active':''}" data-tab="graph" onclick="switchTab('graph', currentNote)">Graph</div>
           <button class="tab-action" id="json-btn" onclick="toggleJson(currentNote)">View raw JSON</button>
         </div>
         <div id="tab-content"></div>
         <pre class="json-pre" id="json-pre"></pre>
       \`
       window.currentNote = note
-      document.getElementById('tab-content').innerHTML = activeTab === 'debug' ? renderDebugTab(note) : activeTab === 'tests' ? renderTestsTab(note) : renderNoteTab(note)
+      if (activeTab === 'graph') {
+        document.getElementById('tab-content').innerHTML = ''
+        renderGraphTab()
+      } else {
+        document.getElementById('tab-content').innerHTML = activeTab === 'debug' ? renderDebugTab(note) : activeTab === 'tests' ? renderTestsTab(note) : renderNoteTab(note)
+      }
     }
 
     // ── Run panel ────────────────────────────────────────────────────────────

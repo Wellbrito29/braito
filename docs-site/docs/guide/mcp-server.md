@@ -13,7 +13,12 @@ bun src/cli/index.ts mcp --root /path/to/your/project
 
 # Generate notes if missing, then start
 bun src/cli/index.ts mcp --root /path/to/your/project --auto-generate
+
+# Serve notes from multiple repos in a single MCP server (e.g. polyrepo workflows)
+bun src/cli/index.ts mcp --roots "api=/path/to/api,web=/path/to/web,infra=/path/to/infra"
 ```
+
+When `--roots` is used, each tool call must include a `repo` argument to disambiguate (call `list_repos` first to enumerate aliases). With a single repo registered (either via `--root` or a single entry in `--roots`), `repo` is optional.
 
 ## Connect to an AI assistant
 
@@ -61,6 +66,7 @@ The MCP server can run outside an IDE too — any client that speaks JSON-RPC 2.
 
 | Tool | Description |
 |---|---|
+| `list_repos` | List repositories registered with this MCP server (multi-repo mode only) |
 | `get_file_note` | Full note for a specific file path |
 | `search_by_criticality` | Files above a criticality threshold, sorted descending |
 | `get_index` | Complete ranked index of all notes |

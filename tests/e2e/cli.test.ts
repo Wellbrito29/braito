@@ -330,13 +330,13 @@ describe('mcp server (handleRequest)', () => {
     expect((res!.result as any).capabilities.tools).toBeDefined()
   })
 
-  it('tools/list returns 4 tools', async () => {
+  it('tools/list returns 10 tools', async () => {
     const req = { jsonrpc: '2.0' as const, id: 2, method: 'tools/list', params: {} }
     const res = await handleRequest(req, mcpTmpDir, '.ai-notes')
     expect(res).not.toBeNull()
     const tools = (res!.result as any).tools
     expect(Array.isArray(tools)).toBe(true)
-    expect(tools).toHaveLength(9)
+    expect(tools).toHaveLength(10)
     const names = tools.map((t: { name: string }) => t.name)
     expect(names).toContain('get_file_note')
     expect(names).toContain('search_by_criticality')

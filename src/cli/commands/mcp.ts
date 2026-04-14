@@ -22,13 +22,111 @@ export type JsonRpcResponse = {
   error?: { code: number; message: string; data?: unknown }
 }
 
+/** A registered repository served by the MCP server. */
+export type RepoEntry = { alias: string; root: string; outputDir: string }
+
+/**
+ * Parse `--roots` into a list of repo specs.
+ * Supported forms (comma-separated):
+ *   "/path/a,/path/b"                       → alias derived from basename
+ *   "api=/path/a,web=/path/b"               → explicit aliases
+ *   "/path/a,web=/path/b"                   → mixed
+ */
+export function parseRootsSpec(spec: string): Array<{ alias: string; root: string }> {
+  const parts = spec.split(',').map((s) => s.trim()).filter(Boolean)
+  const result: Array<{ alias: string; root: string }> = []
+  for (const part of parts) {
+    const eq = part.indexOf('=')
+    if (eq > 0) {
+      const alias = part.slice(0, eq).trim()
+      const root = part.slice(eq + 1).trim()
+      if (alias && root) result.push({ alias, root })
+    } else {
+      result.push({ alias: path.basename(path.resolve(part)), root: part })
+    }
+  }
+  return result
+}
+
+/** Build a registry from either a single root or a `--roots` spec. Resolves roots to absolute paths. */
+export async function buildRegistry(args: {
+  root?: string
+  roots?: string
+}): Promise<RepoEntry[]> {
+  if (args.roots) {
+    const specs = parseRootsSpec(args.roots)
+    if (specs.length === 0) {
+      throw new Error(`--roots is empty or malformed: "${args.roots}"`)
+    }
+    // Enforce unique aliases
+    const seen = new Set<string>()
+    const registry: RepoEntry[] = []
+    for (const { alias, root } of specs) {
+      if (seen.has(alias)) {
+        throw new Error(`Duplicate repo alias "${alias}" in --roots. Use alias=path form to disambiguate.`)
+      }
+      seen.add(alias)
+      const abs = path.resolve(root)
+      const config = await loadConfig(abs)
+      registry.push({ alias, root: abs, outputDir: config.output })
+    }
+    return registry
+  }
+
+  const root = path.resolve(args.root ?? process.cwd())
+  const config = await loadConfig(root)
+  return [{ alias: path.basename(root), root, outputDir: config.output }]
+}
+
+/**
+ * Resolve the repo for a tool call. If `args.repo` is omitted and only one repo is registered,
+ * returns that. If multiple are registered and `repo` is missing or unknown, returns an error response.
+ */
+function resolveRepo(
+  registry: RepoEntry[],
+  args: Record<string, unknown>,
+  id: number | string | null,
+): RepoEntry | JsonRpcResponse {
+  const requested = args.repo as string | undefined
+  if (!requested) {
+    if (registry.length === 1) return registry[0]
+    return errorResponse(
+      id,
+      -32602,
+      `Multiple repos registered (${registry.map((r) => r.alias).join(', ')}). Specify "repo" argument.`,
+    )
+  }
+  const found = registry.find((r) => r.alias === requested)
+  if (!found) {
+    return errorResponse(
+      id,
+      -32602,
+      `Repo "${requested}" not found. Available: ${registry.map((r) => r.alias).join(', ')}`,
+    )
+  }
+  return found
+}
+
+const REPO_PROP = {
+  repo: {
+    type: 'string' as const,
+    description: 'Repository alias when multiple repos are registered via --roots. Optional for single-repo servers.',
+  },
+}
+
 const TOOLS = [
+  {
+    name: 'list_repos',
+    description: 'List repositories registered with this MCP server. Use this first when --roots is configured to discover the aliases needed for the "repo" argument on other tools.',
+    inputSchema: { type: 'object', properties: {} },
+  },
   {
     name: 'get_file_note',
     description: 'Get the AI-generated note for a specific source file.',
     inputSchema: {
       type: 'object',
       properties: {
+        ...REPO_PROP,
         file_path: {
           type: 'string',
           description: 'Path to the source file, relative to the project root.',
@@ -43,6 +141,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...REPO_PROP,
         threshold: {
           type: 'number',
           description: 'Minimum criticality score (0–1). Default: 0.5',
@@ -57,7 +156,7 @@ const TOOLS = [
   {
     name: 'get_index',
     description: 'Get the full .ai-notes/index.json with all files ranked by criticality.',
-    inputSchema: { type: 'object', properties: {} },
+    inputSchema: { type: 'object', properties: { ...REPO_PROP } },
   },
   {
     name: 'get_architecture_context',
@@ -66,6 +165,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...REPO_PROP,
         top_n: {
           type: 'number',
           description: 'Number of top critical files to include. Default: 10',
@@ -80,6 +180,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...REPO_PROP,
         file_path: {
           type: 'string',
           description: 'Path to the source file, relative to the project root.',
@@ -103,6 +204,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...REPO_PROP,
         query: {
           type: 'string',
           description: 'Text to search for (case-insensitive).',
@@ -122,6 +224,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...REPO_PROP,
         domain: {
           type: 'string',
           description: 'Domain name as it appears in the index (e.g. "src/core", "cli").',
@@ -137,6 +240,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
+        ...REPO_PROP,
         path: {
           type: 'string',
           description: 'Path to the source file, relative to the project root.',
@@ -149,7 +253,7 @@ const TOOLS = [
     name: 'get_governance_context',
     description:
       'Get the governance context for the project — detected documentation artifacts (Docs/, Workflows/, Quality/), governance style, domain mappings, and constraints extracted from project docs. Returns null if no governance docs are detected.',
-    inputSchema: { type: 'object', properties: {} },
+    inputSchema: { type: 'object', properties: { ...REPO_PROP } },
   },
 ]
 
@@ -164,13 +268,20 @@ function errorResponse(id: number | string | null, code: number, message: string
 /**
  * Handle a JSON-RPC request and return the response object.
  * Returns null for notification methods that require no response.
- * This function is exported for direct testing without subprocess overhead.
+ *
+ * Two call forms are supported for backward compatibility:
+ *   - handleRequest(req, root: string, outputDir: string)
+ *   - handleRequest(req, registry: RepoEntry[])
  */
 export async function handleRequest(
   req: JsonRpcRequest,
-  root: string,
-  outputDir: string,
+  rootOrRegistry: string | RepoEntry[],
+  outputDir?: string,
 ): Promise<JsonRpcResponse | null> {
+  const registry: RepoEntry[] = Array.isArray(rootOrRegistry)
+    ? rootOrRegistry
+    : [{ alias: path.basename(rootOrRegistry), root: rootOrRegistry, outputDir: outputDir ?? '.ai-notes' }]
+
   const { id, method, params } = req
 
   if (method === 'initialize') {
@@ -196,6 +307,15 @@ export async function handleRequest(
 
   if (method === 'tools/call') {
     const { name, arguments: args } = params as { name: string; arguments: Record<string, unknown> }
+
+    if (name === 'list_repos') {
+      const repos = registry.map((r) => ({ alias: r.alias, root: r.root, outputDir: r.outputDir }))
+      return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ count: repos.length, repos }, null, 2) }] } }
+    }
+
+    const resolved = resolveRepo(registry, args, id)
+    if ('error' in resolved) return resolved
+    const { root, outputDir } = resolved
 
     if (name === 'get_file_note') {
       const filePath = args.file_path as string
@@ -611,24 +731,36 @@ export async function handleRequest(
   return errorResponse(id, -32601, `Method not found: ${method}`)
 }
 
-export async function runMcp(args: { root?: string; autoGenerate?: boolean }): Promise<void> {
-  const root = path.resolve(args.root ?? process.cwd())
-  const config = await loadConfig(root)
-  const outputDir = config.output
+export async function runMcp(args: {
+  root?: string
+  roots?: string
+  autoGenerate?: boolean
+}): Promise<void> {
+  const registry = await buildRegistry({ root: args.root, roots: args.roots })
 
-  // Auto-generate notes if index doesn't exist and --auto-generate flag is set
+  // Auto-generate notes if any repo is missing its index and --auto-generate is set
   if (args.autoGenerate) {
-    const indexPath = path.resolve(root, outputDir, 'index.json')
-    if (!fs.existsSync(indexPath)) {
-      process.stderr.write(`[braito] No notes found — running generate before starting MCP server...\n`)
-      const { runGenerate } = await import('./generate.ts')
-      await runGenerate({ root })
-      process.stderr.write(`[braito] Generate complete. Starting MCP server.\n`)
+    for (const repo of registry) {
+      const indexPath = path.resolve(repo.root, repo.outputDir, 'index.json')
+      if (!fs.existsSync(indexPath)) {
+        process.stderr.write(`[braito] No notes found for ${repo.alias} — running generate...\n`)
+        const { runGenerate } = await import('./generate.ts')
+        await runGenerate({ root: repo.root })
+        process.stderr.write(`[braito] Generate complete for ${repo.alias}.\n`)
+      }
     }
   }
 
-  process.stderr.write(`braito MCP server started (root: ${root}, notes: ${outputDir})\n`)
-  process.stderr.write(`Tools: get_file_note | get_index | get_architecture_context | get_impact | search | get_domain | search_by_criticality | get_business_rules | get_governance_context\n`)
+  if (registry.length === 1) {
+    const r = registry[0]
+    process.stderr.write(`braito MCP server started (root: ${r.root}, notes: ${r.outputDir})\n`)
+  } else {
+    process.stderr.write(`braito MCP server started with ${registry.length} repos:\n`)
+    for (const r of registry) {
+      process.stderr.write(`  [${r.alias}] ${r.root} (notes: ${r.outputDir})\n`)
+    }
+  }
+  process.stderr.write(`Tools: list_repos | get_file_note | get_index | get_architecture_context | get_impact | search | get_domain | search_by_criticality | get_business_rules | get_governance_context\n`)
 
   let buffer = ''
 
@@ -643,7 +775,7 @@ export async function runMcp(args: { root?: string; autoGenerate?: boolean }): P
       if (!trimmed) continue
       try {
         const req = JSON.parse(trimmed) as JsonRpcRequest
-        const response = await handleRequest(req, root, outputDir)
+        const response = await handleRequest(req, registry)
         if (response !== null) {
           send(response)
         }

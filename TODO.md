@@ -30,7 +30,7 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **`get_impact` transitive depth** — BFS uses `graph.json` for full transitive traversal; falls back to index.dependents
 
-- [ ] **Multi-repo MCP** — allow a single MCP server instance to serve notes for multiple roots via a `--roots` flag or registry file; mirrors GitNexus multi-repo model
+- [x] **Multi-repo MCP** — `mcp --roots "alias=/path,..."` serves multiple repos in a single server; each tool accepts a `repo` argument and `list_repos` enumerates registered repos
 
 - [x] **Semantic search** — BM25 search index via MiniSearch; `generate` builds `.ai-notes/search-index.json`; MCP `search` tool uses ranked full-text search with fuzzy and prefix support
 

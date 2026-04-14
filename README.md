@@ -137,10 +137,16 @@ cache/
 
 ```bash
 bun src/cli/index.ts mcp --root ./
+
+# Multi-repo mode — serve multiple projects in one MCP server
+bun src/cli/index.ts mcp --roots "api=/path/to/api,web=/path/to/web"
 ```
+
+In multi-repo mode, each tool call accepts a `repo` argument (use `list_repos` to enumerate aliases). With a single repo registered, `repo` is optional.
 
 | Tool | Description |
 |---|---|
+| `list_repos` | List repositories registered with this MCP server (multi-repo mode) |
 | `get_file_note` | Get the full note for a specific file |
 | `get_index` | Get the full ranked index |
 | `get_impact` | Blast radius of a file — transitive dependents with optional notes |

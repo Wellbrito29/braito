@@ -137,10 +137,16 @@ cache/
 
 ```bash
 bun src/cli/index.ts mcp --root ./
+
+# Modo multi-repo — serve múltiplos projetos em um único servidor MCP
+bun src/cli/index.ts mcp --roots "api=/caminho/api,web=/caminho/web"
 ```
+
+No modo multi-repo, cada chamada de ferramenta aceita um argumento `repo` (use `list_repos` para enumerar os aliases). Com apenas um repo registrado, `repo` é opcional.
 
 | Ferramenta | Descrição |
 |---|---|
+| `list_repos` | Lista repositórios registrados no servidor MCP (modo multi-repo) |
 | `get_file_note` | Obtém a nota completa de um arquivo específico |
 | `search_by_criticality` | Lista arquivos acima de um threshold de criticidade |
 | `get_index` | Obtém o índice completo ranqueado |

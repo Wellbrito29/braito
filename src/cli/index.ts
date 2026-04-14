@@ -15,6 +15,7 @@ const { values } = parseArgs({
   args: rest,
   options: {
     root:     { type: 'string',  short: 'r' },
+    roots:    { type: 'string' },
     agent:    { type: 'boolean' },
     force:    { type: 'boolean', short: 'f' },
     filter:   { type: 'string' },
@@ -56,7 +57,11 @@ switch (command) {
     break
 
   case 'mcp':
-    await runMcp({ root: values.root, autoGenerate: (values as Record<string, unknown>)['auto-generate'] as boolean | undefined })
+    await runMcp({
+      root: values.root,
+      roots: values.roots,
+      autoGenerate: (values as Record<string, unknown>)['auto-generate'] as boolean | undefined,
+    })
     break
 
   case 'update':
@@ -90,6 +95,7 @@ Commands:
 
 Options:
   --root, -r <path>      Root directory to analyze (default: cwd)
+  --roots <spec>         Comma-separated list of repos for MCP server (mcp only); each entry is either a path or alias=path (e.g. "api=./api,web=./web")
   --force, -f            Bypass cache and reprocess all files (generate only)
   --filter <glob>        Scope generation to files matching a glob pattern (generate only)
   --debug                Enable debug-level logging with timestamps

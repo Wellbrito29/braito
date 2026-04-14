@@ -13,7 +13,12 @@ bun src/cli/index.ts mcp --root /caminho/para/seu/projeto
 
 # Gerar notas se não existirem e depois iniciar
 bun src/cli/index.ts mcp --root /caminho/para/seu/projeto --auto-generate
+
+# Servir notas de múltiplos repositórios em um único servidor MCP (polyrepo)
+bun src/cli/index.ts mcp --roots "api=/caminho/api,web=/caminho/web,infra=/caminho/infra"
 ```
+
+Quando `--roots` é usado, cada chamada de ferramenta deve incluir o argumento `repo` para desambiguar (chame `list_repos` primeiro para descobrir os aliases). Com apenas um repo registrado (via `--root` ou uma única entrada em `--roots`), `repo` é opcional.
 
 ## Conectar a um assistente de IA
 
@@ -65,6 +70,7 @@ O servidor MCP também pode rodar fora de uma IDE — qualquer cliente que fale 
 
 | Ferramenta | Descrição |
 |---|---|
+| `list_repos` | Lista repositórios registrados no servidor MCP (modo multi-repo) |
 | `get_file_note` | Nota completa de um arquivo específico |
 | `search_by_criticality` | Arquivos acima de um threshold de criticidade, ordenados decrescentemente |
 | `get_index` | Índice completo ranqueado de todas as notas |

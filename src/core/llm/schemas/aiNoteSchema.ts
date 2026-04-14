@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const evidenceItemSchema = z.object({
-  type: z.enum(['code', 'git', 'test', 'graph', 'comment', 'doc']),
+  type: z.enum(['code', 'git', 'test', 'graph', 'comment', 'doc']).catch('code'),
   detail: z.string(),
 })
 

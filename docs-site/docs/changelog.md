@@ -29,6 +29,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`debugSignals` in every note** — all raw pipeline signals now stored in each `.json` note, powering the Debug tab score breakdown
 
 ### Fixed
+- **LLM evidence schema too strict** — unknown `type` values from the LLM (e.g. `'import'`, `'external'`) are coerced to `'code'` via `.catch('code')` instead of failing Zod validation and silently falling back to the static note
 - **Missing `signatures` field in Python/Go analyzers** — LLM prompts no longer show "none extracted" for Python/Go files
 - **Absolute paths in Impact Validation** — co-changed files now use relative paths consistently
 

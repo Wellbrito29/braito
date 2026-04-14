@@ -79,14 +79,21 @@ Grafo interativo de dependências force-directed com D3.js:
 | **Cores dos nós** | Cada domínio recebe uma cor única de uma paleta de 12 cores |
 | **Tamanho dos nós** | Proporcional ao `criticalityScore` (raio de 4–16px) |
 | **Arestas direcionais** | Setas indicam direção de importação (importador → importado) |
-| **Hover** | Destaca o nó e seus vizinhos diretos; escurece o restante; tooltip mostra caminho, score e domínio |
+| **Modo Global / Focus** | Alterna entre o grafo completo e uma ego-network ao redor do arquivo selecionado |
+| **Slider de profundidade** | No modo Focus, expande a ego-network em 1, 2 ou 3 hops |
+| **Cores das arestas** | Upstream azul, downstream vermelho, ciclos em vermelho com membros destacados |
+| **Legenda por domínio** | Checkbox por domínio para ocultar/mostrar nós sem rodar generate de novo |
+| **Hover** | Destaca o nó e seus vizinhos diretos; escurece o restante; tooltip mostra caminho, score, domínio, ego-hop e participação em ciclo |
 | **Click** | Carrega a nota do arquivo clicado no painel de detalhes |
 | **Drag** | Reposicione nós individuais na simulação de forças |
 | **Zoom/Pan** | Scroll para zoom, arrastar fundo para pan |
 | **Filtro por score mínimo** | Slider para ocultar nós abaixo de um threshold — útil para grafos grandes com 300+ nós |
-| **Labels** | Nomes de arquivo exibidos para nós com score >= 0.5 |
+| **Labels** | Nomes de arquivo exibidos para nós com score >= 0.5 (todos os nós no modo Focus) |
+| **Painel de análise** | Pane lateral com estatísticas do arquivo no grafo: in/out degree, consumidores/deps transitivos, participação em ciclo com lista de membros, distribuição de domínios vizinhos, flag hotspot, e sinais (score, churn, tests) |
 
-O grafo carrega dados de `GET /api/graph`, que serve `.ai-notes/graph.json` (gerado durante `generate`). Fallback para construir o grafo a partir do `index.json` se `graph.json` não estiver disponível.
+O grafo carrega dados de `GET /api/graph` (serve `.ai-notes/graph.json`, fallback para reconstruir a partir do `index.json`). Ciclos vêm de `GET /api/graph/cycles` (Tarjan SCC iterativo) e a análise por arquivo de `GET /api/graph/analysis?path=X`.
+
+**Detecção de hotspot:** um arquivo é marcado como hotspot quando `criticalityScore ≥ 0.6`, tem ≥ 5 consumidores transitivos e não tem testes associados — um sinal rápido de onde adicionar testes ou refatorar primeiro.
 
 ### Estatísticas de cobertura de testes
 

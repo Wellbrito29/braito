@@ -79,14 +79,21 @@ Interactive force-directed dependency graph powered by D3.js:
 | **Node colors** | Each domain gets a unique color from a 12-color palette |
 | **Node size** | Proportional to `criticalityScore` (range: 4–16px radius) |
 | **Directed edges** | Arrow markers show import direction (importer → imported) |
-| **Hover** | Highlights the hovered node and its direct neighbors; dims everything else; tooltip shows path, score, and domain |
+| **Global / Focus mode** | Toggle between the full graph and an ego-network around the currently selected file |
+| **Depth slider** | In Focus mode, expands the ego-network to 1, 2, or 3 hops |
+| **Edge direction colors** | Upstream edges blue, downstream edges red, cycle edges red with ringed members |
+| **Domain legend** | Checkbox per domain to hide/show its nodes without re-running generate |
+| **Hover** | Highlights the hovered node and its direct neighbors; dims everything else; tooltip shows path, score, domain, ego-hop, and cycle membership |
 | **Click** | Loads the clicked file's note in the detail panel |
 | **Drag** | Reposition individual nodes in the force simulation |
 | **Zoom/Pan** | Mouse wheel to zoom, drag background to pan |
 | **Min-score filter** | Slider to hide nodes below a criticality threshold — useful for large graphs with 300+ nodes |
-| **Labels** | File names shown for nodes with score >= 0.5 |
+| **Labels** | File names shown for nodes with score >= 0.5 (all nodes in Focus mode) |
+| **Analysis panel** | Right-side pane with per-file graph stats: in/out degree, transitive consumers/deps, cycle membership with sibling list, neighbor domain breakdown, hotspot flag, and signals (score, churn, tests) |
 
-The graph loads data from `GET /api/graph`, which serves `.ai-notes/graph.json` (generated during `generate`). Falls back to building the graph from `index.json` dependents if `graph.json` is not available.
+The graph loads data from `GET /api/graph` (serves `.ai-notes/graph.json`, falls back to reconstructing from `index.json` dependents). Cycles come from `GET /api/graph/cycles` (iterative Tarjan SCC) and per-file analysis from `GET /api/graph/analysis?path=X`.
+
+**Hotspot detection:** a file is flagged as a hotspot when `criticalityScore ≥ 0.6`, it has ≥ 5 transitive consumers, and it has no associated tests — a fast signal for where to add tests or refactor first.
 
 ### Test coverage stats
 

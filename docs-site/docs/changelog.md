@@ -10,6 +10,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Graph UI — cycles, focus mode, and analysis panel** — `GET /api/graph/cycles` runs iterative Tarjan SCC and returns cycles + flat member set; `GET /api/graph/analysis?path=X` returns per-file graph position (in/out degree, transitive dependents/deps via BFS, neighbor domain distribution, cycle membership, hotspot flag); Graph tab adds Global/Focus toggle with 1–3 hop ego-network, depth slider, domain checkboxes, upstream/downstream/cycle color-coded edges, and a right-side analysis panel; fixed inverted edge direction in the `index.json` fallback graph
 - **Python/Go `exportDetails` and `signatures`** — both analyzers now extract rich export metadata: Python extracts function signatures with params/return types, class definitions with bases, and docstrings; Go extracts function signatures including methods with receivers, struct fields, and interface methods; Python respects `__all__` and handles multiline imports; Go captures exported methods with receivers
 - **BM25 search index** — `generate` builds `.ai-notes/search-index.json` using MiniSearch; the MCP `search` tool uses BM25 ranked full-text search with fuzzy matching and prefix support; falls back to linear scan when index is absent
 - **Graph UI tab** — interactive D3.js force-directed dependency graph visualization in the `ui` command; nodes colored by domain, sized by criticality; directed edges; click-to-detail, zoom/pan/drag, hover neighbor highlight, score filter slider

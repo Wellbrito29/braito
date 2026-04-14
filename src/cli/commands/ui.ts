@@ -128,6 +128,33 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
         return serveJson(resolved)
       }
 
+      // API: GET /api/graph/cycles — detected cycles + flat member set
+      if (url.pathname === '/api/graph/cycles') {
+        const graph = loadGraphFromDisk(notesDir)
+        if (!graph) {
+          return new Response(JSON.stringify({ cycles: [], members: [] }), {
+            headers: { 'Content-Type': 'application/json' },
+          })
+        }
+        const cycles = detectCyclesFromEdges(graph.nodes.map((n) => n.path), graph.edges)
+        const members = Array.from(new Set(cycles.flat()))
+        return new Response(JSON.stringify({ cycles, members }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
+      // API: GET /api/graph/analysis?path=X — per-file graph analysis
+      if (url.pathname === '/api/graph/analysis') {
+        const filePath = url.searchParams.get('path')
+        if (!filePath) return jsonErr(400, 'Missing ?path=')
+        const graph = loadGraphFromDisk(notesDir)
+        if (!graph) return jsonErr(404, 'No graph.json — run generate first')
+        const analysis = computeFileAnalysis(filePath, graph, notesDir)
+        return new Response(JSON.stringify(analysis), {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+
       // API: GET /api/graph — serve graph.json or build from index
       if (url.pathname === '/api/graph') {
         const graphPath = path.join(notesDir, 'graph.json')
@@ -158,8 +185,9 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
             }))
             const links: Array<{ source: string; target: string }> = []
             for (const entry of index.entries || []) {
+              // dependents = files that import this entry → edge flows from dependent to entry
               for (const dep of entry.dependents || []) {
-                links.push({ source: entry.relativePath, target: dep })
+                links.push({ source: dep, target: entry.relativePath })
               }
             }
             return new Response(JSON.stringify({ nodes, links }), {
@@ -189,6 +217,192 @@ export async function runUi(args: { root?: string; port?: number }): Promise<voi
 
   // Keep alive
   await new Promise(() => {})
+}
+
+type PersistedGraph = {
+  nodes: Array<{ path: string; domain: string; criticalityScore: number }>
+  edges: Array<{ from: string; to: string }>
+}
+
+function jsonErr(status: number, message: string): Response {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+function loadGraphFromDisk(notesDir: string): PersistedGraph | null {
+  const graphPath = path.join(notesDir, 'graph.json')
+  if (fs.existsSync(graphPath)) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(graphPath, 'utf-8'))
+      if (Array.isArray(raw.nodes) && Array.isArray(raw.edges)) return raw as PersistedGraph
+    } catch { /* fall through */ }
+  }
+  // Fallback: reconstruct from index.json (pre-graph.json projects)
+  const indexPath = path.join(notesDir, 'index.json')
+  if (!fs.existsSync(indexPath)) return null
+  try {
+    const idx = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
+    const nodes = (idx.entries || []).map((e: { relativePath: string; domain: string; criticalityScore: number }) => ({
+      path: e.relativePath, domain: e.domain, criticalityScore: e.criticalityScore,
+    }))
+    const edges: Array<{ from: string; to: string }> = []
+    for (const e of idx.entries || []) {
+      // dependents = files that import this entry, so edge goes dependent → entry
+      for (const dep of e.dependents || []) edges.push({ from: dep, to: e.relativePath })
+    }
+    return { nodes, edges }
+  } catch {
+    return null
+  }
+}
+
+/** Iterative Tarjan SCC — returns strongly-connected components with size > 1 or self-loops. */
+function detectCyclesFromEdges(nodeIds: string[], edges: Array<{ from: string; to: string }>): string[][] {
+  const adj = new Map<string, string[]>()
+  for (const id of nodeIds) adj.set(id, [])
+  for (const e of edges) {
+    if (!adj.has(e.from)) adj.set(e.from, [])
+    adj.get(e.from)!.push(e.to)
+  }
+
+  let index = 0
+  const indices = new Map<string, number>()
+  const lowlink = new Map<string, number>()
+  const onStack = new Set<string>()
+  const stack: string[] = []
+  const sccs: string[][] = []
+  const selfLoops = new Set<string>()
+  for (const e of edges) if (e.from === e.to) selfLoops.add(e.from)
+
+  function strongconnect(start: string) {
+    const callStack: Array<{ node: string; iter: Iterator<string> }> = []
+    indices.set(start, index)
+    lowlink.set(start, index)
+    index++
+    stack.push(start)
+    onStack.add(start)
+    callStack.push({ node: start, iter: (adj.get(start) ?? [])[Symbol.iterator]() })
+
+    while (callStack.length) {
+      const frame = callStack[callStack.length - 1]
+      const step = frame.iter.next()
+      if (step.done) {
+        if (lowlink.get(frame.node) === indices.get(frame.node)) {
+          const comp: string[] = []
+          while (true) {
+            const w = stack.pop()!
+            onStack.delete(w)
+            comp.push(w)
+            if (w === frame.node) break
+          }
+          if (comp.length > 1 || selfLoops.has(comp[0])) sccs.push(comp)
+        }
+        callStack.pop()
+        if (callStack.length) {
+          const parent = callStack[callStack.length - 1]
+          lowlink.set(parent.node, Math.min(lowlink.get(parent.node)!, lowlink.get(frame.node)!))
+        }
+        continue
+      }
+      const w = step.value
+      if (!indices.has(w)) {
+        indices.set(w, index)
+        lowlink.set(w, index)
+        index++
+        stack.push(w)
+        onStack.add(w)
+        callStack.push({ node: w, iter: (adj.get(w) ?? [])[Symbol.iterator]() })
+      } else if (onStack.has(w)) {
+        lowlink.set(frame.node, Math.min(lowlink.get(frame.node)!, indices.get(w)!))
+      }
+    }
+  }
+
+  for (const id of nodeIds) {
+    if (!indices.has(id)) strongconnect(id)
+  }
+  return sccs
+}
+
+function bfsReachable(start: string, adj: Map<string, string[]>): Set<string> {
+  const seen = new Set<string>()
+  const queue = [start]
+  while (queue.length) {
+    const cur = queue.shift()!
+    for (const next of adj.get(cur) ?? []) {
+      if (seen.has(next) || next === start) continue
+      seen.add(next)
+      queue.push(next)
+    }
+  }
+  return seen
+}
+
+function computeFileAnalysis(filePath: string, graph: PersistedGraph, notesDir: string) {
+  const nodeByPath = new Map<string, { path: string; domain: string; criticalityScore: number }>()
+  for (const n of graph.nodes) nodeByPath.set(n.path, n)
+
+  const outAdj = new Map<string, string[]>()
+  const inAdj = new Map<string, string[]>()
+  for (const n of graph.nodes) { outAdj.set(n.path, []); inAdj.set(n.path, []) }
+  for (const e of graph.edges) {
+    if (!outAdj.has(e.from)) outAdj.set(e.from, [])
+    if (!inAdj.has(e.to)) inAdj.set(e.to, [])
+    outAdj.get(e.from)!.push(e.to)
+    inAdj.get(e.to)!.push(e.from)
+  }
+
+  const directDependencies = outAdj.get(filePath) ?? []
+  const directDependents = inAdj.get(filePath) ?? []
+  const transitiveDependencies = bfsReachable(filePath, outAdj)
+  const transitiveDependents = bfsReachable(filePath, inAdj)
+
+  const cycles = detectCyclesFromEdges(graph.nodes.map((n) => n.path), graph.edges)
+  const inCycle = cycles.find((c) => c.includes(filePath)) ?? null
+
+  const neighborDomains: Record<string, number> = {}
+  const neighbors = new Set([...directDependencies, ...directDependents])
+  for (const p of neighbors) {
+    const d = nodeByPath.get(p)?.domain ?? 'unknown'
+    neighborDomains[d] = (neighborDomains[d] ?? 0) + 1
+  }
+
+  // Hotspot: high criticality + many transitive dependents + no tests (from note on disk)
+  let hasTests = false
+  let churnScore = 0
+  let criticalityScore = nodeByPath.get(filePath)?.criticalityScore ?? 0
+  try {
+    const notePath = path.resolve(notesDir, filePath + '.json')
+    const notesDirNorm = path.normalize(notesDir) + path.sep
+    if (path.normalize(notePath).startsWith(notesDirNorm) && fs.existsSync(notePath)) {
+      const note = JSON.parse(fs.readFileSync(notePath, 'utf-8'))
+      hasTests = !!note.debugSignals?.hasTests
+      churnScore = note.debugSignals?.churnScore ?? 0
+      criticalityScore = typeof note.criticalityScore === 'number' ? note.criticalityScore : criticalityScore
+    }
+  } catch { /* ignore */ }
+
+  const hotspot = criticalityScore >= 0.6 && transitiveDependents.size >= 5 && !hasTests
+
+  return {
+    filePath,
+    domain: nodeByPath.get(filePath)?.domain ?? null,
+    criticalityScore,
+    inDegree: directDependents.length,
+    outDegree: directDependencies.length,
+    directDependencies,
+    directDependents,
+    transitiveDependenciesCount: transitiveDependencies.size,
+    transitiveDependentsCount: transitiveDependents.size,
+    inCycle,
+    cycleSize: inCycle ? inCycle.length : 0,
+    neighborDomains,
+    churnScore,
+    hasTests,
+    hotspot,
+  }
 }
 
 function computeStats(notesDir: string): Response {
@@ -363,6 +577,54 @@ function renderHtml(): string {
     .log-text.warn{color:#f0a500}
     .log-text.error{color:#ff6b6b}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    /* Graph toolbar & controls */
+    .graph-toolbar{display:flex;align-items:center;gap:16px;padding:8px 0 8px;flex-wrap:wrap}
+    .gt-group{display:flex;align-items:center;gap:6px}
+    .gt-label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.05em}
+    .gt-mode,.gt-depth{padding:4px 10px;font-size:11px;background:#1a1a1a;border:1px solid #2a2a2a;color:#888;border-radius:4px;cursor:pointer}
+    .gt-mode:hover:not(:disabled),.gt-depth:hover{color:#ccc;border-color:#3a3a3a}
+    .gt-mode.active,.gt-depth.active{background:#1e2a3a;border-color:#3a5a8a;color:#4a9eff}
+    .gt-mode:disabled{opacity:.4;cursor:not-allowed}
+    .graph-legend{display:flex;flex-wrap:wrap;gap:10px;padding:6px 0;border-bottom:1px solid #1a1a1a;margin-bottom:8px;font-size:11px;color:#888;align-items:center}
+    .legend-item{display:flex;align-items:center;gap:5px;cursor:pointer;padding:2px 6px;border-radius:3px}
+    .legend-item input{cursor:pointer;margin:0}
+    .legend-item.off{opacity:.35}
+    .legend-item:hover{background:#1a1a1a}
+    .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+    .legend-sep{color:#333;padding:0 4px}
+    .legend-edge{display:flex;align-items:center;gap:5px;color:#666}
+    .edge-line{display:inline-block;width:20px;height:2px;border-radius:1px}
+    .edge-line.up{background:#4a9eff}
+    .edge-line.down{background:#ff6b6b}
+    .edge-line.cycle{background:#ff4d6d}
+    /* Graph body layout */
+    .graph-body{display:grid;grid-template-columns:1fr 280px;gap:12px;height:calc(100vh - 270px);min-height:400px}
+    #graph-svg-wrap{width:100%;height:100%;background:#111;border:1px solid #1e1e1e;border-radius:6px;overflow:hidden;position:relative}
+    .graph-analysis{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:6px;padding:14px;overflow-y:auto;font-size:12px}
+    .ga-empty{color:#444;text-align:center;padding:30px 10px;font-size:12px}
+    .ga-header{font-size:14px;font-weight:600;color:#fff;margin-bottom:2px;word-break:break-all}
+    .ga-sub{font-size:11px;color:#555;margin-bottom:12px;word-break:break-all}
+    .ga-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+    .ga-cell{background:#111;border:1px solid #1a1a1a;border-radius:5px;padding:8px 6px;text-align:center}
+    .ga-num{font-size:18px;font-weight:700;color:#4a9eff}
+    .ga-lbl{font-size:10px;color:#555;margin-top:2px}
+    .ga-hotspot{background:#2a1a1a;border:1px solid #4a2a2a;color:#ff8080;padding:8px 10px;border-radius:5px;margin-bottom:12px;font-size:11px;line-height:1.4}
+    .ga-section{margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #1a1a1a}
+    .ga-section:last-child{border-bottom:none}
+    .ga-title{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+    .ga-cycle{background:#2a1a1a;border:1px solid #4a2a2a;color:#ff8080;padding:8px 10px;border-radius:5px;font-size:11px}
+    .ga-cycle strong{display:block;margin-bottom:2px}
+    .ga-cycle span{font-size:10px;color:#c77}
+    .ga-cycle-list{margin-top:6px;max-height:120px;overflow-y:auto;font-family:monospace;font-size:10px;color:#b88;word-break:break-all}
+    .ga-cycle-list div{padding:2px 0;border-bottom:1px solid #2a1a1a}
+    .ga-cycle-list div:last-child{border-bottom:none}
+    .ga-ok{color:#6bcb77;font-size:11px;padding:4px 0}
+    .ga-dom-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px}
+    .ga-dom-name{flex:1;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ga-dom-count{font-weight:600;color:#888}
+    .ga-sig{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:11px;color:#888}
+    .ga-sig strong{color:#ccc;font-weight:600}
+    @media (max-width:1100px){.graph-body{grid-template-columns:1fr;height:auto}.graph-analysis{max-height:400px}}
   </style>
 </head>
 <body>
@@ -762,9 +1024,18 @@ function renderHtml(): string {
     // ── Graph tab ──────────────────────────────────────────────────────────
 
     let graphData = null
+    let graphCycles = null
     const domainColors = {}
     const colorScale = ['#4a9eff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#ff922b','#20c997','#e599f7','#74c0fc','#f06595','#a9e34b','#3bc9db']
     let colorIdx = 0
+
+    const graphState = {
+      mode: 'global',        // 'global' | 'focus'
+      depth: 1,              // focus hops
+      minScore: 0,
+      hiddenDomains: new Set(),
+      currentSim: null,
+    }
 
     function getDomainColor(domain) {
       if (!domainColors[domain]) {
@@ -785,43 +1056,179 @@ function renderHtml(): string {
       return graphData
     }
 
+    async function loadCycles() {
+      if (graphCycles) return graphCycles
+      try {
+        const res = await fetch('/api/graph/cycles')
+        graphCycles = await res.json()
+      } catch {
+        graphCycles = { cycles: [], members: [] }
+      }
+      graphCycles.memberSet = new Set(graphCycles.members || [])
+      return graphCycles
+    }
+
+    async function loadFileAnalysis(relPath) {
+      try {
+        const res = await fetch('/api/graph/analysis?path=' + encodeURIComponent(relPath))
+        if (!res.ok) return null
+        return await res.json()
+      } catch { return null }
+    }
+
+    function computeEgoNetwork(centerId, depth, links) {
+      const upstream = new Map()   // id -> hop (edges where centerId is target traversed backwards)
+      const downstream = new Map() // id -> hop (edges where centerId is source, forward)
+      upstream.set(centerId, 0); downstream.set(centerId, 0)
+      const adjOut = new Map(), adjIn = new Map()
+      for (const l of links) {
+        const s = typeof l.source === 'object' ? l.source.id : l.source
+        const t = typeof l.target === 'object' ? l.target.id : l.target
+        if (!adjOut.has(s)) adjOut.set(s, [])
+        if (!adjIn.has(t)) adjIn.set(t, [])
+        adjOut.get(s).push(t)
+        adjIn.get(t).push(s)
+      }
+      let frontier = [centerId]
+      for (let h = 1; h <= depth; h++) {
+        const next = []
+        for (const node of frontier) {
+          for (const n of (adjOut.get(node) || [])) {
+            if (!downstream.has(n)) { downstream.set(n, h); next.push(n) }
+          }
+        }
+        frontier = next
+      }
+      frontier = [centerId]
+      for (let h = 1; h <= depth; h++) {
+        const next = []
+        for (const node of frontier) {
+          for (const n of (adjIn.get(node) || [])) {
+            if (!upstream.has(n)) { upstream.set(n, h); next.push(n) }
+          }
+        }
+        frontier = next
+      }
+      const all = new Set([...upstream.keys(), ...downstream.keys()])
+      return { all, upstream, downstream }
+    }
+
     async function renderGraphTab() {
       const container = document.getElementById('tab-content')
       if (!container) return
       container.innerHTML = '<div style="color:#444;text-align:center;padding:40px">Loading graph...</div>'
 
       const data = await loadGraphData()
+      const cycles = await loadCycles()
       if (!data.nodes || data.nodes.length === 0) {
         container.innerHTML = '<div style="color:#666;text-align:center;padding:40px">No graph data available. Run generate first.</div>'
         return
       }
 
-      const filterId = 'graph-filter'
-      container.innerHTML = '<div style="padding:8px 0 4px;display:flex;align-items:center;gap:12px">' +
-        '<label style="font-size:12px;color:#888">Min score:</label>' +
-        '<input type="range" id="' + filterId + '" min="0" max="100" value="0" style="width:120px">' +
-        '<span id="graph-filter-val" style="font-size:12px;color:#aaa">0.00</span>' +
-        '<span style="font-size:11px;color:#555;margin-left:auto" id="graph-stats"></span>' +
-        '</div>' +
-        '<div id="graph-svg-wrap" style="width:100%;height:calc(100vh - 220px);background:#111;border:1px solid #1e1e1e;border-radius:6px;overflow:hidden;position:relative"></div>'
+      const allDomains = Array.from(new Set(data.nodes.map(n => n.domain))).sort()
+      const focusAvailable = !!selected && data.nodes.some(n => n.id === selected)
+
+      container.innerHTML = \`
+        <div class="graph-toolbar">
+          <div class="gt-group">
+            <button class="gt-mode \${graphState.mode==='global'?'active':''}" id="gt-mode-global">Global</button>
+            <button class="gt-mode \${graphState.mode==='focus'?'active':''}" id="gt-mode-focus" \${focusAvailable?'':'disabled'}
+                    title="\${focusAvailable?'Ego network around selected file':'Select a file in the sidebar first'}">Focus</button>
+          </div>
+          <div class="gt-group" id="gt-depth-group" style="\${graphState.mode==='focus'?'':'opacity:.4;pointer-events:none'}">
+            <span class="gt-label">Depth</span>
+            \${[1,2,3].map(d => \`<button class="gt-depth \${graphState.depth===d?'active':''}" data-depth="\${d}">\${d}</button>\`).join('')}
+          </div>
+          <div class="gt-group">
+            <span class="gt-label">Min score</span>
+            <input type="range" id="gt-filter" min="0" max="100" value="\${graphState.minScore*100}" style="width:100px">
+            <span id="gt-filter-val" style="font-size:11px;color:#aaa;min-width:30px">\${graphState.minScore.toFixed(2)}</span>
+          </div>
+          <span style="margin-left:auto;font-size:11px;color:#555" id="graph-stats"></span>
+        </div>
+        <div class="graph-legend" id="graph-legend">
+          \${allDomains.map(d => \`
+            <label class="legend-item \${graphState.hiddenDomains.has(d)?'off':''}" data-domain="\${escHtml(d)}">
+              <input type="checkbox" \${graphState.hiddenDomains.has(d)?'':'checked'} data-domain-cb="\${escHtml(d)}">
+              <span class="legend-dot" style="background:\${getDomainColor(d)}"></span>
+              <span>\${escHtml(d)}</span>
+            </label>
+          \`).join('')}
+          <span class="legend-sep">|</span>
+          <span class="legend-edge"><span class="edge-line up"></span>imports</span>
+          <span class="legend-edge"><span class="edge-line down"></span>consumers</span>
+          \${cycles.members && cycles.members.length ? '<span class="legend-edge"><span class="edge-line cycle"></span>cycle (' + cycles.members.length + ')</span>' : ''}
+        </div>
+        <div class="graph-body">
+          <div id="graph-svg-wrap"></div>
+          <div class="graph-analysis" id="graph-analysis"></div>
+        </div>
+      \`
 
       const wrap = document.getElementById('graph-svg-wrap')
       const width = wrap.clientWidth
       const height = wrap.clientHeight
 
-      let minScore = 0
-      let nodes = data.nodes.map(n => ({...n}))
-      let nodeIds = new Set(nodes.map(n => n.id))
-      let links = data.links.filter(l => nodeIds.has(l.source) && nodeIds.has(l.target)).map(l => ({...l}))
+      let nodes = []
+      let links = []
 
-      function buildGraph(threshold) {
-        nodes = data.nodes.filter(n => n.score >= threshold).map(n => ({...n}))
-        nodeIds = new Set(nodes.map(n => n.id))
-        links = data.links.filter(l => nodeIds.has(typeof l.source === 'object' ? l.source.id : l.source) && nodeIds.has(typeof l.target === 'object' ? l.target.id : l.target)).map(l => ({source: typeof l.source === 'object' ? l.source.id : l.source, target: typeof l.target === 'object' ? l.target.id : l.target}))
-        document.getElementById('graph-stats').textContent = nodes.length + ' nodes, ' + links.length + ' edges'
+      function buildGraph() {
+        const threshold = graphState.minScore
+        const visibleNodeSet = new Set()
+        let egoInfo = null
+
+        if (graphState.mode === 'focus' && selected && data.nodes.some(n => n.id === selected)) {
+          egoInfo = computeEgoNetwork(selected, graphState.depth, data.links)
+          for (const id of egoInfo.all) visibleNodeSet.add(id)
+        } else {
+          for (const n of data.nodes) {
+            if (n.score < threshold) continue
+            if (graphState.hiddenDomains.has(n.domain)) continue
+            visibleNodeSet.add(n.id)
+          }
+        }
+
+        // In focus mode we don't threshold the center's network, but we still respect hidden domains for non-center nodes.
+        if (graphState.mode === 'focus' && egoInfo) {
+          for (const id of [...visibleNodeSet]) {
+            if (id === selected) continue
+            const node = data.nodes.find(n => n.id === id)
+            if (node && graphState.hiddenDomains.has(node.domain)) visibleNodeSet.delete(id)
+          }
+        }
+
+        nodes = data.nodes.filter(n => visibleNodeSet.has(n.id)).map(n => {
+          const upHop = egoInfo?.upstream.get(n.id)
+          const downHop = egoInfo?.downstream.get(n.id)
+          return {
+            ...n,
+            egoHop: upHop != null ? -upHop : (downHop != null ? downHop : null),
+            isCenter: n.id === selected && graphState.mode === 'focus',
+            inCycle: cycles.memberSet.has(n.id),
+          }
+        })
+
+        links = data.links
+          .map(l => ({ source: typeof l.source === 'object' ? l.source.id : l.source, target: typeof l.target === 'object' ? l.target.id : l.target }))
+          .filter(l => visibleNodeSet.has(l.source) && visibleNodeSet.has(l.target))
+          .map(l => ({
+            ...l,
+            direction: egoInfo
+              ? (l.source === selected ? 'down'
+                : l.target === selected ? 'up'
+                : (egoInfo.downstream.has(l.source) && egoInfo.downstream.has(l.target)) ? 'down'
+                : (egoInfo.upstream.has(l.source) && egoInfo.upstream.has(l.target)) ? 'up'
+                : 'neutral')
+              : 'neutral',
+            isCycle: cycles.memberSet.has(l.source) && cycles.memberSet.has(l.target),
+          }))
+
+        document.getElementById('graph-stats').textContent =
+          nodes.length + ' nodes · ' + links.length + ' edges' +
+          (graphState.mode === 'focus' ? ' · focus on ' + selected.split('/').pop() : '')
       }
 
-      buildGraph(0)
+      buildGraph()
 
       d3.select('#graph-svg-wrap').selectAll('svg').remove()
       const svg = d3.select('#graph-svg-wrap').append('svg')
@@ -829,40 +1236,48 @@ function renderHtml(): string {
         .style('background', '#111')
 
       const g = svg.append('g')
-
       const zoom = d3.zoom().scaleExtent([0.1, 5]).on('zoom', (e) => g.attr('transform', e.transform))
       svg.call(zoom)
 
-      svg.append('defs').append('marker')
-        .attr('id', 'arrow').attr('viewBox', '0 -5 10 10')
-        .attr('refX', 20).attr('refY', 0)
-        .attr('markerWidth', 6).attr('markerHeight', 6)
-        .attr('orient', 'auto')
-        .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', '#333')
+      const defs = svg.append('defs')
+      for (const kind of ['neutral','up','down','cycle']) {
+        defs.append('marker')
+          .attr('id', 'arrow-' + kind).attr('viewBox', '0 -5 10 10')
+          .attr('refX', 20).attr('refY', 0)
+          .attr('markerWidth', 6).attr('markerHeight', 6)
+          .attr('orient', 'auto')
+          .append('path').attr('d', 'M0,-5L10,0L0,5')
+          .attr('fill', kind === 'up' ? '#4a9eff' : kind === 'down' ? '#ff6b6b' : kind === 'cycle' ? '#ff4d6d' : '#333')
+      }
 
       const rScale = d3.scaleLinear().domain([0, 1]).range([4, 16])
-
       const linkG = g.append('g')
       const nodeG = g.append('g')
 
       function render() {
         linkG.selectAll('line').remove()
         const linkEls = linkG.selectAll('line').data(links).join('line')
-          .attr('stroke', '#222').attr('stroke-width', 0.5).attr('marker-end', 'url(#arrow)')
-          .style('opacity', 0.3)
+          .attr('stroke', l => l.isCycle ? '#ff4d6d' : l.direction === 'up' ? '#4a9eff' : l.direction === 'down' ? '#ff6b6b' : '#2a2a2a')
+          .attr('stroke-width', l => l.isCycle ? 1.2 : l.direction !== 'neutral' ? 0.9 : 0.5)
+          .attr('marker-end', l => 'url(#arrow-' + (l.isCycle ? 'cycle' : l.direction) + ')')
+          .style('opacity', l => l.direction !== 'neutral' || l.isCycle ? 0.75 : 0.3)
 
         nodeG.selectAll('circle').remove()
         nodeG.selectAll('text').remove()
         const nodeEls = nodeG.selectAll('circle').data(nodes, d => d.id).join('circle')
-          .attr('r', d => rScale(d.score))
+          .attr('r', d => d.isCenter ? rScale(d.score) + 4 : rScale(d.score))
           .attr('fill', d => getDomainColor(d.domain))
-          .attr('stroke', '#000').attr('stroke-width', 0.5)
+          .attr('stroke', d => d.isCenter ? '#fff' : d.inCycle ? '#ff4d6d' : '#000')
+          .attr('stroke-width', d => d.isCenter ? 2.5 : d.inCycle ? 1.5 : 0.5)
           .style('cursor', 'pointer')
-          .style('opacity', 0.85)
+          .style('opacity', 0.9)
 
-        const labelEls = nodeG.selectAll('text').data(nodes.filter(n => n.score >= 0.5), d => d.id).join('text')
+        const labelThreshold = graphState.mode === 'focus' ? 0 : 0.5
+        const labelEls = nodeG.selectAll('text').data(nodes.filter(n => n.score >= labelThreshold || n.isCenter), d => d.id).join('text')
           .text(d => d.id.split('/').pop().replace(/\\.\\w+$/, ''))
-          .attr('font-size', 9).attr('fill', '#888').attr('dx', d => rScale(d.score) + 3).attr('dy', 3)
+          .attr('font-size', d => d.isCenter ? 11 : 9)
+          .attr('fill', d => d.isCenter ? '#fff' : '#888')
+          .attr('dx', d => rScale(d.score) + 4).attr('dy', 3)
           .style('pointer-events', 'none')
 
         const tooltip = d3.select('#graph-svg-wrap').selectAll('.graph-tip').data([0]).join('div')
@@ -873,32 +1288,31 @@ function renderHtml(): string {
           .style('max-width', '300px').style('white-space', 'nowrap').style('overflow', 'hidden').style('text-overflow', 'ellipsis')
 
         nodeEls.on('mouseover', (e, d) => {
+          const hopLabel = d.egoHop == null ? '' : d.egoHop === 0 ? 'center' : d.egoHop < 0 ? 'upstream +' + (-d.egoHop) : 'downstream +' + d.egoHop
           tooltip.style('display', 'block')
-            .html('<strong>' + d.id + '</strong><br>Score: ' + d.score.toFixed(2) + ' | Domain: ' + d.domain)
+            .html('<strong>' + d.id + '</strong><br>Score: ' + d.score.toFixed(2) + ' · ' + d.domain + (hopLabel ? ' · ' + hopLabel : '') + (d.inCycle ? ' · in cycle' : ''))
           const neighbors = new Set()
           links.forEach(l => {
-            const sid = typeof l.source === 'object' ? l.source.id : l.source
-            const tid = typeof l.target === 'object' ? l.target.id : l.target
-            if (sid === d.id) neighbors.add(tid)
-            if (tid === d.id) neighbors.add(sid)
+            if (l.source === d.id || (l.source && l.source.id === d.id)) neighbors.add(typeof l.target === 'object' ? l.target.id : l.target)
+            if (l.target === d.id || (l.target && l.target.id === d.id)) neighbors.add(typeof l.source === 'object' ? l.source.id : l.source)
           })
           neighbors.add(d.id)
-          nodeEls.style('opacity', n => neighbors.has(n.id) ? 1 : 0.15)
+          nodeEls.style('opacity', n => neighbors.has(n.id) ? 1 : 0.12)
           linkEls.style('opacity', l => {
             const sid = typeof l.source === 'object' ? l.source.id : l.source
             const tid = typeof l.target === 'object' ? l.target.id : l.target
-            return (sid === d.id || tid === d.id) ? 0.6 : 0.05
+            return (sid === d.id || tid === d.id) ? 0.85 : 0.05
           })
         }).on('mousemove', (e) => {
           const rect = wrap.getBoundingClientRect()
           tooltip.style('left', (e.clientX - rect.left + 12) + 'px').style('top', (e.clientY - rect.top - 10) + 'px')
         }).on('mouseout', () => {
           tooltip.style('display', 'none')
-          nodeEls.style('opacity', 0.85)
-          linkEls.style('opacity', 0.3)
-        }).on('click', (e, d) => {
-          loadNote(d.id)
+          nodeEls.style('opacity', 0.9)
+          linkEls.style('opacity', l => l.direction !== 'neutral' || l.isCycle ? 0.75 : 0.3)
+        }).on('click', (_e, d) => {
           activeTab = 'graph'
+          loadNote(d.id)
         })
 
         nodeEls.call(d3.drag()
@@ -909,7 +1323,7 @@ function renderHtml(): string {
 
         const sim = d3.forceSimulation(nodes)
           .force('link', d3.forceLink(links).id(d => d.id).distance(60))
-          .force('charge', d3.forceManyBody().strength(-150))
+          .force('charge', d3.forceManyBody().strength(graphState.mode === 'focus' ? -220 : -150))
           .force('center', d3.forceCenter(width / 2, height / 2))
           .force('collision', d3.forceCollide().radius(d => rScale(d.score) + 2))
           .on('tick', () => {
@@ -919,23 +1333,108 @@ function renderHtml(): string {
             labelEls.attr('x', d => d.x).attr('y', d => d.y)
           })
 
-        if (selected) {
-          nodeEls.attr('stroke', d => d.id === selected ? '#4a9eff' : '#000')
-            .attr('stroke-width', d => d.id === selected ? 2.5 : 0.5)
-        }
-
         return sim
       }
 
-      let currentSim = render()
+      function rebuild() {
+        if (graphState.currentSim) graphState.currentSim.stop()
+        buildGraph()
+        graphState.currentSim = render()
+      }
 
-      document.getElementById(filterId).addEventListener('input', function() {
-        const val = this.value / 100
-        document.getElementById('graph-filter-val').textContent = val.toFixed(2)
-        if (currentSim) currentSim.stop()
-        buildGraph(val)
-        currentSim = render()
+      graphState.currentSim = render()
+
+      // Wire controls ────────────────────────────────────────────────
+      document.getElementById('gt-mode-global').onclick = () => {
+        graphState.mode = 'global'; rebuild(); renderGraphTab()
+      }
+      const focusBtn = document.getElementById('gt-mode-focus')
+      if (focusBtn && !focusBtn.disabled) {
+        focusBtn.onclick = () => { graphState.mode = 'focus'; rebuild(); renderGraphTab() }
+      }
+      document.querySelectorAll('.gt-depth').forEach(btn => {
+        btn.onclick = () => {
+          graphState.depth = parseInt(btn.dataset.depth, 10)
+          rebuild(); renderGraphTab()
+        }
       })
+      document.getElementById('gt-filter').addEventListener('input', function() {
+        const val = this.value / 100
+        graphState.minScore = val
+        document.getElementById('gt-filter-val').textContent = val.toFixed(2)
+        rebuild()
+      })
+      document.querySelectorAll('[data-domain-cb]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const d = cb.dataset.domainCb
+          if (cb.checked) graphState.hiddenDomains.delete(d)
+          else graphState.hiddenDomains.add(d)
+          rebuild()
+          cb.closest('.legend-item').classList.toggle('off', !cb.checked)
+        })
+      })
+
+      // Analysis panel ──────────────────────────────────────────────
+      renderGraphAnalysis(selected, cycles)
+    }
+
+    async function renderGraphAnalysis(relPath, cycles) {
+      const pane = document.getElementById('graph-analysis')
+      if (!pane) return
+      if (!relPath) {
+        pane.innerHTML = '<div class="ga-empty">Select a file to analyze its graph position</div>'
+        return
+      }
+      pane.innerHTML = '<div class="ga-empty">Analyzing...</div>'
+      const a = await loadFileAnalysis(relPath)
+      if (!a) {
+        pane.innerHTML = '<div class="ga-empty">No analysis available</div>'
+        return
+      }
+
+      const inCycleHtml = a.inCycle
+        ? \`<div class="ga-cycle">
+             <strong>⚠ In cycle</strong>
+             <span>\${a.cycleSize} files</span>
+             <div class="ga-cycle-list">\${a.inCycle.map(p => '<div>' + escHtml(p) + '</div>').join('')}</div>
+           </div>\`
+        : '<div class="ga-ok">No cycle membership</div>'
+
+      const domainRows = Object.entries(a.neighborDomains || {})
+        .sort((x, y) => y[1] - x[1])
+        .map(([d, c]) => \`<div class="ga-dom-row"><span class="legend-dot" style="background:\${getDomainColor(d)}"></span><span class="ga-dom-name">\${escHtml(d)}</span><span class="ga-dom-count">\${c}</span></div>\`)
+        .join('') || '<div class="ga-empty">No neighbors</div>'
+
+      pane.innerHTML = \`
+        <div class="ga-header">\${escHtml(relPath.split('/').pop())}</div>
+        <div class="ga-sub">\${escHtml(relPath)}</div>
+
+        <div class="ga-grid">
+          <div class="ga-cell"><div class="ga-num">\${a.inDegree}</div><div class="ga-lbl">in-degree</div></div>
+          <div class="ga-cell"><div class="ga-num">\${a.outDegree}</div><div class="ga-lbl">out-degree</div></div>
+          <div class="ga-cell"><div class="ga-num">\${a.transitiveDependentsCount}</div><div class="ga-lbl">trans. consumers</div></div>
+          <div class="ga-cell"><div class="ga-num">\${a.transitiveDependenciesCount}</div><div class="ga-lbl">trans. deps</div></div>
+        </div>
+
+        \${a.hotspot ? '<div class="ga-hotspot">🔥 <strong>Hotspot</strong>: high criticality + many consumers + no tests</div>' : ''}
+
+        <div class="ga-section">
+          <div class="ga-title">Cycle membership</div>
+          \${inCycleHtml}
+        </div>
+
+        <div class="ga-section">
+          <div class="ga-title">Neighbor domains (\${Object.keys(a.neighborDomains || {}).length})</div>
+          \${domainRows}
+        </div>
+
+        <div class="ga-section">
+          <div class="ga-title">Signals</div>
+          <div class="ga-sig"><span>Score</span><strong>\${a.criticalityScore.toFixed(2)}</strong></div>
+          <div class="ga-sig"><span>Churn</span><strong>\${a.churnScore}</strong></div>
+          <div class="ga-sig"><span>Tests</span><strong>\${a.hasTests ? '✓' : '—'}</strong></div>
+        </div>
+      \`
     }
 
     function renderDetail(note, relPath) {

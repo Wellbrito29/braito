@@ -43,6 +43,22 @@ describe('aiNotesConfigSchema', () => {
     const result = aiNotesConfigSchema.safeParse({ ...BASE, staleThresholdDays: 1.5 })
     expect(result.success).toBe(false)
   })
+
+  it('accepts a positive integer maxSourceLines', () => {
+    const result = aiNotesConfigSchema.safeParse({ ...BASE, maxSourceLines: 300 })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.maxSourceLines).toBe(300)
+  })
+
+  it('rejects non-positive maxSourceLines', () => {
+    const result = aiNotesConfigSchema.safeParse({ ...BASE, maxSourceLines: 0 })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects non-integer maxSourceLines', () => {
+    const result = aiNotesConfigSchema.safeParse({ ...BASE, maxSourceLines: 1.5 })
+    expect(result.success).toBe(false)
+  })
 })
 
 describe('llmConfigSchema', () => {

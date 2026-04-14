@@ -9,6 +9,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **`withDefaults` descartando config do usuário silenciosamente** — o bloco `llm` do `ai-notes.config.ts` era descartado antes do Zod, desabilitando silenciosamente a síntese LLM; `withDefaults` agora faz `...partial` antes de aplicar defaults. Regressão coberta por `tests/config/loadConfig.test.ts`.
+- **`maxSourceLines` sem validação e nunca aplicado** — o campo era lido em `generate.ts` mas faltava em `AiNotesConfig` e no schema Zod, então era removido e o LLM sempre recebia o arquivo inteiro. Declarado em ambos e coberto por testes.
+
+### Changed
+- **Extractors AST realocados para `analyzers/ts/`** — `extractEnvVars` e `extractApiCalls` saíram do `parseFile.ts` para arquivos dedicados, seguindo a convenção "um extractor por arquivo".
+- **Docs de estrutura/arquitetura consolidados em `docs-site/`** — `docs/FILE_STRUCTURE.md` e `docs/ARCHITECTURE.md` legados viraram stubs; as páginas canônicas em `docs-site/docs/reference/` (EN + pt-BR) agora refletem `business/`, `governance/`, `llm/prompts`, `llm/schemas`, `buildSearchIndex`, `writeGraph` e os comandos `init`/`update`.
+
+### Removed
+- **`src/core/ast/extractSkeleton.ts`** — código morto; superado pelo `readSource` em `buildPrompt.ts` desde a reforma do `maxSourceLines`.
+
 ### Added
 - **`exportDetails` e `signatures` para Python/Go** — ambos os analisadores agora extraem metadados ricos: Python extrai assinaturas de funções com params/return types, classes com bases, e docstrings; Go extrai assinaturas de funções com receivers, campos de structs e métodos de interfaces; Python respeita `__all__` e trata imports multiline; Go captura métodos exportados com receivers
 - **Índice de busca BM25** — `generate` constrói `.ai-notes/search-index.json` via MiniSearch; a ferramenta MCP `search` usa busca ranqueada com fuzzy matching e prefix; fallback para scan linear quando índice ausente

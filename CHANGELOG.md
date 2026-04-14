@@ -4,6 +4,17 @@ All notable changes to braito will be documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **`withDefaults` silently dropping user config** — `src/core/config/defaults.ts` built the merged config by listing fields explicitly and therefore stripped `llm` (and any future optional field) before Zod ever saw it, so the user's LLM block in `ai-notes.config.ts` never reached `config.llm` and synthesis silently fell back to static notes; the function now spreads `...partial` before applying defaults. Regression covered by `tests/config/loadConfig.test.ts`.
+- **`maxSourceLines` not validated and never applied** — the field was read in `generate.ts` and forwarded to `buildPrompt`, but was missing from `AiNotesConfig` (`src/core/types/project.ts`) and from `aiNotesConfigSchema`, so Zod stripped it and the LLM always received the full file. Declared in both and covered by schema + loader tests.
+
+### Changed
+- **AST extractors relocated to `analyzers/ts/`** — the inline helpers `extractEnvVars` and `extractApiCalls` in `parseFile.ts` moved to dedicated files (`extractEnvUsage.ts`, `extractApiCalls.ts`) to match the one-extractor-per-file convention; `parseFile.ts` is now pure dispatch.
+- **Structure/architecture docs consolidated in `docs-site/`** — `docs-site/docs/reference/file-structure.md` and `architecture.md` (and their pt-BR mirrors) regenerated to reflect current modules (`business/`, `governance/`, `llm/prompts`, `llm/schemas`, `buildSearchIndex`, `writeGraph`, `init`/`update` commands, test coverage of `governance/`). Legacy `docs/FILE_STRUCTURE.md` and `docs/ARCHITECTURE.md` reduced to stubs pointing at the docs-site to prevent drift.
+
+### Removed
+- **`src/core/ast/extractSkeleton.ts`** — dead code; never imported. `buildPrompt.ts` has used its own `readSource` helper since the `maxSourceLines` rework.
+
 ### Added
 - **Python/Go `exportDetails` and `signatures`** — both analyzers now extract rich export metadata: Python extracts function signatures with params/return types, class definitions with bases, and docstrings; Go extracts function signatures including methods with receivers, struct fields (up to 6), and interface methods; `signatures` field populated from extracted details for LLM prompt enrichment; Python respects `__all__` to filter exports; Python handles multiline `from X import (...)` blocks; Go captures exported methods with receivers; `ENSURES` and `ADR` keywords added to both comment extractors
 - **BM25 search index** — `generate` now builds `.ai-notes/search-index.json` using MiniSearch (BM25 scoring); the MCP `search` tool uses ranked full-text search with fuzzy matching and prefix support instead of linear substring scanning; searches across all `observed[]`, `inferred[]`, and `evidence[].detail` fields; falls back to linear scan when index is not present; `searchMethod` field in response indicates which engine was used

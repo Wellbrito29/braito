@@ -15,31 +15,36 @@ braito/
         watch.ts
         mcp.ts
         ui.ts
+        init.ts                   ← generates agent slash commands
+        update.ts                 ← re-generates only stale notes
 
     core/
       config/
         loadConfig.ts
         defaults.ts
         configSchema.ts           ← Zod validation schema
+        loadProjectContext.ts     ← reads braito.context.md
 
       scanner/
         scanRepository.ts
         discoverFiles.ts
+        ignoreRules.ts
 
       ast/
-        parseFile.ts
+        parseFile.ts              ← language dispatcher
         analyzerRegistry.ts
         types.ts                  ← LanguageAnalyzer interface
         analyzers/
           ts/
             extractImports.ts
             extractExports.ts
+            extractExportDetails.ts
             extractSymbols.ts
             extractHooks.ts
+            extractComments.ts
+            extractSignatures.ts
             extractEnvUsage.ts
             extractApiCalls.ts
-            extractComments.ts
-            extractDynamicImports.ts
           python/
             pythonAnalyzer.ts
           go/
@@ -60,12 +65,22 @@ braito/
       tests/
         findRelatedTests.ts
         loadCoverage.ts
+        parseLcov.ts
 
       cache/
         computeHash.ts
         cacheStore.ts
-        isNoteStale.ts
         analysisStore.ts
+        isCacheValid.ts
+        isNoteStale.ts
+
+      business/
+        extractBusinessRules.ts   ← heuristic rule extractor used by MCP
+
+      governance/
+        detectGovernanceModel.ts
+        loadGovernanceContext.ts
+        types.ts
 
       llm/
         synthesizeFileNote.ts
@@ -76,13 +91,20 @@ braito/
           openai.ts
           ollama.ts
           types.ts
+        prompts/
+          buildPrompt.ts
+          systemPrompt.ts
+        schemas/
+          aiNoteSchema.ts         ← Zod schema for LLM response
 
       output/
         buildBasicNote.ts
         buildIndex.ts
+        buildSearchIndex.ts       ← BM25 MiniSearch index
         writeJsonNote.ts
         writeMarkdownNote.ts
         writeIndexNote.ts
+        writeGraph.ts             ← persists .ai-notes/graph.json
         diffNotes.ts
 
       utils/
@@ -93,6 +115,7 @@ braito/
       types/
         project.ts
         ai-note.ts
+        file-analysis.ts
         schema-version.ts
 
   vscode-extension/
@@ -112,6 +135,7 @@ braito/
     config/
     e2e/
     git/
+    governance/
     graph/
     llm/
     mcp/
@@ -120,16 +144,11 @@ braito/
     tests/
     utils/
 
-  docs/
-    assets/
-      braito.png
-    ARCHITECTURE.md
-    DOMAIN_MODEL_AND_SCHEMA.md
-    FILE_STRUCTURE.md
-    LLM_STRATEGY.md
-    PROJECT_DESCRIPTION.md
-    RECOMMENDATIONS.md
-    ai-notes.config.example.ts.md
+  docs-site/                      ← Docusaurus site (source of truth for docs)
+    docs/
+      guide/
+      reference/
+    i18n/pt-BR/…
 
   .github/
     workflows/
@@ -139,9 +158,10 @@ braito/
   cache/          ← generated, do not edit manually
 
   ai-notes.config.ts
+  braito.context.md                ← optional project constitution injected in LLM prompts
   package.json
   tsconfig.json
-  bun.lockb
+  bun.lock
   CLAUDE.md
   README.md
   README.pt-BR.md
@@ -161,15 +181,23 @@ All business rules live here. Each subdirectory is a self-contained module.
 
 ### `src/core/ast`
 
-Modular by language. Add a new language by implementing `LanguageAnalyzer` and registering in `analyzerRegistry.ts`.
+Modular by language. Add a new language by implementing `LanguageAnalyzer` and registering in `analyzerRegistry.ts`. TypeScript/JavaScript extractors live in `analyzers/ts/`, one per extractor.
 
 ### `src/core/llm`
 
-Separate: provider, synthesizer, retry logic. Providers are swappable without changing the pipeline.
+Separate: provider, synthesizer, retry logic, prompts, and response schemas. Providers are swappable without changing the pipeline.
+
+### `src/core/business`
+
+Static heuristic extractors for domain rules (numeric limits, permission guards, schema validations, business constants). Consumed by the `get_business_rules` MCP tool. No LLM dependency — pure functions over source text.
+
+### `src/core/governance`
+
+Detects project-level documentation artifacts (`Docs/`, `Workflows/`, `Quality/`, `Skills/`) and injects `doc` evidence items into notes. `buildBasicNote` receives the loaded `GovernanceContext` optionally.
 
 ### `src/core/output`
 
-All output formats are isolated here.
+All output formats are isolated here: structured JSON sidecars, human-readable Markdown, the ranked index, the dependency graph (`graph.json`), and the BM25 search index.
 
 ### `.ai-notes/` and `cache/`
 

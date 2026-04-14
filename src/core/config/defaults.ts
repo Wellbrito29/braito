@@ -27,11 +27,10 @@ export const DEFAULT_LANGUAGE = 'en'
 
 export function withDefaults(partial: Partial<AiNotesConfig> & { root: string }): AiNotesConfig {
   return {
-    root: partial.root,
+    ...partial,
     include: partial.include ?? DEFAULT_INCLUDE,
     exclude: partial.exclude ?? DEFAULT_EXCLUDE,
     output: partial.output ?? '.ai-notes',
-    tsconfigPath: partial.tsconfigPath,
     staleThresholdDays: partial.staleThresholdDays ?? DEFAULT_STALE_THRESHOLD_DAYS,
     language: partial.language ?? DEFAULT_LANGUAGE,
   }

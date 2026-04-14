@@ -26,4 +26,5 @@ export type AiNotesConfig = {
   llm?: LLMConfig
   staleThresholdDays?: number
   language?: string  // BCP 47 language tag — e.g. 'en', 'pt-BR', 'es'. Default: 'en'
+  maxSourceLines?: number  // cap source content sent to LLM prompts; unset = full file
 }

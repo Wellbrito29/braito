@@ -9,6 +9,8 @@ import { extractSymbols } from './analyzers/ts/extractSymbols.ts'
 import { extractHooks } from './analyzers/ts/extractHooks.ts'
 import { extractComments } from './analyzers/ts/extractComments.ts'
 import { extractSignatures } from './analyzers/ts/extractSignatures.ts'
+import { extractEnvVars } from './analyzers/ts/extractEnvUsage.ts'
+import { extractApiCalls } from './analyzers/ts/extractApiCalls.ts'
 import { getAnalyzer } from './analyzerRegistry.ts'
 import { logger } from '../utils/logger.ts'
 
@@ -88,15 +90,5 @@ function emptyAnalysis(filePath: string): StaticFileAnalysis {
     hasSideEffects: false,
     signatures: [],
   }
-}
-
-function extractEnvVars(text: string): string[] {
-  const matches = text.matchAll(/process\.env\.([A-Z_][A-Z0-9_]*)/g)
-  return [...new Set([...matches].map((m) => m[1]))]
-}
-
-function extractApiCalls(text: string): string[] {
-  const matches = text.matchAll(/(?:fetch|axios|got|request)\s*\(\s*['"`]([^'"`]+)['"`]/g)
-  return [...new Set([...matches].map((m) => m[1]))]
 }
 

@@ -80,6 +80,7 @@ O servidor MCP também pode rodar fora de uma IDE — qualquer cliente que fale 
 | `get_domain` | Todos os arquivos em um domínio específico, ordenados por criticidade |
 | `get_business_rules` | Extrai regras de negócio, restrições de domínio e padrões de validação de um arquivo |
 | `get_governance_context` | Documentos de governança detectados (Docs/, Workflows/, Quality/), estilo, mapeamentos de domínio |
+| `get_divergences` | Divergências estruturais entre docs de governança e o código — arquivos ausentes, dependências proibidas, domínios não declarados, hotspots não documentados |
 
 ## Detalhes das ferramentas
 

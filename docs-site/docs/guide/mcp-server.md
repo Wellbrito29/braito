@@ -76,6 +76,7 @@ The MCP server can run outside an IDE too — any client that speaks JSON-RPC 2.
 | `get_domain` | All files in a specific domain, sorted by criticality |
 | `get_business_rules` | Extract business rules, domain constraints, and policy enforcement patterns from a source file |
 | `get_governance_context` | Detected governance docs (Docs/, Workflows/, Quality/), style, domain mappings, and constraints |
+| `get_divergences` | Structural mismatches between governance docs and the codebase — missing files, forbidden deps, undeclared domains, undocumented hotspots |
 
 ## Tool details
 

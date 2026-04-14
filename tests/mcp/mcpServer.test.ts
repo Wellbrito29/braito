@@ -125,7 +125,7 @@ describe('MCP server', () => {
     expect(names).toContain('search')
     expect(names).toContain('get_domain')
     expect(names).toContain('list_repos')
-    expect(res.result.tools).toHaveLength(10)
+    expect(res.result.tools).toHaveLength(11)
   })
 
   it('get_file_note returns note content', async () => {

@@ -156,6 +156,7 @@ No modo multi-repo, cada chamada de ferramenta aceita um argumento `repo` (use `
 | `get_domain` | Todos os arquivos em um domínio específico, ordenados por criticidade |
 | `get_business_rules` | Extrai regras de negócio, restrições de domínio e padrões de validação de um arquivo |
 | `get_governance_context` | Documentos de governança detectados (Docs/, Workflows/, Quality/), estilo, mapeamentos de domínio |
+| `get_divergences` | Divergências estruturais entre docs de governança e o código — arquivos ausentes, dependências proibidas, domínios não declarados, hotspots não documentados |
 
 Adicione à configuração do cliente MCP (ex: `~/.cursor/mcp.json` ou `~/.claude/config.json`):
 

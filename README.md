@@ -156,6 +156,7 @@ In multi-repo mode, each tool call accepts a `repo` argument (use `list_repos` t
 | `get_architecture_context` | Synthesized architectural overview — top files, domain breakdown, stats |
 | `get_business_rules` | Extract business rules, domain constraints, and policy enforcement patterns from a source file |
 | `get_governance_context` | Detected governance docs (Docs/, Workflows/, Quality/), style, domain mappings, and constraints |
+| `get_divergences` | Structural mismatches between governance docs and the codebase — missing files, forbidden deps, undeclared domains, undocumented hotspots |
 
 Add to your MCP client config (e.g. `~/.cursor/mcp.json` or `~/.claude/config.json`):
 

@@ -160,6 +160,24 @@ export async function runGenerate(args: {
     logger.info(`Governance docs detected (${governanceContext.model.style}): ${governanceContext.model.docs.length} documents`)
   }
 
+  // Detect divergences between governance docs and actual code (optional)
+  const { detectDivergences, divergencesByFile } = await import('../../core/governance/detectDivergence.ts')
+  const divergences = governanceContext
+    ? detectDivergences({
+        governance: governanceContext,
+        files: files.map((f) => f.relativePath),
+        depGraph,
+        revGraph,
+        root,
+      })
+    : []
+  const divergenceMap = divergencesByFile(divergences)
+  if (divergences.length > 0) {
+    const errors = divergences.filter((d) => d.severity === 'error').length
+    const warns = divergences.filter((d) => d.severity === 'warn').length
+    logger.warn(`Detected ${divergences.length} governance divergence(s): ${errors} error, ${warns} warn`)
+  }
+
   // Use concurrency cap from config when LLM is active; fall back to 1 (sequential) otherwise
   const concurrency = provider ? (llmConfig?.concurrency ?? 5) : 1
 
@@ -220,7 +238,8 @@ export async function runGenerate(args: {
       const coveragePct = coverageMap?.get(file.relativePath)
       const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
-      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext)
+      const fileDivergences = divergenceMap.get(file.relativePath) ?? []
+      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext, fileDivergences)
       const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)
 
       if (args.verbose) {
@@ -326,6 +345,18 @@ export async function runGenerate(args: {
     index.entries.map((e) => [e.relativePath, { domain: e.domain, criticalityScore: e.criticalityScore }]),
   )
   await writeGraph(depGraph, nodeMetaMap, root, config.output)
+
+  // 11b. Persist divergences (if any) to .ai-notes/divergences.json
+  const divergencesPath = path.join(root, config.output, 'divergences.json')
+  if (divergences.length > 0) {
+    await fs.writeFile(
+      divergencesPath,
+      JSON.stringify({ generatedAt: new Date().toISOString(), count: divergences.length, divergences }, null, 2),
+    )
+  } else {
+    // Remove stale divergences file if the current run is clean
+    try { await fs.unlink(divergencesPath) } catch {}
+  }
 
   // 12. Build search index for BM25 full-text search
   const { buildSearchIndex } = await import('../../core/output/buildSearchIndex.ts')

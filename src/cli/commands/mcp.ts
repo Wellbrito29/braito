@@ -255,6 +255,25 @@ const TOOLS = [
       'Get the governance context for the project — detected documentation artifacts (Docs/, Workflows/, Quality/), governance style, domain mappings, and constraints extracted from project docs. Returns null if no governance docs are detected.',
     inputSchema: { type: 'object', properties: { ...REPO_PROP } },
   },
+  {
+    name: 'get_divergences',
+    description:
+      'Get structural divergences between governance docs and the actual codebase — missing files referenced in docs, forbidden dependencies, files living outside declared domains, and undocumented hotspots. Populated during generate; empty when no governance docs are detected.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ...REPO_PROP,
+        severity: {
+          type: 'string',
+          description: 'Filter by severity: "info", "warn", or "error". Optional.',
+        },
+        type: {
+          type: 'string',
+          description: 'Filter by type: "missing_file", "undeclared_domain", "forbidden_dependency", "undocumented_hotspot". Optional.',
+        },
+      },
+    },
+  },
 ]
 
 function send(msg: JsonRpcResponse): void {
@@ -698,6 +717,24 @@ export async function handleRequest(
       return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] } }
     }
 
+    if (name === 'get_divergences') {
+      const divergencesPath = path.resolve(root, outputDir, 'divergences.json')
+      if (!fs.existsSync(divergencesPath)) {
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ count: 0, divergences: [], message: 'No divergences recorded. Run generate with governance docs in place.' }, null, 2) }] } }
+      }
+      try {
+        const payload = JSON.parse(fs.readFileSync(divergencesPath, 'utf-8')) as { count: number; generatedAt: string; divergences: Array<{ type: string; severity: string }> }
+        let list = payload.divergences
+        const sev = args.severity as string | undefined
+        const typ = args.type as string | undefined
+        if (sev) list = list.filter((d) => d.severity === sev)
+        if (typ) list = list.filter((d) => d.type === typ)
+        return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify({ generatedAt: payload.generatedAt, count: list.length, divergences: list }, null, 2) }] } }
+      } catch {
+        return errorResponse(id, -32603, 'Failed to read divergences file.')
+      }
+    }
+
     if (name === 'get_governance_context') {
       try {
         const { loadGovernanceContext } = await import('../../core/governance/loadGovernanceContext.ts')
@@ -760,7 +797,7 @@ export async function runMcp(args: {
       process.stderr.write(`  [${r.alias}] ${r.root} (notes: ${r.outputDir})\n`)
     }
   }
-  process.stderr.write(`Tools: list_repos | get_file_note | get_index | get_architecture_context | get_impact | search | get_domain | search_by_criticality | get_business_rules | get_governance_context\n`)
+  process.stderr.write(`Tools: list_repos | get_file_note | get_index | get_architecture_context | get_impact | search | get_domain | search_by_criticality | get_business_rules | get_governance_context | get_divergences\n`)
 
   let buffer = ''
 

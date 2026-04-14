@@ -2,6 +2,7 @@ import path from 'node:path'
 import type { StaticFileAnalysis, GraphSignals, TestSignals, GitSignals } from '../types/file-analysis.ts'
 import type { AiFileNote, ChangelogEntry, DebugSignals, EvidenceItem, StructuredListField } from '../types/ai-note.ts'
 import type { GovernanceContext } from '../governance/types.ts'
+import type { Divergence } from '../governance/detectDivergence.ts'
 import { SCHEMA_VERSION } from '../types/schema-version.ts'
 
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
@@ -15,6 +16,7 @@ export function buildBasicNote(
   git: GitSignals,
   cycleFiles?: Set<string>,
   governance?: GovernanceContext | null,
+  divergences?: Divergence[],
 ): AiFileNote {
   const purposeObserved: string[] = []
   const purposeEvidence: EvidenceItem[] = []
@@ -97,6 +99,14 @@ export function buildBasicNote(
   if (cycleFiles?.has(analysis.filePath)) {
     pitfallsObserved.push('Participates in a circular import cycle')
     pitfallsEvidence.push({ type: 'graph', detail: 'File is part of a circular dependency cycle' })
+  }
+
+  if (divergences && divergences.length > 0) {
+    for (const d of divergences) {
+      const prefix = d.severity === 'error' ? 'Divergence (error)' : d.severity === 'warn' ? 'Divergence' : 'Divergence (info)'
+      pitfallsObserved.push(`${prefix}: ${d.message}`)
+      pitfallsEvidence.push({ type: 'doc', detail: d.docPath ? `${d.docPath}: ${d.message}` : d.message })
+    }
   }
 
   // impactValidation: consumers + tests + co-changed files + coverage

@@ -48,6 +48,6 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 - [x] **Governance-aware analysis** — `src/core/governance/` module detects project docs (Docs/, Workflows/, Quality/) and injects `doc` evidence into file notes; `get_governance_context` MCP tool exposes detected governance model
 
-- [ ] **Divergence detection** — cross-reference governance docs (architecture, contracts) against actual code structure and flag mismatches as `knownPitfalls`
+- [x] **Divergence detection** — `src/core/governance/detectDivergence.ts` cross-references governance docs against the codebase and dep graph; detectors for `missing_file`, `undeclared_domain`, `forbidden_dependency`, `undocumented_hotspot`; divergences injected into `knownPitfalls.observed` and persisted to `.ai-notes/divergences.json`; new `get_divergences` MCP tool
 
 - [ ] **Embedding-based semantic search** — optional `@huggingface/transformers` for true semantic search when BM25 is insufficient

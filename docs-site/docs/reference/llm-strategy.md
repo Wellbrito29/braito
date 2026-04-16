@@ -83,6 +83,19 @@ This keeps the output language configurable without changing the schema or pipel
 - cache by file hash + signals
 - limit synthesis to relevant or critical files (`criticalityScore >= llmThreshold`)
 - allow incremental execution
+- **tiered models** — spend budget only on the riskiest files:
+
+  ```ts
+  llm: {
+    provider: 'claude-cli',
+    model: 'claude-sonnet-4-6',      // default tier
+    highModel: 'claude-opus-4-6',    // premium tier
+    highThreshold: 0.7,              // route files with score >= 0.7 to highModel
+    llmThreshold: 0.4,               // below this, no LLM at all
+  }
+  ```
+
+  With this config: files with `score < 0.4` get static notes, `0.4 ≤ score < 0.7` use the default model, and `score ≥ 0.7` use the premium model. The end-of-run log reports how many files used each tier.
 
 ## Confidence guidelines
 

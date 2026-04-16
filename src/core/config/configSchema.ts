@@ -7,6 +7,12 @@ export const llmConfigSchema = z.object({
     }),
   }),
   model: z.string().optional(),
+  highModel: z.string().optional(),
+  highThreshold: z
+    .number()
+    .min(0, 'llm.highThreshold must be >= 0')
+    .max(1, 'llm.highThreshold must be <= 1')
+    .optional(),
   baseUrl: z.string().url({ message: 'llm.baseUrl must be a valid URL' }).optional(),
   llmThreshold: z
     .number()
@@ -20,6 +26,25 @@ export const llmConfigSchema = z.object({
     .optional(),
   timeoutMs: z.number().int().positive().optional(),
   concurrency: z.number().int().min(1).max(20).optional(),
+})
+
+export const analysisConfigSchema = z.object({
+  sideEffectPackages: z.array(z.string().min(1)).optional(),
+  apiCallPatterns: z
+    .array(
+      z.string().refine(
+        (s) => {
+          try {
+            new RegExp(s)
+            return true
+          } catch {
+            return false
+          }
+        },
+        { message: 'analysis.apiCallPatterns entries must be valid regex fragments' },
+      ),
+    )
+    .optional(),
 })
 
 export const aiNotesConfigSchema = z.object({
@@ -40,6 +65,7 @@ export const aiNotesConfigSchema = z.object({
     .positive('staleThresholdDays must be > 0')
     .optional(),
   language: z.string().min(2, 'language must be a valid BCP 47 tag (e.g. "en", "pt-BR")').optional(),
+  analysis: analysisConfigSchema.optional(),
 })
 
 export type ValidatedConfig = z.infer<typeof aiNotesConfigSchema>

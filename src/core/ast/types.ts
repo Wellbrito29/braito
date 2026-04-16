@@ -1,4 +1,5 @@
 import type { StaticFileAnalysis } from '../types/file-analysis.ts'
+import type { AnalysisConfig } from '../types/project.ts'
 
 /**
  * Common interface for all language analyzers.
@@ -8,5 +9,5 @@ export interface LanguageAnalyzer {
   /** File extensions this analyzer handles (e.g. ['.py']) */
   readonly extensions: string[]
   /** Analyze a file and return a StaticFileAnalysis */
-  analyze(filePath: string, content: string): StaticFileAnalysis
+  analyze(filePath: string, content: string, analysisConfig?: AnalysisConfig): StaticFileAnalysis
 }

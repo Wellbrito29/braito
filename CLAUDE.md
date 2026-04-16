@@ -120,6 +120,15 @@ llm: { provider: 'openai', model: 'gpt-4o', llmThreshold: 0.4 }
 
 // Claude CLI — uses your logged-in Claude Code session (no API key needed)
 llm: { provider: 'claude-cli', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
+
+// Tiered models — cheap default, premium for top-criticality files
+llm: {
+  provider: 'claude-cli',
+  model: 'claude-sonnet-4-6',      // default: used for files with score >= llmThreshold and < highThreshold
+  highModel: 'claude-opus-4-6',    // premium: used for files with score >= highThreshold
+  highThreshold: 0.7,              // default 0.7 when highModel is set
+  llmThreshold: 0.4,
+}
 ```
 
 **Security:** API keys must be set via environment variables only — never in `ai-notes.config.ts`.
@@ -293,6 +302,15 @@ llm: { provider: 'openai', model: 'gpt-4o', llmThreshold: 0.4 }
 
 // Claude CLI — usa sua sessão do Claude Code já autenticada (sem chave de API)
 llm: { provider: 'claude-cli', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
+
+// Modelos em tiers — default barato, premium para os arquivos mais críticos
+llm: {
+  provider: 'claude-cli',
+  model: 'claude-sonnet-4-6',      // default: score >= llmThreshold e < highThreshold
+  highModel: 'claude-opus-4-6',    // premium: score >= highThreshold
+  highThreshold: 0.7,              // padrão 0.7 quando highModel está definido
+  llmThreshold: 0.4,
+}
 ```
 
 **Segurança:** chaves de API devem ser definidas apenas por variáveis de ambiente — nunca no `ai-notes.config.ts`.

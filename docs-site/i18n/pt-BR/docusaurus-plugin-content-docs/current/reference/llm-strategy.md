@@ -80,6 +80,19 @@ Quando `language` é diferente de inglês, uma instrução adicional é adiciona
 - cache por hash de arquivo + sinais
 - limitar síntese a arquivos relevantes ou críticos (`criticalityScore >= llmThreshold`)
 - permitir execução incremental
+- **modelos em tiers** — gastar orçamento apenas nos arquivos mais arriscados:
+
+  ```ts
+  llm: {
+    provider: 'claude-cli',
+    model: 'claude-sonnet-4-6',      // tier padrão
+    highModel: 'claude-opus-4-6',    // tier premium
+    highThreshold: 0.7,              // roteia arquivos com score >= 0.7 para highModel
+    llmThreshold: 0.4,               // abaixo disso, sem LLM
+  }
+  ```
+
+  Com essa config: arquivos com `score < 0.4` recebem nota estática, `0.4 ≤ score < 0.7` usam o modelo padrão, e `score ≥ 0.7` usam o modelo premium. O log final mostra quantos arquivos foram atendidos por cada tier.
 
 ## Referência de confiança
 

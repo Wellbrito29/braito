@@ -120,6 +120,55 @@ Chaves de API devem ser definidas apenas por variáveis de ambiente. Nunca coloq
 O provider `claude-cli` dispensa a chave de API — ele autentica via sua sessão local do Claude Code.
 :::
 
+### Modelos em tiers — premium só para os arquivos mais arriscados
+
+Defina `highModel` e `highThreshold` para rotear arquivos de alta criticidade a um modelo mais capaz (e mais caro), mantendo um default barato para o resto.
+
+```ts
+llm: {
+  provider: 'claude-cli',
+  model: 'claude-sonnet-4-6',      // default: score >= llmThreshold e < highThreshold
+  highModel: 'claude-opus-4-6',    // premium: score >= highThreshold
+  highThreshold: 0.7,              // padrão 0.7 quando highModel está definido
+  llmThreshold: 0.4,               // abaixo disso, sem LLM (nota estática)
+}
+```
+
+Com essa config, uma execução típica produz três tiers:
+
+| Faixa de score | Saída |
+|---|---|
+| `score < 0.4` | nota estática (sem LLM) |
+| `0.4 ≤ score < 0.7` | síntese LLM via `model` (tier padrão) |
+| `score ≥ 0.7` | síntese LLM via `highModel` (tier premium) |
+
+O resumo final da execução informa quantos arquivos foram sintetizados em cada tier. Funciona com qualquer provider — combine sonnet/opus, gpt-4o-mini/gpt-4o, ou llama3/llama3-70b.
+
+## Dicas de análise — ensine o braito sobre seus SDKs internos
+
+A camada de análise estática já vem com padrões amplos para detectar efeitos colaterais em runtime (observabilidade, filas de mensagens, agendadores, canais realtime, caches, feature flags) e chamadas externas (`fetch`, `axios.*`, `got`, `ky`, …). Equipes costumam embrulhar esses clientes atrás de pacotes internos — o bloco `analysis` permite registrar isso sem forkar o braito.
+
+```ts
+export default {
+  analysis: {
+    // Substrings comparadas case-insensitive contra os imports externos.
+    // Mescladas aos defaults embutidos (sentry, datadog, amqp, kafkajs, bullmq, …).
+    sideEffectPackages: ['minha-empresa-tracing', 'cliente-fila-interno'],
+
+    // Fragmentos regex extras para detectar chamadas HTTP/RPC. Cada fragmento
+    // deve conter um grupo de captura para o payload URL. Validado na carga
+    // da config.
+    apiCallPatterns: [
+      "meuHttpClient\\.(?:get|post|put|delete)\\s*\\(\\s*['\"]([^'\"]+)['\"]",
+    ],
+  },
+}
+```
+
+:::note
+Esses sinais são **dicas**, não gates. `hasSideEffects` enriquece a seção de purpose em notas estáticas, mas o score de criticidade é dirigido pelos sinais de grafo, git e testes — não por um import isolado.
+:::
+
 ## Constituição do projeto
 
 Crie um arquivo `braito.context.md` na raiz do projeto para injetar conhecimento específico em cada prompt de síntese LLM. É opcional — o pipeline funciona identicamente sem ele.

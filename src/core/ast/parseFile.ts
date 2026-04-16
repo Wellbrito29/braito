@@ -2,6 +2,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { Project } from 'ts-morph'
 import type { StaticFileAnalysis } from '../types/file-analysis.ts'
+import type { AnalysisConfig } from '../types/project.ts'
 import { extractImports } from './analyzers/ts/extractImports.ts'
 import { extractExports } from './analyzers/ts/extractExports.ts'
 import { extractExportDetails } from './analyzers/ts/extractExportDetails.ts'
@@ -11,12 +12,18 @@ import { extractComments } from './analyzers/ts/extractComments.ts'
 import { extractSignatures } from './analyzers/ts/extractSignatures.ts'
 import { getAnalyzer } from './analyzerRegistry.ts'
 import { logger } from '../utils/logger.ts'
+import {
+  buildApiCallRegex,
+  extractApiCallUrls,
+  hasSideEffectImport,
+  resolveSideEffectPackages,
+} from './detection.ts'
 
 const project = new Project({ skipAddingFilesFromTsConfig: true, useInMemoryFileSystem: false })
 
 const TS_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.mjs'])
 
-export function parseFile(filePath: string): StaticFileAnalysis {
+export function parseFile(filePath: string, analysisConfig?: AnalysisConfig): StaticFileAnalysis {
   try {
     const ext = path.extname(filePath)
 
@@ -24,7 +31,7 @@ export function parseFile(filePath: string): StaticFileAnalysis {
     const analyzer = getAnalyzer(ext)
     if (analyzer) {
       const content = fs.readFileSync(filePath, 'utf-8')
-      return analyzer.analyze(filePath, content)
+      return analyzer.analyze(filePath, content, analysisConfig)
     }
 
     // Default: TypeScript/JavaScript via ts-morph
@@ -46,10 +53,12 @@ export function parseFile(filePath: string): StaticFileAnalysis {
     const comments = extractComments(sourceFile)
     const signatures = extractSignatures(sourceFile)
 
+    const sideEffectPackages = resolveSideEffectPackages(analysisConfig)
     const hasSideEffects =
-      imports.external.some((s) =>
-        ['analytics', 'sentry', 'datadog', 'mixpanel', 'firebase'].some((kw) => s.includes(kw)),
-      ) || comments.hack.length > 0
+      hasSideEffectImport(imports.external, sideEffectPackages) || comments.hack.length > 0
+
+    const fullText = sourceFile.getFullText()
+    const apiCallRegex = buildApiCallRegex(analysisConfig)
 
     return {
       filePath,
@@ -60,8 +69,8 @@ export function parseFile(filePath: string): StaticFileAnalysis {
       exportDetails,
       symbols,
       hooks,
-      envVars: extractEnvVars(sourceFile.getFullText()),
-      apiCalls: extractApiCalls(sourceFile.getFullText()),
+      envVars: extractEnvVars(fullText),
+      apiCalls: apiCallRegex ? extractApiCallUrls(fullText, apiCallRegex) : [],
       comments,
       hasSideEffects,
       signatures,
@@ -92,11 +101,6 @@ function emptyAnalysis(filePath: string): StaticFileAnalysis {
 
 function extractEnvVars(text: string): string[] {
   const matches = text.matchAll(/process\.env\.([A-Z_][A-Z0-9_]*)/g)
-  return [...new Set([...matches].map((m) => m[1]))]
-}
-
-function extractApiCalls(text: string): string[] {
-  const matches = text.matchAll(/(?:fetch|axios|got|request)\s*\(\s*['"`]([^'"`]+)['"`]/g)
   return [...new Set([...matches].map((m) => m[1]))]
 }
 

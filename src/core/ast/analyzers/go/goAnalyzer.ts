@@ -2,6 +2,12 @@ import path from 'node:path'
 import fs from 'node:fs'
 import type { LanguageAnalyzer } from '../../types.ts'
 import type { StaticFileAnalysis, ExportDetail } from '../../../types/file-analysis.ts'
+import {
+  buildApiCallRegex,
+  extractApiCallUrls,
+  hasSideEffectImport,
+  resolveSideEffectPackages,
+} from '../../detection.ts'
 
 /**
  * Walk up the directory tree from filePath to find the nearest go.mod file.
@@ -31,21 +37,28 @@ export function getGoModuleName(filePath: string): string | null {
 
 export const goAnalyzer: LanguageAnalyzer = {
   extensions: ['.go'],
-  analyze(filePath, content): StaticFileAnalysis {
+  analyze(filePath, content, analysisConfig): StaticFileAnalysis {
     const details = extractExportDetails(content)
+    const externalImports = extractExternalImports(filePath, content)
+    const sideEffectPackages = resolveSideEffectPackages(analysisConfig)
+    const apiCallRegex = buildApiCallRegex(analysisConfig)
     return {
       filePath,
       imports: extractImports(content),
       localImports: extractLocalImports(filePath, content),
-      externalImports: extractExternalImports(filePath, content),
+      externalImports,
       exports: extractExports(content),
       exportDetails: details,
       symbols: extractSymbols(content),
       hooks: [],
       envVars: extractEnvVars(content),
-      apiCalls: extractApiCalls(content),
+      apiCalls: [
+        ...extractApiCalls(content),
+        ...(apiCallRegex ? extractApiCallUrls(content, apiCallRegex) : []),
+      ].filter((v, i, arr) => arr.indexOf(v) === i),
       comments: extractComments(content),
-      hasSideEffects: hasSideEffects(content),
+      hasSideEffects:
+        hasSideEffectImport(externalImports, sideEffectPackages) || hasSideEffects(content),
       signatures: details.map((d) => d.signature),
     }
   },

@@ -7,7 +7,36 @@ import { SCHEMA_VERSION } from '../types/schema-version.ts'
 
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
 const VALIDATION_LIBS = ['zod', 'yup', 'joi', 'superstruct', 'valibot', 'arktype']
-const DECISION_COMMIT_KEYWORDS = ['because', 'instead of', 'chose', 'migrated', 'switched', 'replaced', 'moved to', 'adopted']
+
+// Conventional-commit style prefixes are language-agnostic, so we match them everywhere.
+const DECISION_COMMIT_PATTERNS: RegExp[] = [
+  /^refactor[:(]/i,
+  /^revert[:(]/i,
+  /^perf[:(]/i,
+]
+
+// Natural-language keywords — language tag from config selects the table.
+const DECISION_KEYWORDS_BY_LANG: Record<string, string[]> = {
+  en: ['because', 'instead of', 'chose', 'migrated', 'switched', 'replaced', 'moved to', 'adopted', 'refactor'],
+  'pt-BR': ['porque', 'em vez de', 'escolhido', 'escolhemos', 'migrou', 'migramos', 'substituiu', 'substituímos', 'refatoração', 'refatorando', 'refatorou', 'adotou', 'adotamos'],
+  pt: ['porque', 'em vez de', 'escolhido', 'escolhemos', 'migrou', 'substituiu', 'refatoração', 'refatorando', 'adotou'],
+  es: ['porque', 'en lugar de', 'elegido', 'migró', 'reemplazó', 'refactorización', 'adoptó'],
+  fr: ['parce que', 'au lieu de', 'choisi', 'migré', 'remplacé', 'refactorisation', 'adopté'],
+  de: ['weil', 'anstatt', 'gewählt', 'migriert', 'ersetzt', 'refaktorierung', 'übernommen'],
+  it: ["perché", "invece di", "scelto", "migrato", "sostituito", "rifattorizzazione", "adottato"],
+}
+
+function getDecisionKeywords(language: string): string[] {
+  if (DECISION_KEYWORDS_BY_LANG[language]) return DECISION_KEYWORDS_BY_LANG[language]
+  const base = language.split('-')[0]
+  return DECISION_KEYWORDS_BY_LANG[base] ?? DECISION_KEYWORDS_BY_LANG.en
+}
+
+function isDecisionCommit(message: string, keywords: string[]): boolean {
+  if (DECISION_COMMIT_PATTERNS.some((re) => re.test(message))) return true
+  const lower = message.toLowerCase()
+  return keywords.some((kw) => lower.includes(kw))
+}
 
 export function buildBasicNote(
   analysis: StaticFileAnalysis,
@@ -18,6 +47,7 @@ export function buildBasicNote(
   governance?: GovernanceContext | null,
   divergences?: Divergence[],
   root?: string,
+  language: string = 'en',
 ): AiFileNote {
   // Render absolute paths relative to root so notes are portable and readable.
   // External paths (e.g. 'node_modules/x') and strings that aren't paths pass through.
@@ -54,6 +84,16 @@ export function buildBasicNote(
     // Fallback for non-TS files (Python/Go analyzers don't produce exportDetails)
     purposeObserved.push(`Exports: ${analysis.exports.join(', ')}`)
     purposeEvidence.push({ type: 'code', detail: `Exported symbols: ${analysis.exports.join(', ')}` })
+  }
+
+  // Enrich static-only notes with contextual purpose hints
+  if (analysis.hasSideEffects && purposeObserved.length <= 1) {
+    purposeObserved.push('Has side effects (module-level execution)')
+    purposeEvidence.push({ type: 'code', detail: 'Module has top-level side effects' })
+  }
+  if (analysis.apiCalls.length > 0 && purposeObserved.length <= 2) {
+    purposeObserved.push(`Makes API calls: ${analysis.apiCalls.slice(0, 3).join(', ')}`)
+    purposeEvidence.push({ type: 'code', detail: `API calls: ${analysis.apiCalls.join(', ')}` })
   }
 
   if (reverseDeps.length > 0) {
@@ -106,9 +146,8 @@ export function buildBasicNote(
     pitfallsObserved.push(
       `Co-changes frequently with: ${highFreqCoChanged.map((f) => f.path).join(', ')}`,
     )
-    for (const f of highFreqCoChanged) {
-      pitfallsEvidence.push({ type: 'git', detail: `Co-changed ${f.count}x with ${f.path}` })
-    }
+    // Per-file co-change evidence lives in impactValidation only — no duplication here.
+    pitfallsEvidence.push({ type: 'git', detail: `Co-changed with ${highFreqCoChanged.length} files (see impactValidation)` })
   }
 
   if (cycleFiles?.has(analysis.filePath)) {
@@ -195,9 +234,9 @@ export function buildBasicNote(
     decisionsEvidence.push({ type: 'comment', detail: dec })
   }
 
+  const decisionKeywords = getDecisionKeywords(language)
   for (const msg of git.recentCommitMessages) {
-    const lower = msg.toLowerCase()
-    if (DECISION_COMMIT_KEYWORDS.some((kw) => lower.includes(kw))) {
+    if (isDecisionCommit(msg, decisionKeywords)) {
       decisionsObserved.push(`Commit: "${msg}"`)
       decisionsEvidence.push({ type: 'git', detail: msg })
     }
@@ -326,6 +365,14 @@ function computeCriticality(
 
   // Multiple authors = higher coordination risk
   if (git.authorCount > 3) score += 0.05
+
+  // High co-change coupling: files frequently changed together are operationally critical
+  // even when they have few direct import-graph consumers (e.g. DI-injected classes).
+  // Self-normalized against churn so it works on repos of any activity level.
+  const maxCoChange = git.coChangedFiles.reduce((m, f) => Math.max(m, f.count), 0)
+  const coChangeRatio = maxCoChange / Math.max(1, git.churnScore)
+  if (coChangeRatio >= 0.6 && maxCoChange >= 3) score += 0.15
+  else if (coChangeRatio >= 0.4 && maxCoChange >= 2) score += 0.1
 
   return Math.min(parseFloat(score.toFixed(2)), 1)
 }

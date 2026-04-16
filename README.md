@@ -94,6 +94,17 @@ export default {
 export default {
   llm: { provider: 'claude-cli', model: 'claude-sonnet-4-6', llmThreshold: 0.4 },
 }
+
+// Tiered models — cheap default, premium model for the top-criticality files only
+export default {
+  llm: {
+    provider: 'claude-cli',
+    model: 'claude-sonnet-4-6',      // default: score >= llmThreshold and < highThreshold
+    highModel: 'claude-opus-4-6',    // premium: score >= highThreshold
+    highThreshold: 0.7,              // default 0.7 when highModel is set
+    llmThreshold: 0.4,               // below this, no LLM at all
+  },
+}
 ```
 
 > **Security:** API keys must be set via environment variables only. Never put them in `ai-notes.config.ts`.
@@ -119,6 +130,19 @@ export default { staleThresholdDays: 14 }
 ```ts
 import { MULTI_LANGUAGE_INCLUDE } from './src/core/config/defaults.ts'
 export default { include: MULTI_LANGUAGE_INCLUDE }
+```
+
+**Teach braito about your internal SDKs** — the `analysis` block merges with the built-in defaults (observability, queues, schedulers, realtime, caches, feature flags, etc.). Useful when a private package name drives side effects or a custom HTTP client should count as an API call:
+
+```ts
+export default {
+  analysis: {
+    sideEffectPackages: ['my-corp-tracing', 'internal-queue-client'],
+    apiCallPatterns: [
+      "myHttpClient\\.(?:get|post|put|delete)\\s*\\(\\s*['\"]([^'\"]+)['\"]",
+    ],
+  },
+}
 ```
 
 ---

@@ -10,6 +10,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Tiered LLM models** — new `llm.highModel` + `llm.highThreshold` (default `0.7`) in `ai-notes.config.ts`; `generate` instantiates a second provider pinned to `highModel` and routes files whose `criticalityScore >= highThreshold` through it while the rest keep using the default `model`; lets teams spend budget on the riskiest files only (e.g. Opus for critical, Sonnet for everything else); end-of-run summary reports how many files used the high-tier model
 - **Claude CLI provider** — new `provider: 'claude-cli'` spawns the local `claude` binary (`claude -p --output-format json`) for synthesis; authenticates via the user's existing Claude Code session, skipping `ANTHROPIC_API_KEY`; pipes user prompt via stdin, system prompt via `--system-prompt` (fully replaces default prompt to avoid user memory leakage); surfaces cost and duration metrics; wired into `LLMProviderName`, config schema, and factory
 - **Governance divergence detection** — new `src/core/governance/detectDivergence.ts` cross-references governance docs against the actual code and graph; four detectors flag `missing_file`, `undeclared_domain`, `forbidden_dependency` (mined from "`src/X` must not depend on `src/Y`" doc prose), and `undocumented_hotspot` (≥5 reverse deps, no doc coverage); per-file divergences injected into `knownPitfalls.observed` with `evidence.type: 'doc'`; all divergences persisted to `.ai-notes/divergences.json`; new `get_divergences` MCP tool with optional `severity`/`type` filters
 - **Multi-repo MCP** — `mcp --roots "alias=/path,..."` registers multiple repositories with one MCP server; tool calls accept a `repo` argument; new `list_repos` tool enumerates registered repos; single-repo behavior via `--root` is unchanged
@@ -32,6 +33,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`debugSignals` in every note** — all raw pipeline signals now stored in each `.json` note, powering the Debug tab score breakdown
 
 ### Changed
+- **Co-change weight self-normalized to churn** — `computeCriticality` now compares `maxCoChange` to the file's own `churnScore`; `+0.15` when the ratio is `≥0.6` with ≥3 co-changes, `+0.10` when the ratio is `≥0.4` with ≥2; heuristic now works on any repo regardless of overall activity level
+- **Language-aware decision keywords** — `buildBasicNote` selects decision keywords by `config.language` (English, Portuguese, Spanish, French, German, Italian, with base-language fallback); conventional-commit prefixes `refactor:`, `revert:`, `perf:` match across all languages via regex
+- **Expanded side-effect detection** — built-in package list now covers observability (sentry, datadog, newrelic, opentelemetry, …), analytics (mixpanel, amplitude, segment, …), queues (amqp, kafkajs, nats, …), schedulers (bullmq, bull, agenda, …), realtime, caches, and feature flags
+- **Configurable analysis hints** — new `analysis.sideEffectPackages` and `analysis.apiCallPatterns` in `ai-notes.config.ts` let teams register internal SDKs without forking; user entries merge with the built-in defaults; validated by the Zod schema
+- **`"refactoring"` keyword in decision detection** — commit messages like `"refactoring persistence layer to accept external IDs"` now surface as `importantDecisions` evidence
+- **Consolidated co-change evidence in `knownPitfalls`** — per-file `"Co-changed Nx with X"` entries removed from `knownPitfalls.evidence`; a single summary line remains and the detailed list stays in `impactValidation.evidence` only — no more duplication
+- **Static-note enrichment** — `buildBasicNote` adds contextual purpose hints (`"Has side effects (module-level execution)"`, `"Makes API calls: …"`) when `purposeObserved` is otherwise sparse; improves static-only notes below `llmThreshold`
 - **LLM cost/duration logging** — `generate` logs total cost (USD), LLM time (seconds), and call count at the end of the run
 - **Relative paths in notes** — `buildBasicNote` converts absolute paths to relative for portable, readable notes
 - **Index uses inferred purpose** — purpose summary column prefers LLM-inferred descriptions when available

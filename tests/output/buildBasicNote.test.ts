@@ -103,6 +103,49 @@ describe('buildBasicNote', () => {
     expect(highChurn.criticalityScore).toBeGreaterThan(lowChurn.criticalityScore)
   })
 
+  it('criticalityScore rewards high co-change-to-churn ratio on low-activity files', () => {
+    // 3 co-changes out of 4 total commits = 0.75 ratio → should trigger +0.15
+    const tightCoupling: GitSignals = {
+      ...emptyGit,
+      churnScore: 4,
+      coChangedFiles: [{ path: '/project/src/b.ts', count: 3 }],
+    }
+    const looseCoupling: GitSignals = {
+      ...emptyGit,
+      churnScore: 4,
+      coChangedFiles: [{ path: '/project/src/b.ts', count: 1 }],
+    }
+    const tight = buildBasicNote(makeAnalysis(), graph, tests, tightCoupling)
+    const loose = buildBasicNote(makeAnalysis(), graph, tests, looseCoupling)
+    expect(tight.criticalityScore).toBeGreaterThan(loose.criticalityScore)
+  })
+
+  it('criticalityScore ignores co-change when ratio is low even on high-churn files', () => {
+    // 5 co-changes out of 50 total commits = 0.1 ratio → should NOT trigger bonus
+    const dilutedCoupling: GitSignals = {
+      ...emptyGit,
+      churnScore: 50,
+      coChangedFiles: [{ path: '/project/src/b.ts', count: 5 }],
+    }
+    const baseline: GitSignals = { ...emptyGit, churnScore: 50 }
+    const diluted = buildBasicNote(makeAnalysis(), graph, tests, dilutedCoupling)
+    const base = buildBasicNote(makeAnalysis(), graph, tests, baseline)
+    expect(diluted.criticalityScore).toBe(base.criticalityScore)
+  })
+
+  it('criticalityScore requires minimum absolute co-change count to avoid noise', () => {
+    // 1 co-change out of 1 commit = 1.0 ratio but only 1 absolute → should NOT trigger
+    const singleCoChange: GitSignals = {
+      ...emptyGit,
+      churnScore: 1,
+      coChangedFiles: [{ path: '/project/src/b.ts', count: 1 }],
+    }
+    const baseline: GitSignals = { ...emptyGit, churnScore: 1 }
+    const single = buildBasicNote(makeAnalysis(), graph, tests, singleCoChange)
+    const base = buildBasicNote(makeAnalysis(), graph, tests, baseline)
+    expect(single.criticalityScore).toBe(base.criticalityScore)
+  })
+
   it('criticalityScore is between 0 and 1', () => {
     const note = buildBasicNote(makeAnalysis(), graph, tests, emptyGit)
     expect(note.criticalityScore).toBeGreaterThanOrEqual(0)
@@ -162,6 +205,51 @@ describe('buildBasicNote', () => {
     const note = buildBasicNote(makeAnalysis(), graph, tests, git)
     expect(note.importantDecisions.observed.some((o) => o.includes('switched'))).toBe(true)
     expect(note.importantDecisions.evidence.some((e) => e.type === 'git')).toBe(true)
+  })
+
+  it('matches conventional-commit refactor/revert/perf prefixes regardless of language', () => {
+    const git: GitSignals = {
+      ...emptyGit,
+      recentCommitMessages: [
+        'refactor(persistence): split base repository',
+        'revert: bring back sync path',
+        'perf: cache resolved imports',
+        'chore: bump deps',
+      ],
+    }
+    const note = buildBasicNote(makeAnalysis(), graph, tests, git, undefined, undefined, undefined, undefined, 'pt-BR')
+    expect(note.importantDecisions.observed.some((o) => o.includes('refactor('))).toBe(true)
+    expect(note.importantDecisions.observed.some((o) => o.includes('revert'))).toBe(true)
+    expect(note.importantDecisions.observed.some((o) => o.includes('perf'))).toBe(true)
+    expect(note.importantDecisions.observed.some((o) => o.includes('chore'))).toBe(false)
+  })
+
+  it('uses Portuguese keywords when language is pt-BR', () => {
+    const git: GitSignals = {
+      ...emptyGit,
+      recentCommitMessages: [
+        'escolhemos fetch em vez de axios pelo tamanho do bundle',
+        'refatoração da camada de persistência',
+      ],
+    }
+    const note = buildBasicNote(makeAnalysis(), graph, tests, git, undefined, undefined, undefined, undefined, 'pt-BR')
+    expect(note.importantDecisions.observed.some((o) => o.includes('escolhemos'))).toBe(true)
+    expect(note.importantDecisions.observed.some((o) => o.includes('refatoração'))).toBe(true)
+  })
+
+  it('falls back to base language tag (pt from pt-PT) and then to English', () => {
+    const git: GitSignals = {
+      ...emptyGit,
+      recentCommitMessages: ['substituiu o cliente HTTP legado'],
+    }
+    const ptPT = buildBasicNote(makeAnalysis(), graph, tests, git, undefined, undefined, undefined, undefined, 'pt-PT')
+    expect(ptPT.importantDecisions.observed.some((o) => o.includes('substituiu'))).toBe(true)
+
+    const unknownLang = buildBasicNote(makeAnalysis(), graph, tests, {
+      ...emptyGit,
+      recentCommitMessages: ['chose fetch instead of axios'],
+    }, undefined, undefined, undefined, undefined, 'xx-YY')
+    expect(unknownLang.importantDecisions.observed.some((o) => o.includes('chose'))).toBe(true)
   })
 
   // coverage hints

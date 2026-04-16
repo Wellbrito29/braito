@@ -120,6 +120,55 @@ API keys must be set via environment variables only. Never put them in `ai-notes
 The `claude-cli` provider skips the API-key path entirely — it authenticates via your local Claude Code session.
 :::
 
+### Tiered models — premium model for the riskiest files only
+
+Set `highModel` and `highThreshold` to route high-criticality files to a more capable (and more expensive) model while keeping a cheaper default for everything else.
+
+```ts
+llm: {
+  provider: 'claude-cli',
+  model: 'claude-sonnet-4-6',      // default: files with score >= llmThreshold and < highThreshold
+  highModel: 'claude-opus-4-6',    // premium: files with score >= highThreshold
+  highThreshold: 0.7,              // default 0.7 when highModel is set; ignored otherwise
+  llmThreshold: 0.4,               // below this, no LLM at all (static note)
+}
+```
+
+With this config, a typical run produces three tiers:
+
+| Score range | Output |
+|---|---|
+| `score < 0.4` | static note (no LLM) |
+| `0.4 ≤ score < 0.7` | LLM synthesis via `model` (default tier) |
+| `score ≥ 0.7` | LLM synthesis via `highModel` (premium tier) |
+
+The end-of-run summary reports how many files were synthesized at each tier. Works with any provider — mix and match sonnet/opus, gpt-4o-mini/gpt-4o, or llama3/llama3-70b.
+
+## Analysis hints — teach braito about your internal SDKs
+
+The static-analysis layer ships with broad defaults for detecting runtime side effects (observability, message queues, schedulers, realtime channels, caches, feature flags) and outbound API calls (`fetch`, `axios.*`, `got`, `ky`, …). Teams often wrap these behind internal packages — the `analysis` block lets you register those without forking the codebase.
+
+```ts
+export default {
+  analysis: {
+    // Substrings matched case-insensitively against external imports. Merged
+    // with the built-in defaults (sentry, datadog, amqp, kafkajs, bullmq, …).
+    sideEffectPackages: ['my-corp-tracing', 'internal-queue-client'],
+
+    // Extra regex fragments to detect outbound HTTP/RPC calls. Each fragment
+    // should contain one capture group for the URL-like payload. Validated
+    // at config-load time.
+    apiCallPatterns: [
+      "myHttpClient\\.(?:get|post|put|delete)\\s*\\(\\s*['\"]([^'\"]+)['\"]",
+    ],
+  },
+}
+```
+
+:::note
+These are **hints**, not gates. `hasSideEffects` biases the purpose section of static-only notes, but the criticality score is driven by the graph, git, and test signals — not by a single import.
+:::
+
 ## Project constitution
 
 Create a `braito.context.md` file at your project root to inject project-specific knowledge into every LLM synthesis prompt. This is optional — the pipeline runs identically without it.

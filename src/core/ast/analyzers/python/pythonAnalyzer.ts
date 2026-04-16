@@ -1,25 +1,38 @@
 import type { LanguageAnalyzer } from '../../types.ts'
 import type { StaticFileAnalysis, ExportDetail } from '../../../types/file-analysis.ts'
+import {
+  buildApiCallRegex,
+  extractApiCallUrls,
+  hasSideEffectImport,
+  resolveSideEffectPackages,
+} from '../../detection.ts'
 
 export const pythonAnalyzer: LanguageAnalyzer = {
   extensions: ['.py'],
-  analyze(filePath, content): StaticFileAnalysis {
+  analyze(filePath, content, analysisConfig): StaticFileAnalysis {
     const allNames = extractAllPublicNames(content)
     const allowedNames = filterByDunderAll(content, allNames)
     const details = extractExportDetails(content, allowedNames)
+    const externalImports = extractExternalImports(content)
+    const sideEffectPackages = resolveSideEffectPackages(analysisConfig)
+    const apiCallRegex = buildApiCallRegex(analysisConfig)
     return {
       filePath,
       imports: extractImports(content),
       localImports: extractLocalImports(content),
-      externalImports: extractExternalImports(content),
+      externalImports,
       exports: allowedNames,
       exportDetails: details,
       symbols: extractSymbols(content),
       hooks: [],
       envVars: extractEnvVars(content),
-      apiCalls: extractApiCalls(content),
+      apiCalls: [
+        ...extractApiCalls(content),
+        ...(apiCallRegex ? extractApiCallUrls(content, apiCallRegex) : []),
+      ].filter((v, i, arr) => arr.indexOf(v) === i),
       comments: extractComments(content),
-      hasSideEffects: hasSideEffects(content),
+      hasSideEffects:
+        hasSideEffectImport(externalImports, sideEffectPackages) || hasSideEffects(content),
       signatures: details.map((d) => d.signature),
     }
   },

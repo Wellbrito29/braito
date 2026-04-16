@@ -36,5 +36,6 @@ export function withDefaults(partial: Partial<AiNotesConfig> & { root: string })
     maxSourceLines: partial.maxSourceLines,
     staleThresholdDays: partial.staleThresholdDays ?? DEFAULT_STALE_THRESHOLD_DAYS,
     language: partial.language ?? DEFAULT_LANGUAGE,
+    analysis: partial.analysis,
   }
 }

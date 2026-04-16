@@ -21,6 +21,7 @@ import { buildIndex } from '../../core/output/buildIndex.ts'
 import { writeIndexNote } from '../../core/output/writeIndexNote.ts'
 import { logger } from '../../core/utils/logger.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
+import type { AnalysisConfig } from '../../core/types/project.ts'
 
 const DEFAULT_LLM_THRESHOLD = 0.4
 const DEBOUNCE_MS = 300
@@ -34,7 +35,7 @@ export async function runWatch(args: { root?: string; language?: string }): Prom
   // Initial full generate to build graphs and cache
   const files = await scanRepository(config)
   logger.debug(`Found ${files.length} files to watch`)
-  const analyses = files.map((f) => parseFile(f.path))
+  const analyses = files.map((f) => parseFile(f.path, config.analysis))
   const aliases = loadBundlerAliases(root)
   logger.debug(`Bundler aliases: ${Object.keys(aliases).length} entries`)
   const depGraph = buildDependencyGraph(analyses, root, aliases)
@@ -55,7 +56,7 @@ export async function runWatch(args: { root?: string; language?: string }): Prom
 
   // Generate initial notes
   for (const analysis of analyses) {
-    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs, language, projectContext)
+    const note = await processFile(analysis.filePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs, language, projectContext, config.analysis)
     if (note) {
       noteMap.set(analysis.filePath, note)
       const relPath = path.relative(root, analysis.filePath)
@@ -86,13 +87,13 @@ export async function runWatch(args: { root?: string; language?: string }): Prom
 
       // Incrementally update the dependency graph for the changed file only,
       // then rebuild the reverse graph (O(edges), not O(files × parse)).
-      const changedAnalysis = parseFile(absolutePath)
+      const changedAnalysis = parseFile(absolutePath, config.analysis)
       updateDependencyGraph(depGraph, changedAnalysis, root, aliases)
       revGraph = buildReverseDependencyGraph(depGraph)
       cycleFiles = filesInCycles(detectCycles(depGraph))
       logger.debug(`Graph updated incrementally for: ${filename}`)
 
-      const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs)
+      const note = await processFile(absolutePath, root, config.output, files, depGraph, revGraph, cycleFiles, provider, llmThreshold, temperature, timeoutMs, language, projectContext, config.analysis)
       if (note) {
         noteMap.set(absolutePath, note)
         hashStore.set(filename, await computeHash(absolutePath))
@@ -124,9 +125,10 @@ async function processFile(
   timeoutMs: number,
   language: string = 'en',
   projectContext: string | null = null,
+  analysisConfig?: AnalysisConfig,
 ): Promise<AiFileNote | null> {
   try {
-    const analysis = parseFile(filePath)
+    const analysis = parseFile(filePath, analysisConfig)
     const relatedTests = findRelatedTests(filePath, files)
     const gitSignals = getGitSignals(filePath, root)
 
@@ -137,7 +139,7 @@ async function processFile(
     }
     const tests = { filePath, relatedTests }
 
-    let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, undefined, undefined, root)
+    let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, undefined, undefined, root, language)
 
     if (provider && note.criticalityScore >= llmThreshold) {
       note = await synthesizeFileNote(

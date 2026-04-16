@@ -83,7 +83,7 @@ export async function runGenerate(args: {
     } else {
       logger.debug(`Parsing: ${file.relativePath}`)
       const tFile = Date.now()
-      const analysis = parseFile(file.path)
+      const analysis = parseFile(file.path, config.analysis)
       analyses.push(analysis)
       analysisStore.set(file.relativePath, analysis)
       if (args.verbose) logger.info(`  parsed  ${file.relativePath}  [${Date.now() - tFile}ms]`)
@@ -144,8 +144,15 @@ export async function runGenerate(args: {
   }
 
   // 7. Setup LLM provider (if configured)
+  //    When `highModel` is set, we also instantiate a premium provider — files whose
+  //    criticality score is >= `highThreshold` are routed to it, the rest use the
+  //    default provider. This lets teams spend budget on the riskiest files only.
   const llmConfig = config.llm
   const provider = llmConfig ? createProvider(llmConfig) : null
+  const highProvider = llmConfig && llmConfig.highModel
+    ? createProvider({ ...llmConfig, model: llmConfig.highModel })
+    : null
+  const highThreshold = llmConfig?.highThreshold ?? 0.7
   const llmThreshold = llmConfig?.llmThreshold ?? DEFAULT_LLM_THRESHOLD
   const temperature = llmConfig?.temperature ?? 0.2
   const timeoutMs = llmConfig?.timeoutMs ?? 30_000
@@ -183,6 +190,9 @@ export async function runGenerate(args: {
 
   if (provider) {
     logger.info(`LLM synthesis enabled (provider: ${llmConfig!.provider}, threshold: ${llmThreshold}, concurrency: ${concurrency})`)
+    if (highProvider) {
+      logger.info(`  Tiered models: default '${llmConfig!.model ?? 'provider default'}', high '${llmConfig!.highModel}' at score >= ${highThreshold}`)
+    }
   }
 
   // 8. Generate and write notes
@@ -194,6 +204,7 @@ export async function runGenerate(args: {
   let written = 0
   let skipped = 0
   let synthesized = 0
+  let synthesizedHigh = 0
   const notes: AiFileNote[] = []
   const diffs: NoteDiff[] = []
 
@@ -242,7 +253,7 @@ export async function runGenerate(args: {
       const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
       const fileDivergences = divergenceMap.get(file.relativePath) ?? []
-      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext, fileDivergences, root)
+      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext, fileDivergences, root, language)
       const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)
 
       if (args.verbose) {
@@ -271,7 +282,10 @@ export async function runGenerate(args: {
       }
 
       if (wouldUseLlm) {
-        logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)})`)
+        // Pick the premium provider only for top-tier files; everything else uses the default.
+        const useHigh = !!(highProvider && note.criticalityScore >= highThreshold)
+        const activeProvider = useHigh ? highProvider! : provider!
+        logger.debug(`LLM synthesizing: ${file.relativePath} (score=${note.criticalityScore.toFixed(2)}${useHigh ? ', tier=high' : ''})`)
         // Build a map of local import path → exports[] for richer prompt context
         const localImportExports = new Map<string, string[]>()
         for (const dep of graph.directDependencies) {
@@ -282,7 +296,7 @@ export async function runGenerate(args: {
         }
         note = await synthesizeFileNote(
           { analysis, graph, tests, git: gitSignals, staticNote: note, maxSourceLines: config.maxSourceLines, localImportExports },
-          provider!,
+          activeProvider,
           temperature,
           timeoutMs,
           language,
@@ -294,6 +308,7 @@ export async function runGenerate(args: {
           },
         )
         synthesized++
+        if (useHigh) synthesizedHigh++
       }
 
       const diff = (args.diff && oldNote) ? diffNotes(oldNote, note) : undefined
@@ -380,7 +395,11 @@ export async function runGenerate(args: {
   logger.success(`Generated ${written} notes in ${config.output}/`)
   if (skipped > 0) logger.info(`Skipped ${skipped} unchanged files (use --force to reprocess)`)
   if (provider) {
-    logger.info(`LLM synthesized: ${synthesized} files`)
+    if (highProvider && synthesizedHigh > 0) {
+      logger.info(`LLM synthesized: ${synthesized} files (${synthesizedHigh} via high-tier model '${llmConfig!.highModel}')`)
+    } else {
+      logger.info(`LLM synthesized: ${synthesized} files`)
+    }
     if (usageSamples > 0) {
       const parts: string[] = []
       if (totalCostUsd > 0) parts.push(`cost $${totalCostUsd.toFixed(4)}`)

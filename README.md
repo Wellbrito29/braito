@@ -88,9 +88,16 @@ export default {
 export default {
   llm: { provider: 'openai', model: 'gpt-4o', llmThreshold: 0.4 },
 }
+
+// Claude CLI — uses your logged-in Claude Code session (no API key needed)
+// Requires the `claude` binary on PATH — see https://docs.claude.com/en/docs/claude-code
+export default {
+  llm: { provider: 'claude-cli', model: 'claude-sonnet-4-6', llmThreshold: 0.4 },
+}
 ```
 
 > **Security:** API keys must be set via environment variables only. Never put them in `ai-notes.config.ts`.
+> The `claude-cli` provider skips the API-key path entirely — it authenticates via your local Claude Code session.
 
 **Multi-language output** — LLM-synthesized content (`inferred` fields) is generated in the configured language. The `--language` CLI flag overrides the config:
 

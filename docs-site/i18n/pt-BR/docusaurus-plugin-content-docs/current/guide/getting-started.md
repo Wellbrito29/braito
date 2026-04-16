@@ -34,7 +34,7 @@ Defina sua chave de API e configure um provider em `ai-notes.config.ts`:
 // ai-notes.config.ts
 export default {
   llm: {
-    provider: 'anthropic',          // 'anthropic' | 'openai' | 'ollama'
+    provider: 'anthropic',          // 'anthropic' | 'openai' | 'ollama' | 'claude-cli'
     model: 'claude-sonnet-4-6',
     llmThreshold: 0.4,              // apenas arquivos acima desse score vão para o LLM
   },

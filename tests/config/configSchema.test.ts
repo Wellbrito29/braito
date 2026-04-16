@@ -61,6 +61,11 @@ describe('llmConfigSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('accepts claude-cli provider', () => {
+    const result = llmConfigSchema.safeParse({ provider: 'claude-cli' })
+    expect(result.success).toBe(true)
+  })
+
   it('rejects unknown provider', () => {
     const result = llmConfigSchema.safeParse({ provider: 'gemini' })
     expect(result.success).toBe(false)

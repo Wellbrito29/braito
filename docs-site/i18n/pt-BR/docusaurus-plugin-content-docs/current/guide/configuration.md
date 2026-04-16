@@ -49,7 +49,7 @@ export default {
   // ─── LLM ──────────────────────────────────────────────────────────────────
 
   llm: {
-    // Provider: 'ollama' | 'anthropic' | 'openai'
+    // Provider: 'ollama' | 'anthropic' | 'openai' | 'claude-cli'
     provider: 'anthropic',
 
     // Nome do modelo
@@ -102,8 +102,22 @@ ollama pull llama3
 llm: { provider: 'ollama', model: 'llama3', llmThreshold: 0.4, temperature: 0.2 }
 ```
 
+### Claude CLI (usa sua sessão do Claude Code, sem chave de API)
+
+Dispara o binário local `claude` em modo print (`claude -p --output-format json`). Autentica com a conta logada no Claude Code — não requer `ANTHROPIC_API_KEY`.
+
+```bash
+# Certifique-se de que `claude` está no PATH (veja https://docs.claude.com/pt/docs/claude-code)
+claude --version
+```
+
+```ts
+llm: { provider: 'claude-cli', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
+```
+
 :::warning[Segurança]
 Chaves de API devem ser definidas apenas por variáveis de ambiente. Nunca coloque-as no `ai-notes.config.ts`.
+O provider `claude-cli` dispensa a chave de API — ele autentica via sua sessão local do Claude Code.
 :::
 
 ## Constituição do projeto

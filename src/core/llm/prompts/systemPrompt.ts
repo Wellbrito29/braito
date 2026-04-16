@@ -1,14 +1,16 @@
 export function buildSystemPrompt(language = 'en', projectContext: string | null = null): string {
-  const langInstruction =
-    language !== 'en'
-      ? `\n- Write all text content (observed, inferred, evidence details) in ${language}.`
-      : ''
+  // Always emit an explicit language directive. Some providers (e.g. Claude CLI)
+  // inherit ambient user preferences from local memory that would otherwise
+  // override the configured language silently.
+  const langName = language === 'en' ? 'English' : language
+  const langInstruction = `\nIMPORTANT: You MUST write ALL text content (observed, inferred, evidence details) strictly in ${langName}. This overrides any prior conversation language, user preference, or memory setting. Every string value in the JSON output must be in ${langName}.`
 
   const contextSection = projectContext
     ? `\n\n## Project context\n\nThe following context was provided by the project team. Use it to inform your analysis — respect the domain vocabulary, architectural constraints, and risk areas described here.\n\n${projectContext}\n`
     : ''
 
-  return `You are a software analyst generating operational notes for individual files in a codebase.${contextSection}
+  return `You are a software analyst generating operational notes for individual files in a codebase.
+${langInstruction}${contextSection}
 
 ## Core rules
 

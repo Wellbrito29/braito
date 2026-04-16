@@ -1,8 +1,10 @@
 import { z } from 'zod'
 
 export const llmConfigSchema = z.object({
-  provider: z.enum(['ollama', 'anthropic', 'openai'], {
-    errorMap: () => ({ message: "llm.provider must be 'ollama', 'anthropic', or 'openai'" }),
+  provider: z.enum(['ollama', 'anthropic', 'openai', 'claude-cli'], {
+    errorMap: () => ({
+      message: "llm.provider must be 'ollama', 'anthropic', 'openai', or 'claude-cli'",
+    }),
   }),
   model: z.string().optional(),
   baseUrl: z.string().url({ message: 'llm.baseUrl must be a valid URL' }).optional(),
@@ -27,6 +29,11 @@ export const aiNotesConfigSchema = z.object({
   output: z.string().min(1, 'output directory must not be empty'),
   tsconfigPath: z.string().optional(),
   llm: llmConfigSchema.optional(),
+  maxSourceLines: z
+    .number()
+    .int('maxSourceLines must be an integer')
+    .positive('maxSourceLines must be > 0')
+    .optional(),
   staleThresholdDays: z
     .number()
     .int('staleThresholdDays must be an integer')

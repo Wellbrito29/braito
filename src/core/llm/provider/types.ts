@@ -7,6 +7,12 @@ export type LLMRequest = {
 export type LLMResponse = {
   content: string
   model: string
+  usage?: LLMUsage
+}
+
+export type LLMUsage = {
+  durationMs?: number
+  costUsd?: number
 }
 
 export interface LLMProvider {

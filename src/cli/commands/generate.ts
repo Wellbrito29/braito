@@ -187,6 +187,9 @@ export async function runGenerate(args: {
 
   // 8. Generate and write notes
   const tWrite = Date.now()
+  let totalCostUsd = 0
+  let totalDurationMs = 0
+  let usageSamples = 0
   if (!args.dryRun) logger.info('Writing notes...')
   let written = 0
   let skipped = 0
@@ -239,7 +242,7 @@ export async function runGenerate(args: {
       const tests = { filePath: analysis.filePath, relatedTests, coveragePct }
 
       const fileDivergences = divergenceMap.get(file.relativePath) ?? []
-      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext, fileDivergences)
+      let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext, fileDivergences, root)
       const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)
 
       if (args.verbose) {
@@ -284,6 +287,11 @@ export async function runGenerate(args: {
           timeoutMs,
           language,
           projectContext,
+          (usage) => {
+            if (typeof usage.costUsd === 'number') totalCostUsd += usage.costUsd
+            if (typeof usage.durationMs === 'number') totalDurationMs += usage.durationMs
+            usageSamples++
+          },
         )
         synthesized++
       }
@@ -371,7 +379,15 @@ export async function runGenerate(args: {
   logger.info(`Write phase done  [${Date.now() - tWrite}ms]`)
   logger.success(`Generated ${written} notes in ${config.output}/`)
   if (skipped > 0) logger.info(`Skipped ${skipped} unchanged files (use --force to reprocess)`)
-  if (provider) logger.info(`LLM synthesized: ${synthesized} files`)
+  if (provider) {
+    logger.info(`LLM synthesized: ${synthesized} files`)
+    if (usageSamples > 0) {
+      const parts: string[] = []
+      if (totalCostUsd > 0) parts.push(`cost $${totalCostUsd.toFixed(4)}`)
+      if (totalDurationMs > 0) parts.push(`llm time ${(totalDurationMs / 1000).toFixed(1)}s`)
+      if (parts.length > 0) logger.info(`  LLM usage: ${parts.join(', ')} across ${usageSamples} calls`)
+    }
+  }
   if (index.staleFiles > 0) {
     logger.warn(`${index.staleFiles} note(s) are older than ${config.staleThresholdDays} days — run with --force to refresh`)
   }

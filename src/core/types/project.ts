@@ -5,7 +5,7 @@ export type DiscoveredFile = {
   size: number
 }
 
-export type LLMProviderName = 'ollama' | 'anthropic' | 'openai'
+export type LLMProviderName = 'ollama' | 'anthropic' | 'openai' | 'claude-cli'
 
 export type LLMConfig = {
   provider: LLMProviderName
@@ -24,6 +24,7 @@ export type AiNotesConfig = {
   output: string
   tsconfigPath?: string
   llm?: LLMConfig
+  maxSourceLines?: number
   staleThresholdDays?: number
   language?: string  // BCP 47 language tag — e.g. 'en', 'pt-BR', 'es'. Default: 'en'
 }

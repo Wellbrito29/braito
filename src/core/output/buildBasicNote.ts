@@ -17,7 +17,18 @@ export function buildBasicNote(
   cycleFiles?: Set<string>,
   governance?: GovernanceContext | null,
   divergences?: Divergence[],
+  root?: string,
 ): AiFileNote {
+  // Render absolute paths relative to root so notes are portable and readable.
+  // External paths (e.g. 'node_modules/x') and strings that aren't paths pass through.
+  const rel = (p: string): string => {
+    if (!root || !p.startsWith('/')) return p
+    const r = path.relative(root, p)
+    return r.startsWith('..') ? p : r
+  }
+  const relList = (xs: string[]): string[] => xs.map(rel)
+  const reverseDeps = relList(graph.reverseDependencies)
+  const directDeps = relList(graph.directDependencies)
   const purposeObserved: string[] = []
   const purposeEvidence: EvidenceItem[] = []
 
@@ -45,20 +56,20 @@ export function buildBasicNote(
     purposeEvidence.push({ type: 'code', detail: `Exported symbols: ${analysis.exports.join(', ')}` })
   }
 
-  if (graph.reverseDependencies.length > 0) {
+  if (reverseDeps.length > 0) {
     purposeEvidence.push({
       type: 'graph',
-      detail: `Consumed by: ${graph.reverseDependencies.slice(0, 3).join(', ')}`,
+      detail: `Consumed by: ${reverseDeps.slice(0, 3).join(', ')}`,
     })
   }
 
   const sensitiveDepsObserved: string[] = [
     ...analysis.externalImports,
-    ...graph.reverseDependencies.slice(0, 5),
+    ...reverseDeps.slice(0, 5),
   ]
   const sensitiveDepsEvidence: EvidenceItem[] = [
     ...analysis.externalImports.map((i) => ({ type: 'code' as const, detail: `import from '${i}'` })),
-    ...graph.reverseDependencies.slice(0, 5).map((r) => ({ type: 'graph' as const, detail: `Reverse dep: ${r}` })),
+    ...reverseDeps.slice(0, 5).map((r) => ({ type: 'graph' as const, detail: `Reverse dep: ${r}` })),
   ]
 
   // knownPitfalls: comments + risky commit messages + high-frequency co-changes
@@ -78,15 +89,19 @@ export function buildBasicNote(
     pitfallsEvidence.push({ type: 'comment', detail: hack })
   }
 
+  // Risky commit messages are kept as evidence for the LLM to reason about,
+  // but not promoted to observed pitfalls — a risky commit message alone isn't
+  // a pitfall, just a signal. Let the LLM decide what to highlight.
   for (const msg of git.recentCommitMessages) {
     const lower = msg.toLowerCase()
     if (RISKY_COMMIT_KEYWORDS.some((kw) => lower.includes(kw))) {
-      pitfallsObserved.push(`Commit: "${msg}"`)
       pitfallsEvidence.push({ type: 'git', detail: msg })
     }
   }
 
-  const highFreqCoChanged = git.coChangedFiles.filter((f) => f.count >= 2)
+  const highFreqCoChanged = git.coChangedFiles
+    .filter((f) => f.count >= 2)
+    .map((f) => ({ path: rel(f.path), count: f.count }))
   if (highFreqCoChanged.length > 0) {
     pitfallsObserved.push(
       `Co-changes frequently with: ${highFreqCoChanged.map((f) => f.path).join(', ')}`,
@@ -110,15 +125,17 @@ export function buildBasicNote(
   }
 
   // impactValidation: consumers + tests + co-changed files + coverage
+  const relatedTests = relList(tests.relatedTests)
+  const coChanges = git.coChangedFiles.map((f) => ({ path: rel(f.path), count: f.count }))
   const impactObserved: string[] = [
-    ...graph.reverseDependencies,
-    ...tests.relatedTests,
-    ...git.coChangedFiles.map((f) => f.path),
+    ...reverseDeps,
+    ...relatedTests,
+    ...coChanges.map((f) => f.path),
   ]
   const impactEvidence: EvidenceItem[] = [
-    ...graph.reverseDependencies.map((r) => ({ type: 'graph' as const, detail: `Consumer: ${r}` })),
-    ...tests.relatedTests.map((t) => ({ type: 'test' as const, detail: `Related test: ${t}` })),
-    ...git.coChangedFiles.map((f) => ({ type: 'git' as const, detail: `Co-changed ${f.count}x: ${f.path}` })),
+    ...reverseDeps.map((r) => ({ type: 'graph' as const, detail: `Consumer: ${r}` })),
+    ...relatedTests.map((t) => ({ type: 'test' as const, detail: `Related test: ${t}` })),
+    ...coChanges.map((f) => ({ type: 'git' as const, detail: `Co-changed ${f.count}x: ${f.path}` })),
   ]
 
   if (tests.coveragePct !== undefined) {

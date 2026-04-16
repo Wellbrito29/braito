@@ -69,14 +69,14 @@ describe('buildBasicNote', () => {
     expect(note.knownPitfalls.observed).toContain('TODO: fix this')
   })
 
-  it('adds risky commit messages to knownPitfalls', () => {
+  it('adds risky commit messages as knownPitfalls evidence (not observed bullets)', () => {
     const git: GitSignals = {
       ...emptyGit,
       recentCommitMessages: ['hotfix: revert search pagination', 'chore: update deps'],
     }
     const note = buildBasicNote(makeAnalysis(), graph, tests, git)
-    expect(note.knownPitfalls.observed.some((o) => o.includes('hotfix'))).toBe(true)
-    expect(note.knownPitfalls.evidence.some((e) => e.type === 'git')).toBe(true)
+    expect(note.knownPitfalls.evidence.some((e) => e.type === 'git' && e.detail.includes('hotfix'))).toBe(true)
+    expect(note.knownPitfalls.observed.some((o) => o.includes('hotfix'))).toBe(false)
   })
 
   it('adds co-changed files to impactValidation.observed', () => {

@@ -37,7 +37,7 @@ Set your API key and configure a provider in `ai-notes.config.ts`:
 // ai-notes.config.ts
 export default {
   llm: {
-    provider: 'anthropic',          // 'anthropic' | 'openai' | 'ollama'
+    provider: 'anthropic',          // 'anthropic' | 'openai' | 'ollama' | 'claude-cli'
     model: 'claude-sonnet-4-6',
     llmThreshold: 0.4,              // only files above this score get LLM synthesis
   },

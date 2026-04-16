@@ -1,5 +1,5 @@
 import type { AiFileNote } from '../types/ai-note.ts'
-import type { LLMProvider } from './provider/types.ts'
+import type { LLMProvider, LLMUsage } from './provider/types.ts'
 import { buildPrompt, type PromptContext } from './prompts/buildPrompt.ts'
 import { buildSystemPrompt } from './prompts/systemPrompt.ts'
 import { llmNoteSchema } from './schemas/aiNoteSchema.ts'
@@ -12,6 +12,7 @@ export async function synthesizeFileNote(
   timeoutMs: number = 30_000,
   language: string = 'en',
   projectContext: string | null = null,
+  onUsage?: (usage: LLMUsage) => void,
 ): Promise<AiFileNote> {
   const staticNote = ctx.staticNote
 
@@ -28,6 +29,8 @@ export async function synthesizeFileNote(
       }),
       timeoutPromise,
     ])
+
+    if (response.usage && onUsage) onUsage(response.usage)
 
     const parsed = parseJSON(response.content)
     const validated = llmNoteSchema.safeParse(parsed)
@@ -60,13 +63,16 @@ function merge(
   staticField: AiFileNote['purpose'],
   llmField: AiFileNote['purpose'],
 ): AiFileNote['purpose'] {
+  const norm = (s: string) => s.trim().toLowerCase()
+  const observedKeys = new Set(staticField.observed.map(norm))
+  const evidenceKeys = new Set(staticField.evidence.map((e) => norm(e.detail)))
   return {
     observed: staticField.observed,
-    inferred: llmField.inferred,
+    inferred: llmField.inferred.filter((b) => !observedKeys.has(norm(b))),
     confidence: llmField.confidence,
     evidence: [
       ...staticField.evidence,
-      ...llmField.evidence.filter((e) => !staticField.evidence.some((s) => s.detail === e.detail)),
+      ...llmField.evidence.filter((e) => !evidenceKeys.has(norm(e.detail))),
     ],
   }
 }

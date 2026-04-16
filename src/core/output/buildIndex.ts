@@ -56,7 +56,7 @@ export function buildIndex(
         domain: deriveDomain(relativePath),
         criticalityScore: note.criticalityScore,
         model: note.model,
-        purpose: note.purpose.observed[0] ?? note.purpose.inferred[0] ?? '',
+        purpose: note.purpose.inferred[0] ?? note.purpose.observed[0] ?? '',
         generatedAt: note.generatedAt,
         stale: isNoteStale(note.generatedAt, staleThresholdDays),
         dependents: rawDependents.map((d) => path.relative(root, d)),

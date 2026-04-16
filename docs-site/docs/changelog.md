@@ -10,7 +10,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- **Claude CLI provider** — new `provider: 'claude-cli'` spawns the local `claude` binary (`claude -p --output-format json`) for synthesis; authenticates via the user's existing Claude Code session, skipping `ANTHROPIC_API_KEY`; pipes user prompt via stdin, system prompt via `--append-system-prompt`; wired into `LLMProviderName`, config schema, and factory
+- **Claude CLI provider** — new `provider: 'claude-cli'` spawns the local `claude` binary (`claude -p --output-format json`) for synthesis; authenticates via the user's existing Claude Code session, skipping `ANTHROPIC_API_KEY`; pipes user prompt via stdin, system prompt via `--system-prompt` (fully replaces default prompt to avoid user memory leakage); surfaces cost and duration metrics; wired into `LLMProviderName`, config schema, and factory
 - **Governance divergence detection** — new `src/core/governance/detectDivergence.ts` cross-references governance docs against the actual code and graph; four detectors flag `missing_file`, `undeclared_domain`, `forbidden_dependency` (mined from "`src/X` must not depend on `src/Y`" doc prose), and `undocumented_hotspot` (≥5 reverse deps, no doc coverage); per-file divergences injected into `knownPitfalls.observed` with `evidence.type: 'doc'`; all divergences persisted to `.ai-notes/divergences.json`; new `get_divergences` MCP tool with optional `severity`/`type` filters
 - **Multi-repo MCP** — `mcp --roots "alias=/path,..."` registers multiple repositories with one MCP server; tool calls accept a `repo` argument; new `list_repos` tool enumerates registered repos; single-repo behavior via `--root` is unchanged
 - **Graph UI — cycles, focus mode, and analysis panel** — `GET /api/graph/cycles` runs iterative Tarjan SCC and returns cycles + flat member set; `GET /api/graph/analysis?path=X` returns per-file graph position (in/out degree, transitive dependents/deps via BFS, neighbor domain distribution, cycle membership, hotspot flag); Graph tab adds Global/Focus toggle with 1–3 hop ego-network, depth slider, domain checkboxes, upstream/downstream/cycle color-coded edges, and a right-side analysis panel; fixed inverted edge direction in the `index.json` fallback graph
@@ -31,7 +31,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`package.json` run scripts** — `bun run scan/generate/generate:force/generate:dry/generate:v/watch/mcp/ui/init:agent` replace verbose `bun src/cli/index.ts …` invocations
 - **`debugSignals` in every note** — all raw pipeline signals now stored in each `.json` note, powering the Debug tab score breakdown
 
+### Changed
+- **LLM cost/duration logging** — `generate` logs total cost (USD), LLM time (seconds), and call count at the end of the run
+- **Relative paths in notes** — `buildBasicNote` converts absolute paths to relative for portable, readable notes
+- **Index uses inferred purpose** — purpose summary column prefers LLM-inferred descriptions when available
+- **Dedup observed/inferred** — merge strategy filters LLM `inferred` items that duplicate `observed` items
+- **Risky commits kept as evidence only** — no longer promoted to `knownPitfalls.observed`; kept in evidence for LLM reasoning
+- **Stronger language directive** — system prompt overrides ambient provider preferences (e.g. Claude CLI user memory)
+
 ### Fixed
+- **`withDefaults` drops `llm` config** — LLM configuration was silently dropped, causing static-only mode; now passed through correctly
 - **LLM evidence schema too strict** — unknown `type` values from the LLM (e.g. `'import'`, `'external'`) are coerced to `'code'` via `.catch('code')` instead of failing Zod validation and silently falling back to the static note
 - **Missing `signatures` field in Python/Go analyzers** — LLM prompts no longer show "none extracted" for Python/Go files
 - **Absolute paths in Impact Validation** — co-changed files now use relative paths consistently

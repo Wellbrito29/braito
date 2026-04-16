@@ -59,7 +59,7 @@ repo → scanner → static analyzer → graph engine → git intelligence
 - **`core/git/`** — churn score, recent commit messages, co-changed files, author count via `git` CLI + `Bun.spawnSync`
 - **`core/tests/`** — heuristic test discovery; `loadCoverage` reads `lcov.info` or `coverage-summary.json`
 - **`core/cache/`** — SHA-1 hash per file, `cache/hashes.json`, skip unchanged files; `isNoteStale` flags notes older than `staleThresholdDays` (default 30)
-- **`core/llm/`** — provider abstraction (`ollama`, `anthropic`, `openai`), retry/timeout, prompt builder, Zod schema validation, merge strategy
+- **`core/llm/`** — provider abstraction (`ollama`, `anthropic`, `openai`, `claude-cli`), retry/timeout, prompt builder, Zod schema validation, merge strategy
 - **`core/output/`** — `buildBasicNote`, `writeJsonNote`, `writeMarkdownNote`, `buildIndex` (domain-grouped with dependents), `writeIndexNote`
 
 ### Domain Model
@@ -117,9 +117,13 @@ llm: { provider: 'anthropic', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
 
 // OpenAI — set OPENAI_API_KEY env var
 llm: { provider: 'openai', model: 'gpt-4o', llmThreshold: 0.4 }
+
+// Claude CLI — uses your logged-in Claude Code session (no API key needed)
+llm: { provider: 'claude-cli', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
 ```
 
 **Security:** API keys must be set via environment variables only — never in `ai-notes.config.ts`.
+The `claude-cli` provider skips the API-key path entirely — it authenticates via your local Claude Code session.
 
 ### Generated Output
 
@@ -286,9 +290,13 @@ llm: { provider: 'anthropic', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
 
 // OpenAI — defina a variável OPENAI_API_KEY
 llm: { provider: 'openai', model: 'gpt-4o', llmThreshold: 0.4 }
+
+// Claude CLI — usa sua sessão do Claude Code já autenticada (sem chave de API)
+llm: { provider: 'claude-cli', model: 'claude-sonnet-4-6', llmThreshold: 0.4 }
 ```
 
 **Segurança:** chaves de API devem ser definidas apenas por variáveis de ambiente — nunca no `ai-notes.config.ts`.
+O provider `claude-cli` dispensa a chave de API — ele autentica via sua sessão local do Claude Code.
 
 ### Saída Gerada
 

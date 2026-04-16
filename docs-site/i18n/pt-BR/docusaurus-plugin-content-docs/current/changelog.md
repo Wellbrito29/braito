@@ -10,7 +10,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ## [Unreleased]
 
 ### Added
-- **Provider Claude CLI** — novo `provider: 'claude-cli'` em `ai-notes.config.ts` dispara o binário local `claude` (`claude -p --output-format json`) para síntese; autentica via sua sessão já logada no Claude Code, sem exigir `ANTHROPIC_API_KEY`; envia o prompt do usuário via stdin, o system prompt via `--append-system-prompt`; integrado ao `LLMProviderName`, ao schema de config e ao factory
+- **Provider Claude CLI** — novo `provider: 'claude-cli'` em `ai-notes.config.ts` dispara o binário local `claude` (`claude -p --output-format json`) para síntese; autentica via sua sessão já logada no Claude Code, sem exigir `ANTHROPIC_API_KEY`; envia o prompt do usuário via stdin, o system prompt via `--system-prompt` (substitui completamente o prompt padrão para evitar vazamento de memória/preferências do usuário); expõe métricas de custo e duração; integrado ao `LLMProviderName`, ao schema de config e ao factory
 - **Detecção de divergências de governança** — novo `src/core/governance/detectDivergence.ts` compara docs de governança contra o código e o grafo reais; quatro detectores sinalizam `missing_file` (docs referenciam um arquivo que não existe), `undeclared_domain` (arquivo vive fora de todo domínio declarado pelos docs de arquitetura), `forbidden_dependency` (aresta do grafo viola uma regra "`src/X` não deve depender de `src/Y`" extraída do texto dos docs) e `undocumented_hotspot` (≥5 dependentes reversos, sem cobertura em docs); integrado ao `runGenerate` logo após o carregamento do contexto de governança; divergências por arquivo injetadas em `knownPitfalls.observed` com `evidence.type: 'doc'`; todas as divergências persistidas em `.ai-notes/divergences.json`; nova ferramenta MCP `get_divergences` com filtros opcionais `severity`/`type`; 11 testes em `tests/governance/detectDivergence.test.ts`
 - **MCP multi-repo** — `mcp --roots "alias=/caminho,..."` registra múltiplos repositórios em um mesmo servidor MCP; chamadas de ferramenta aceitam um argumento `repo`; nova ferramenta `list_repos` enumera os repositórios registrados; comportamento single-repo via `--root` permanece inalterado
 - **UI do Graph — ciclos, modo Focus e painel de análise** — `GET /api/graph/cycles` roda Tarjan SCC iterativo e retorna ciclos + set de membros; `GET /api/graph/analysis?path=X` retorna a posição do arquivo no grafo (in/out degree, dependents/deps transitivos via BFS, distribuição de domínios vizinhos, participação em ciclo, flag `hotspot`); aba Graph agora tem toggle Global/Focus com ego-network de 1–3 hops, slider de profundidade, checkboxes por domínio, arestas coloridas (upstream azul / downstream vermelho / ciclos vermelhos) e painel de análise lateral; correção de direção invertida das arestas no fallback do `index.json`
@@ -31,7 +31,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Scripts `package.json`** — `bun run scan/generate/generate:force/generate:dry/generate:v/watch/mcp/ui/init:agent` substituem as invocações verbosas `bun src/cli/index.ts …`
 - **`debugSignals` em cada nota** — todos os sinais brutos do pipeline agora armazenados em cada `.json`, alimentando o score breakdown da aba Debug
 
+### Changed
+- **Log de custo/duração LLM** — `generate` registra custo total (USD), tempo LLM (segundos) e número de chamadas ao final da execução
+- **Caminhos relativos nas notas** — `buildBasicNote` converte caminhos absolutos para relativos, tornando as notas portáveis e legíveis
+- **Index usa purpose inferido** — coluna de resumo de propósito prefere descrições inferidas pelo LLM quando disponíveis
+- **Dedup observed/inferred** — estratégia de merge filtra itens `inferred` do LLM que duplicam itens `observed`
+- **Commits arriscados mantidos só como evidência** — não são mais promovidos a `knownPitfalls.observed`; mantidos em evidence para raciocínio do LLM
+- **Diretiva de idioma reforçada** — system prompt sobrescreve preferências ambientes do provider (ex: memória do usuário no Claude CLI)
+
 ### Fixed
+- **`withDefaults` descartava config `llm`** — configuração LLM era silenciosamente descartada, causando modo static-only; agora passada corretamente
 - **Schema de evidência LLM rígido demais** — valores de `type` desconhecidos retornados pelo LLM (ex: `'import'`, `'external'`) agora são coergidos para `'code'` via `.catch('code')` em vez de falhar a validação Zod e cair silenciosamente no fallback estático
 - **Campo `signatures` ausente nos analisadores Python/Go** — prompts LLM não mostram mais "nenhuma extraída" para arquivos Python/Go
 - **Caminhos absolutos no Impact Validation** — arquivos co-modificados agora usam caminhos relativos consistentemente

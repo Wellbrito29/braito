@@ -22,13 +22,14 @@ const { values } = parseArgs({
     format:   { type: 'string' },
     diff:     { type: 'boolean' },
     language: { type: 'string',  short: 'l' },
+    port:     { type: 'string' },
     'dry-run': { type: 'boolean' },
     'auto-generate': { type: 'boolean' },
     debug:    { type: 'boolean' },
     silent:   { type: 'boolean' },
     verbose:  { type: 'boolean', short: 'v' },
   },
-  strict: false,
+  strict: true,
 })
 
 // Configure log level from flags (debug > verbose > silent > default)
@@ -49,7 +50,7 @@ switch (command) {
   }
 
   case 'generate':
-    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff, dryRun: (values as Record<string, unknown>)['dry-run'] as boolean | undefined, language: values.language })
+    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff, dryRun: values['dry-run'], language: values.language })
     break
 
   case 'watch':
@@ -60,7 +61,7 @@ switch (command) {
     await runMcp({
       root: values.root,
       roots: values.roots,
-      autoGenerate: (values as Record<string, unknown>)['auto-generate'] as boolean | undefined,
+      autoGenerate: values['auto-generate'],
     })
     break
 
@@ -73,8 +74,7 @@ switch (command) {
     break
 
   case 'ui': {
-    const portStr = (values as Record<string, unknown>).port as string | undefined
-    await runUi({ root: values.root, port: portStr ? parseInt(portStr) : undefined })
+    await runUi({ root: values.root, port: values.port ? parseInt(values.port) : undefined })
     break
   }
 

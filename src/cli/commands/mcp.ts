@@ -333,7 +333,7 @@ export async function handleRequest(
     }
 
     const resolved = resolveRepo(registry, args, id)
-    if ('error' in resolved) return resolved
+    if ('jsonrpc' in resolved) return resolved
     const { root, outputDir } = resolved
 
     if (name === 'get_file_note') {

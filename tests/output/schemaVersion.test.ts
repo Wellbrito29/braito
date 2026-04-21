@@ -17,6 +17,7 @@ const analysis: StaticFileAnalysis = {
   apiCalls: [],
   comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
   hasSideEffects: false,
+  signatures: [],
 }
 
 const graph: GraphSignals = {

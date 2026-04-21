@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import { llmNoteSchema } from '../../src/core/llm/schemas/aiNoteSchema.ts'
 
-const emptyField = { observed: [], inferred: [], confidence: 0, evidence: [] }
+const emptyField: { observed: string[]; inferred: string[]; confidence: number; evidence: Array<{ type: string; detail: string }> } = { observed: [], inferred: [], confidence: 0, evidence: [] }
 
 function baseNote() {
   return {

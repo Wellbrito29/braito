@@ -1,4 +1,4 @@
-import type { GovernanceContext, GovernanceModel, FileGovernanceInfo } from './types.ts'
+import type { GovernanceContext, GovernanceModel, GovernanceDoc, FileGovernanceInfo } from './types.ts'
 import { detectGovernanceModel } from './detectGovernanceModel.ts'
 
 /**

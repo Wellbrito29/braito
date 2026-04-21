@@ -16,6 +16,7 @@ function makeAnalysis(overrides: Partial<StaticFileAnalysis> = {}): StaticFileAn
     apiCalls: [],
     comments: { todo: [], fixme: [], hack: [], invariant: [], decision: [] },
     hasSideEffects: false,
+    signatures: [],
     ...overrides,
   }
 }

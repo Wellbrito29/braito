@@ -5,6 +5,7 @@ import type { AiFileNote } from '../../src/core/types/ai-note.ts'
 function makeNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
   const emptyField = { observed: [], inferred: [], confidence: 0.5, evidence: [] }
   return {
+    schemaVersion: '1.0.0',
     filePath: '/project/src/example.ts',
     purpose: { ...emptyField },
     invariants: { ...emptyField },
@@ -12,7 +13,22 @@ function makeNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
     importantDecisions: { ...emptyField },
     knownPitfalls: { ...emptyField },
     impactValidation: { ...emptyField },
+    recentChanges: [],
     criticalityScore: 0.5,
+    debugSignals: {
+      reverseDepCount: 0,
+      directDepCount: 0,
+      hasHooks: false,
+      hasExternalImports: false,
+      hasEnvVars: false,
+      hasApiCalls: false,
+      hasTodoComments: false,
+      hasTests: false,
+      coveragePct: null,
+      churnScore: 0,
+      authorCount: 0,
+      coChangedFiles: [],
+    },
     generatedAt: '2026-01-01T00:00:00.000Z',
     model: 'static',
     ...overrides,

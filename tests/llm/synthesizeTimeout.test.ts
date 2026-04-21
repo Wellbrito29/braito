@@ -7,6 +7,7 @@ import type { AiFileNote } from '../../src/core/types/ai-note.ts'
 function makeStaticNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
   const empty = { observed: [], inferred: [], confidence: 0, evidence: [] }
   return {
+    schemaVersion: '1.0.0',
     filePath: '/project/src/useSearch.ts',
     purpose: { observed: ['Exports hooks: useSearch'], inferred: [], confidence: 0.6, evidence: [] },
     invariants: empty,
@@ -14,7 +15,22 @@ function makeStaticNote(overrides: Partial<AiFileNote> = {}): AiFileNote {
     importantDecisions: empty,
     knownPitfalls: empty,
     impactValidation: empty,
+    recentChanges: [],
     criticalityScore: 0.5,
+    debugSignals: {
+      reverseDepCount: 0,
+      directDepCount: 0,
+      hasHooks: false,
+      hasExternalImports: false,
+      hasEnvVars: false,
+      hasApiCalls: false,
+      hasTodoComments: false,
+      hasTests: false,
+      coveragePct: null,
+      churnScore: 0,
+      authorCount: 0,
+      coChangedFiles: [],
+    },
     generatedAt: new Date().toISOString(),
     model: 'static',
     ...overrides,

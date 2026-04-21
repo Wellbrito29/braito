@@ -8,6 +8,21 @@ import type { AiFileNote } from '../../src/core/types/ai-note.ts'
 const TMP_OUTPUT = path.resolve(import.meta.dir, '../../.tmp-test-index')
 const ROOT = '/project'
 
+const EMPTY_DEBUG_SIGNALS = {
+  reverseDepCount: 0,
+  directDepCount: 0,
+  hasHooks: false,
+  hasExternalImports: false,
+  hasEnvVars: false,
+  hasApiCalls: false,
+  hasTodoComments: false,
+  hasTests: false,
+  coveragePct: null,
+  churnScore: 0,
+  authorCount: 0,
+  coChangedFiles: [],
+}
+
 afterEach(async () => {
   await fs.rm(TMP_OUTPUT, { recursive: true, force: true })
 })
@@ -23,7 +38,9 @@ function makeNote(filePath: string, score: number, model = 'static'): AiFileNote
     importantDecisions: empty,
     knownPitfalls: empty,
     impactValidation: empty,
+    recentChanges: [],
     criticalityScore: score,
+    debugSignals: EMPTY_DEBUG_SIGNALS,
     generatedAt: new Date().toISOString(),
     model,
   }
@@ -107,7 +124,9 @@ describe('buildIndex', () => {
       purpose: { observed: ['Does something'], inferred: [], confidence: 0.6, evidence: [] },
       invariants: empty, sensitiveDependencies: empty, importantDecisions: empty,
       knownPitfalls: empty, impactValidation: empty,
+      recentChanges: [],
       criticalityScore: 0.5,
+      debugSignals: EMPTY_DEBUG_SIGNALS,
       generatedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
       model: 'static',
     }

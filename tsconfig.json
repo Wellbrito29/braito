@@ -5,10 +5,10 @@
     "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
     "paths": {}
   },
   "include": ["src/**/*", "tests/**/*"],
-  "exclude": ["node_modules", "dist", ".ai-notes"]
+  "exclude": ["node_modules", "dist", ".ai-notes", "tests/fixtures", "example"]
 }

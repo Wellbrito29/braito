@@ -67,7 +67,7 @@ export function extractSignatures(sourceFile: SourceFile): string[] {
 
   // Type aliases
   for (const alias of sourceFile.getTypeAliases()) {
-    const typeText = alias.getTypeNode().getText()
+    const typeText = alias.getTypeNode()?.getText() ?? 'unknown'
     // Truncate very long type expressions
     const truncated = typeText.length > 120 ? typeText.slice(0, 120) + '...' : typeText
     sigs.push(`type ${alias.getName()} = ${truncated}`)

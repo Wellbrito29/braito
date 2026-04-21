@@ -47,8 +47,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Risky commits kept as evidence only** — no longer promoted to `knownPitfalls.observed`; kept in evidence for LLM reasoning
 - **Stronger language directive** — system prompt overrides ambient provider preferences (e.g. Claude CLI user memory)
 
-### Changed
 - **Aggregators now derive from disk (single source of truth)** — `index.json`, `search-index.json`, and `graph.json` node metadata are built from `loadAllNotesFromDisk(root, outputDir)` after the synthesis loop, not from an in-memory `notes[]` populated only by files the loop touched; eliminates the class of bugs where `--filter` / `--force` / cache-only runs accidentally shrank the repo-wide artifacts. Removes three earlier workaround code paths; new helper at `src/core/output/loadAllNotesFromDisk.ts` is a `fs.readdir` walk + parallel `JSON.parse` (~50ms / 74 files) and skips reserved aggregate filenames
+
+- **`purpose.observed`** — now shows full typed function signatures (`name(param: Type): ReturnType`) and first JSDoc line instead of bare export name lists
+- **LLM prompt context** — replaced first-200-lines truncation with semantic skeleton extraction: exports + JSDoc + special comments (DECISION/INVARIANT/WHY/HACK), giving the model the most informative content within the same token budget
+- **System prompt** — added field-by-field BAD/GOOD examples for all six note fields, preventing the LLM from producing generic export-list summaries
+- **Project constitution** (`braito.context.md`) — optional file at project root injected into every LLM synthesis prompt; lets teams define domain vocabulary, architectural constraints, and risk areas that the model uses as context when generating notes
+- **Agent slash commands** (`init --agent`) — generates `.claude/commands/braito-note.md`, `braito-impact.md`, `braito-search.md` in the target project so braito tools are available as native slash commands in Claude Code and Cursor
+- **Docs site migrated to Docusaurus** — rebuilt with Docusaurus v3, full i18n support (EN + PT-BR), custom homepage, dark mode
+
+---
 
 ### Fixed
 - **`get_architecture_context` returns empty fields in `topCriticalFiles`** — handler resolved per-file notes from `entry.filePath` (absolute), so `path.resolve` collapsed to the source-file path, every read threw ENOENT, and the silent catch returned `{}`; now uses `entry.relativePath`, adds path-traversal guard, and merges `observed + inferred` so LLM-synthesized purpose/invariants/pitfalls actually surface
@@ -63,16 +71,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 - **`get_overview` MCP tool** — removed orphan tool; `get_architecture_context` provides equivalent and richer functionality
-
-### Changed
-- **`purpose.observed`** — now shows full typed function signatures (`name(param: Type): ReturnType`) and first JSDoc line instead of bare export name lists
-- **LLM prompt context** — replaced first-200-lines truncation with semantic skeleton extraction: exports + JSDoc + special comments (DECISION/INVARIANT/WHY/HACK), giving the model the most informative content within the same token budget
-- **System prompt** — added field-by-field BAD/GOOD examples for all six note fields, preventing the LLM from producing generic export-list summaries
-- **Project constitution** (`braito.context.md`) — optional file at project root injected into every LLM synthesis prompt; lets teams define domain vocabulary, architectural constraints, and risk areas that the model uses as context when generating notes
-- **Agent slash commands** (`init --agent`) — generates `.claude/commands/braito-note.md`, `braito-impact.md`, `braito-search.md` in the target project so braito tools are available as native slash commands in Claude Code and Cursor
-- **Docs site migrated to Docusaurus** — rebuilt with Docusaurus v3, full i18n support (EN + PT-BR), custom homepage, dark mode
-
----
 
 ## [0.6.0] — 2026-04-04
 

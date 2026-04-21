@@ -47,8 +47,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Commits arriscados mantidos só como evidência** — não são mais promovidos a `knownPitfalls.observed`; mantidos em evidence para raciocínio do LLM
 - **Diretiva de idioma reforçada** — system prompt sobrescreve preferências ambientes do provider (ex: memória do usuário no Claude CLI)
 
-### Changed
 - **Agregados agora derivam do disco (fonte única de verdade)** — `index.json`, `search-index.json` e os metadados do `graph.json` são construídos a partir de `loadAllNotesFromDisk(root, outputDir)` depois do loop de síntese, e não mais de um `notes[]` em memória populado só pelos arquivos que o loop tocou; elimina a classe de bugs em que `--filter` / `--force` / runs cache-only encolhiam acidentalmente os artefatos do repo inteiro. Remove três workarounds adicionados antes; novo helper em `src/core/output/loadAllNotesFromDisk.ts` faz um walk com `fs.readdir` + `JSON.parse` paralelo (~50ms / 74 arquivos) e pula filenames agregados reservados
+
+- **`purpose.observed`** — agora exibe assinaturas de função tipadas completas (`name(param: Tipo): ReturnType`) e a primeira linha do JSDoc, em vez de apenas listas de nomes de exports
+- **Contexto do prompt LLM** — substituiu o truncamento nas primeiras 200 linhas pela extração de esqueleto semântico: exports + JSDoc + comentários especiais (DECISION/INVARIANT/WHY/HACK)
+- **System prompt** — adicionados exemplos RUIM/BOM por campo para todos os seis campos da nota, evitando que o LLM produza resumos genéricos de listas de exports
+- **Constituição do projeto** (`braito.context.md`) — arquivo opcional na raiz do projeto injetado em todo prompt de síntese LLM; permite que times definam vocabulário de domínio, restrições arquiteturais e áreas de risco
+- **Slash commands para agentes** (`init --agent`) — gera `.claude/commands/braito-note.md`, `braito-impact.md`, `braito-search.md` no projeto alvo para que as ferramentas do braito fiquem disponíveis como slash commands nativos no Claude Code e Cursor
+- **Site de docs migrado para Docusaurus** — reconstruído com Docusaurus v3, suporte completo a i18n (EN + PT-BR), homepage personalizada, modo escuro
+
+---
 
 ### Fixed
 - **`get_architecture_context` retornava campos vazios em `topCriticalFiles`** — o handler resolvia os notes por arquivo a partir de `entry.filePath` (absoluto), então `path.resolve` colapsava para o caminho do código-fonte, todo read dava ENOENT e o catch silencioso devolvia `{}`; agora usa `entry.relativePath`, adiciona guard de path traversal e mergeia `observed + inferred` para que os campos sintetizados pelo LLM (purpose/invariants/pitfalls) apareçam de fato
@@ -63,16 +71,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Removed
 - **Ferramenta MCP `get_overview`** — removida ferramenta órfã; `get_architecture_context` oferece funcionalidade equivalente e mais rica
-
-### Changed
-- **`purpose.observed`** — agora exibe assinaturas de função tipadas completas (`name(param: Tipo): ReturnType`) e a primeira linha do JSDoc, em vez de apenas listas de nomes de exports
-- **Contexto do prompt LLM** — substituiu o truncamento nas primeiras 200 linhas pela extração de esqueleto semântico: exports + JSDoc + comentários especiais (DECISION/INVARIANT/WHY/HACK)
-- **System prompt** — adicionados exemplos RUIM/BOM por campo para todos os seis campos da nota, evitando que o LLM produza resumos genéricos de listas de exports
-- **Constituição do projeto** (`braito.context.md`) — arquivo opcional na raiz do projeto injetado em todo prompt de síntese LLM; permite que times definam vocabulário de domínio, restrições arquiteturais e áreas de risco
-- **Slash commands para agentes** (`init --agent`) — gera `.claude/commands/braito-note.md`, `braito-impact.md`, `braito-search.md` no projeto alvo para que as ferramentas do braito fiquem disponíveis como slash commands nativos no Claude Code e Cursor
-- **Site de docs migrado para Docusaurus** — reconstruído com Docusaurus v3, suporte completo a i18n (EN + PT-BR), homepage personalizada, modo escuro
-
----
 
 ## [0.6.0] — 2026-04-04
 

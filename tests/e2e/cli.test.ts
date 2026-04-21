@@ -183,6 +183,36 @@ describe('generate command', () => {
     expect(paths.some((p: string) => p.includes('index.ts'))).toBe(true)
     expect(paths.some((p: string) => p.includes('utils.ts'))).toBe(true)
   })
+
+  it('cache-only re-run preserves index.json and search-index.json', async () => {
+    // Independent fixture so we can assert on a full cache-hit pass.
+    const cacheTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-cache-only-'))
+    try {
+      fs.mkdirSync(path.join(cacheTmp, 'src'))
+      fs.writeFileSync(path.join(cacheTmp, 'src', 'a.ts'), `export const a = 1`)
+      fs.writeFileSync(path.join(cacheTmp, 'src', 'b.ts'), `import { a } from './a'\nexport const b = a + 1`)
+
+      // First run populates everything
+      await runGenerate({ root: cacheTmp })
+      const firstIndex = JSON.parse(fs.readFileSync(path.join(cacheTmp, '.ai-notes', 'index.json'), 'utf-8'))
+      const firstSearch = JSON.parse(fs.readFileSync(path.join(cacheTmp, '.ai-notes', 'search-index.json'), 'utf-8'))
+      expect(firstIndex.totalFiles).toBe(2)
+      expect(firstIndex.entries.length).toBe(2)
+
+      // Second run — no source changes, every file is a cache hit
+      await runGenerate({ root: cacheTmp })
+      const secondIndex = JSON.parse(fs.readFileSync(path.join(cacheTmp, '.ai-notes', 'index.json'), 'utf-8'))
+      const secondSearch = JSON.parse(fs.readFileSync(path.join(cacheTmp, '.ai-notes', 'search-index.json'), 'utf-8'))
+
+      expect(secondIndex.totalFiles).toBe(firstIndex.totalFiles)
+      expect(secondIndex.entries.length).toBe(firstIndex.entries.length)
+      // Search index serializes to MiniSearch JSON — non-empty payload survives the cache-only run
+      expect(JSON.stringify(secondSearch).length).toBeGreaterThan(JSON.stringify({}).length + 50)
+      expect(JSON.stringify(secondSearch).length).toBeGreaterThanOrEqual(JSON.stringify(firstSearch).length / 2)
+    } finally {
+      fs.rmSync(cacheTmp, { recursive: true, force: true })
+    }
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -219,6 +249,57 @@ describe('generate --filter', () => {
     const paths = index.entries.map((e: { relativePath: string }) => e.relativePath)
     expect(paths.some((p: string) => p.includes('app.ts'))).toBe(true)
     expect(paths.some((p: string) => p.includes('helper.ts'))).toBe(false)
+  })
+
+  it('--force --filter does not wipe cache entries for unfiltered files', async () => {
+    // Independent fixture: full run primes the cache for both files; --force --filter
+    // must rewrite only the matched file's hash and keep the unfiltered entry intact.
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-filter-cache-'))
+    try {
+      fs.mkdirSync(path.join(tmp, 'src'))
+      fs.mkdirSync(path.join(tmp, 'lib'))
+      fs.writeFileSync(path.join(tmp, 'src', 'app.ts'), `export const app = 'app'`)
+      fs.writeFileSync(path.join(tmp, 'lib', 'helper.ts'), `export const help = 'help'`)
+      await runGenerate({ root: tmp })
+      const cachePath = path.join(tmp, 'cache', 'hashes.json')
+      const before = JSON.parse(fs.readFileSync(cachePath, 'utf-8')) as Record<string, string>
+      const helperHashBefore = before['lib/helper.ts']
+      expect(typeof helperHashBefore).toBe('string')
+      expect(typeof before['src/app.ts']).toBe('string')
+
+      await runGenerate({ root: tmp, filter: 'src/**', force: true })
+      const after = JSON.parse(fs.readFileSync(cachePath, 'utf-8')) as Record<string, string>
+      // Both entries must still exist; helper hash unchanged because we never touched it
+      expect(after['lib/helper.ts']).toBe(helperHashBefore)
+      expect(after['src/app.ts']).toBeDefined()
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
+  })
+
+  it('filter rerun preserves existing notes for unfiltered files in index', async () => {
+    // Independent fixture: full run first, then filter rerun must keep both files in index.
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-filter-keep-'))
+    try {
+      fs.mkdirSync(path.join(tmp, 'src'))
+      fs.mkdirSync(path.join(tmp, 'lib'))
+      fs.writeFileSync(path.join(tmp, 'src', 'app.ts'), `export const app = 'app'`)
+      fs.writeFileSync(path.join(tmp, 'lib', 'helper.ts'), `export const help = 'help'`)
+      // Full run — both files indexed
+      await runGenerate({ root: tmp })
+      const before = JSON.parse(fs.readFileSync(path.join(tmp, '.ai-notes', 'index.json'), 'utf-8'))
+      expect(before.totalFiles).toBe(2)
+
+      // Filter run — only app.ts re-processed, helper.ts must remain in the index
+      await runGenerate({ root: tmp, filter: 'src/**', force: true })
+      const after = JSON.parse(fs.readFileSync(path.join(tmp, '.ai-notes', 'index.json'), 'utf-8'))
+      const paths = after.entries.map((e: { relativePath: string }) => e.relativePath)
+      expect(after.totalFiles).toBe(2)
+      expect(paths.some((p: string) => p.includes('app.ts'))).toBe(true)
+      expect(paths.some((p: string) => p.includes('helper.ts'))).toBe(true)
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
   })
 })
 

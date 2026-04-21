@@ -55,9 +55,15 @@ export async function runGenerate(args: {
   logger.info(`Found ${files.length} files  [${Date.now() - tScan}ms]`)
 
   // 2. Load caches
-  const noteHashStore = args.force ? new Map() : await loadCache(root)
-  const analysisStore = args.force ? new Map() : await loadAnalysisStore(root)
-  if (args.force) logger.info('Cache bypassed (--force)')
+  //    Always load existing entries from disk — `--force` is enforced inside the
+  //    loop via `!args.force && noteHashStore.get(...) === currentHash`, so the
+  //    in-memory map can stay populated. Resetting it to an empty Map here used
+  //    to combine catastrophically with `--filter`: the unfiltered entries were
+  //    never re-added, so saveCache would persist a near-empty file and the
+  //    next run would regenerate every note (very expensive with claude-cli).
+  const noteHashStore = await loadCache(root)
+  const analysisStore = await loadAnalysisStore(root)
+  if (args.force) logger.info('Cache bypassed (--force) — entries will be re-validated')
 
   // 3. Pre-compute hashes and parse files incrementally
   //    Files whose hash matches the stored note hash reuse their cached StaticFileAnalysis,
@@ -205,7 +211,6 @@ export async function runGenerate(args: {
   let skipped = 0
   let synthesized = 0
   let synthesizedHigh = 0
-  const notes: AiFileNote[] = []
   const diffs: NoteDiff[] = []
 
   // Dry-run tracking
@@ -217,11 +222,13 @@ export async function runGenerate(args: {
   const progress = new ProgressBar(filteredAnalyses.length, 'Writing notes')
   const noteResults = await concurrentMap(
     filteredAnalyses,
-    async (analysis): Promise<{ note: AiFileNote; relativePath: string; hash: string; diff?: NoteDiff } | null> => {
+    async (analysis): Promise<{ relativePath: string; hash: string; diff?: NoteDiff } | null> => {
       const file = files.find((f) => f.path === analysis.filePath)!
       const currentHash = fileHashes.get(file.relativePath)!
 
-      // Skip if the note is already up to date for this file
+      // Skip if the note is already up to date for this file. The aggregators
+      // (index, search-index, graph metadata) are rebuilt from disk after the
+      // loop, so cached files don't need to be carried in memory here.
       if (!args.force && !args.forceFiles?.has(file.relativePath) && noteHashStore.get(file.relativePath) === currentHash) {
         if (args.dryRun) {
           dryRunEntries.push({ relativePath: file.relativePath, score: 0, useLlm: false, wouldSkip: true })
@@ -278,7 +285,7 @@ export async function runGenerate(args: {
 
       if (args.dryRun) {
         dryRunEntries.push({ relativePath: file.relativePath, score: note.criticalityScore, useLlm: wouldUseLlm, wouldSkip: false })
-        return { note, relativePath: file.relativePath, hash: currentHash }
+        return { relativePath: file.relativePath, hash: currentHash }
       }
 
       if (wouldUseLlm) {
@@ -318,7 +325,7 @@ export async function runGenerate(args: {
       await writeJsonNote(note, root, config.output)
       await writeMarkdownNote(note, root, config.output)
 
-      return { note, relativePath: file.relativePath, hash: currentHash, diff }
+      return { relativePath: file.relativePath, hash: currentHash, diff }
     },
     concurrency,
   )
@@ -330,7 +337,6 @@ export async function runGenerate(args: {
       if (!args.dryRun) {
         noteHashStore.set(result.relativePath, result.hash)
       }
-      notes.push(result.note)
       if (result.diff) diffs.push(result.diff)
       written++
     }
@@ -359,17 +365,28 @@ export async function runGenerate(args: {
   // 9. Save note cache
   await saveCache(root, noteHashStore)
 
-  // 10. Build and write index
-  const index = buildIndex(notes, root, config.staleThresholdDays, revGraph)
+  // 10. Load every note from disk so the aggregators reflect the persisted
+  //     state of the repo, not just the subset processed by this invocation.
+  //     This is the single source of truth — index, search index, and graph
+  //     metadata all derive from it, so cache-only / --filter / --force
+  //     invocations cannot accidentally shrink the repo-wide artifacts.
+  const { loadAllNotesFromDisk } = await import('../../core/output/loadAllNotesFromDisk.ts')
+  const { notes: diskNotes, errors: noteLoadErrors } = await loadAllNotesFromDisk(root, config.output)
+  for (const err of noteLoadErrors) {
+    logger.warn(`Skipping unreadable note ${err.path}: ${err.message}`)
+  }
+
+  // 11. Build and write index
+  const index = buildIndex(diskNotes, root, config.staleThresholdDays, revGraph)
   await writeIndexNote(index, root, config.output)
 
-  // 11. Persist dependency graph to graph.json
+  // 12. Persist dependency graph to graph.json
   const nodeMetaMap = new Map(
     index.entries.map((e) => [e.relativePath, { domain: e.domain, criticalityScore: e.criticalityScore }]),
   )
   await writeGraph(depGraph, nodeMetaMap, root, config.output)
 
-  // 11b. Persist divergences (if any) to .ai-notes/divergences.json
+  // 12b. Persist divergences (if any) to .ai-notes/divergences.json
   const divergencesPath = path.join(root, config.output, 'divergences.json')
   if (divergences.length > 0) {
     await fs.writeFile(
@@ -381,10 +398,10 @@ export async function runGenerate(args: {
     try { await fs.unlink(divergencesPath) } catch {}
   }
 
-  // 12. Build search index for BM25 full-text search
+  // 13. Build search index for BM25 full-text search
   const { buildSearchIndex } = await import('../../core/output/buildSearchIndex.ts')
-  const notesMap = new Map<string, typeof notes[number]>()
-  for (const note of notes) {
+  const notesMap = new Map<string, AiFileNote>()
+  for (const note of diskNotes) {
     notesMap.set(path.relative(root, note.filePath), note)
   }
   const searchIndexJson = buildSearchIndex(notesMap)
@@ -412,15 +429,15 @@ export async function runGenerate(args: {
   }
   logger.info(`Total time  [${Date.now() - t0}ms]`)
 
-  if (args.verbose && notes.length > 0) {
-    const sorted = [...notes].sort((a, b) => b.criticalityScore - a.criticalityScore)
+  if (args.verbose && diskNotes.length > 0) {
+    const sorted = [...diskNotes].sort((a, b) => b.criticalityScore - a.criticalityScore)
     logger.info('Top 5 files by criticality score:')
     for (const n of sorted.slice(0, 5)) {
       logger.info(`  ${n.criticalityScore.toFixed(2)}  ${path.relative(root, n.filePath)}`)
     }
-    const noTests = notes.filter((n) => !n.debugSignals?.hasTests)
+    const noTests = diskNotes.filter((n) => !n.debugSignals?.hasTests)
     if (noTests.length > 0) {
-      logger.info(`Files without tests: ${noTests.length}/${notes.length}`)
+      logger.info(`Files without tests: ${noTests.length}/${diskNotes.length}`)
     }
   }
 

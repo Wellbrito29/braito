@@ -49,6 +49,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - **`get_architecture_context` returns empty fields in `topCriticalFiles`** — handler resolved per-file notes from `entry.filePath` (absolute), so `path.resolve` collapsed to the source-file path, every read threw ENOENT, and the silent catch returned `{}`; now uses `entry.relativePath`, adds path-traversal guard, and merges `observed + inferred` so LLM-synthesized purpose/invariants/pitfalls actually surface
+- **`claude-cli` synthesis silently fails when model prepends prose** — parser only stripped markdown fences, so responses like `"Looking at this file...\n{...}"` triggered `JSON Parse error` and silently fell back to the static note; extracted `parseJsonResponse.ts` that walks every `{` candidate with a string-and-escape-aware brace counter; system prompt strengthened to forbid prose prefixes; 10 new tests in `tests/llm/parseJsonResponse.test.ts`
 - **`withDefaults` drops `llm` config** — LLM configuration was silently dropped, causing static-only mode; now passed through correctly
 - **LLM evidence schema too strict** — unknown `type` values from the LLM (e.g. `'import'`, `'external'`) are coerced to `'code'` via `.catch('code')` instead of failing Zod validation and silently falling back to the static note
 - **Missing `signatures` field in Python/Go analyzers** — LLM prompts no longer show "none extracted" for Python/Go files

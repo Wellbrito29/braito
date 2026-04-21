@@ -3,6 +3,7 @@ import type { LLMProvider, LLMUsage } from './provider/types.ts'
 import { buildPrompt, type PromptContext } from './prompts/buildPrompt.ts'
 import { buildSystemPrompt } from './prompts/systemPrompt.ts'
 import { llmNoteSchema } from './schemas/aiNoteSchema.ts'
+import { parseJsonResponse } from './parseJsonResponse.ts'
 import { logger } from '../utils/logger.ts'
 
 export async function synthesizeFileNote(
@@ -32,7 +33,7 @@ export async function synthesizeFileNote(
 
     if (response.usage && onUsage) onUsage(response.usage)
 
-    const parsed = parseJSON(response.content)
+    const parsed = parseJsonResponse(response.content)
     const validated = llmNoteSchema.safeParse(parsed)
 
     if (!validated.success) {
@@ -77,12 +78,3 @@ function merge(
   }
 }
 
-function parseJSON(raw: string): unknown {
-  // Strip markdown code block if present
-  const stripped = raw
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/, '')
-    .trim()
-
-  return JSON.parse(stripped)
-}

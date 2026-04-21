@@ -20,7 +20,7 @@ ${langInstruction}${contextSection}
 - confidence must be a number between 0 and 1.
 - evidence items must have type ("code"|"git"|"test"|"graph"|"comment"|"doc") and a concrete detail string.
 - Fields can be empty arrays when there is insufficient evidence — that is correct behavior.
-- Return valid JSON matching the requested schema exactly. No markdown wrapping.
+- Return valid JSON matching the requested schema exactly. No markdown wrapping, no preamble, no commentary. The first character of your response MUST be \`{\` and the last character MUST be \`}\`. Do NOT begin with phrases like "Looking at this file", "Now let me", "Here is the analysis", etc.
 
 ## Field-by-field guidance
 

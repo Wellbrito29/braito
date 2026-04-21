@@ -48,6 +48,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Stronger language directive** — system prompt overrides ambient provider preferences (e.g. Claude CLI user memory)
 
 ### Fixed
+- **`get_architecture_context` returns empty fields in `topCriticalFiles`** — handler resolved per-file notes from `entry.filePath` (absolute), so `path.resolve` collapsed to the source-file path, every read threw ENOENT, and the silent catch returned `{}`; now uses `entry.relativePath`, adds path-traversal guard, and merges `observed + inferred` so LLM-synthesized purpose/invariants/pitfalls actually surface
 - **`withDefaults` drops `llm` config** — LLM configuration was silently dropped, causing static-only mode; now passed through correctly
 - **LLM evidence schema too strict** — unknown `type` values from the LLM (e.g. `'import'`, `'external'`) are coerced to `'code'` via `.catch('code')` instead of failing Zod validation and silently falling back to the static note
 - **Missing `signatures` field in Python/Go analyzers** — LLM prompts no longer show "none extracted" for Python/Go files

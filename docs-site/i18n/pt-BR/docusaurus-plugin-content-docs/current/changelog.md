@@ -48,6 +48,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - **Diretiva de idioma reforçada** — system prompt sobrescreve preferências ambientes do provider (ex: memória do usuário no Claude CLI)
 
 ### Fixed
+- **`get_architecture_context` retornava campos vazios em `topCriticalFiles`** — o handler resolvia os notes por arquivo a partir de `entry.filePath` (absoluto), então `path.resolve` colapsava para o caminho do código-fonte, todo read dava ENOENT e o catch silencioso devolvia `{}`; agora usa `entry.relativePath`, adiciona guard de path traversal e mergeia `observed + inferred` para que os campos sintetizados pelo LLM (purpose/invariants/pitfalls) apareçam de fato
 - **`withDefaults` descartava config `llm`** — configuração LLM era silenciosamente descartada, causando modo static-only; agora passada corretamente
 - **Schema de evidência LLM rígido demais** — valores de `type` desconhecidos retornados pelo LLM (ex: `'import'`, `'external'`) agora são coergidos para `'code'` via `.catch('code')` em vez de falhar a validação Zod e cair silenciosamente no fallback estático
 - **Campo `signatures` ausente nos analisadores Python/Go** — prompts LLM não mostram mais "nenhuma extraída" para arquivos Python/Go

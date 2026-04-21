@@ -394,30 +394,40 @@ export async function handleRequest(
       try {
         const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'))
 
-        // Top N critical files with enriched note data
+        // Top N critical files with enriched note data.
+        // Note JSONs live at <root>/<outputDir>/<relativePath>.json — using the
+        // absolute `entry.filePath` here used to make path.resolve collapse to the
+        // source-file path, so every fs.readFileSync threw ENOENT and the catch
+        // silently returned `{}`, leaving every field empty.
+        const notesDir = path.resolve(root, outputDir)
         const topFiles = (index.entries as Array<{
           filePath: string
+          relativePath: string
           criticalityScore: number
           domain: string
           stale?: boolean
         }>)
           .slice(0, topN)
           .map((entry) => {
-            const notePath = path.resolve(root, outputDir, entry.filePath + '.json')
+            const notePath = path.resolve(notesDir, entry.relativePath + '.json')
             let note: Record<string, unknown> = {}
-            try { note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { /* skip */ }
+            if (path.normalize(notePath).startsWith(path.normalize(notesDir) + path.sep)) {
+              try { note = JSON.parse(fs.readFileSync(notePath, 'utf-8')) } catch { /* skip */ }
+            }
             type Field = { observed?: string[]; inferred?: string[] }
             const obs = (key: string): string[] => (note[key] as Field | undefined)?.observed ?? []
+            const inf = (key: string): string[] => (note[key] as Field | undefined)?.inferred ?? []
             return {
               filePath: entry.filePath,
+              relativePath: entry.relativePath,
               criticalityScore: entry.criticalityScore,
               domain: entry.domain,
               stale: entry.stale ?? false,
-              purpose: obs('purpose')[0] ?? '',
-              invariants: obs('invariants'),
-              knownPitfalls: obs('knownPitfalls'),
-              sensitiveDependencies: obs('sensitiveDependencies'),
-              importantDecisions: obs('importantDecisions'),
+              purpose: inf('purpose')[0] ?? obs('purpose')[0] ?? '',
+              invariants: [...obs('invariants'), ...inf('invariants')],
+              knownPitfalls: [...obs('knownPitfalls'), ...inf('knownPitfalls')],
+              sensitiveDependencies: [...obs('sensitiveDependencies'), ...inf('sensitiveDependencies')],
+              importantDecisions: [...obs('importantDecisions'), ...inf('importantDecisions')],
             }
           })
 

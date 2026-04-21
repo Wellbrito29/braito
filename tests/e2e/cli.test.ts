@@ -686,6 +686,25 @@ describe('mcp server — extended tool tests', () => {
     expect(ctx.domains.some((d: { name: string }) => d.name === 'src/core')).toBe(true)
   })
 
+  it('get_architecture_context populates topCriticalFiles fields from per-file notes', async () => {
+    // Regression: handler used to resolve note JSONs from `entry.filePath` (an
+    // absolute path), so path.resolve collapsed to the source-file path,
+    // every read threw ENOENT, and every field came back empty.
+    const req = {
+      jsonrpc: '2.0' as const,
+      id: 100,
+      method: 'tools/call',
+      params: { name: 'get_architecture_context', arguments: { top_n: 5 } },
+    }
+    const res = await handleRequest(req, extMcpDir, '.ai-notes')
+    const ctx = JSON.parse((res!.result as any).content[0].text)
+    const aFile = ctx.topCriticalFiles.find((f: { relativePath: string }) => f.relativePath === 'src/core/a.ts')
+    expect(aFile).toBeDefined()
+    expect(aFile.purpose).toBe('Handles authentication tokens')
+    expect(aFile.invariants).toContain('Token must not be null')
+    expect(aFile.knownPitfalls).toContain('Token can expire unexpectedly')
+  })
+
   it('get_impact returns BFS dependents for a file', async () => {
     const req = {
       jsonrpc: '2.0' as const,

@@ -4,6 +4,7 @@ import type { AiFileNote, ChangelogEntry, DebugSignals, EvidenceItem, Structured
 import type { GovernanceContext } from '../governance/types.ts'
 import type { Divergence } from '../governance/detectDivergence.ts'
 import { SCHEMA_VERSION } from '../types/schema-version.ts'
+import { enrichStaticSignals } from './enrichStaticSignals.ts'
 
 const RISKY_COMMIT_KEYWORDS = ['hotfix', 'rollback', 'workaround', 'revert', 'hack', 'fix', 'breaking']
 const VALIDATION_LIBS = ['zod', 'yup', 'joi', 'superstruct', 'valibot', 'arktype']
@@ -239,6 +240,33 @@ export function buildBasicNote(
     if (isDecisionCommit(msg, decisionKeywords)) {
       decisionsObserved.push(`Commit: "${msg}"`)
       decisionsEvidence.push({ type: 'git', detail: msg })
+    }
+  }
+
+  // Static enrichment: filename classification + import categorization + cross-signal inferences.
+  // Merges into the observed[] arrays only when the entry isn't already present (case-insensitive).
+  const relFilePath = rel(analysis.filePath)
+  const enrich = enrichStaticSignals(analysis, graph, tests, git, relFilePath)
+  const hasEntry = (arr: string[], candidate: string): boolean =>
+    arr.some((x) => x.toLowerCase() === candidate.toLowerCase())
+
+  for (const hint of enrich.purposeHints) {
+    if (!hasEntry(purposeObserved, hint)) {
+      // Prepend the classification so it reads as a lead-in to the mechanical exports below.
+      purposeObserved.unshift(hint)
+      purposeEvidence.push({ type: 'code', detail: `Filename pattern: ${hint}` })
+    }
+  }
+  for (const hint of enrich.invariantHints) {
+    if (!hasEntry(invariantsObserved, hint)) {
+      invariantsObserved.push(hint)
+      invariantsEvidence.push({ type: 'code', detail: hint })
+    }
+  }
+  for (const hint of enrich.pitfallHints) {
+    if (!hasEntry(pitfallsObserved, hint)) {
+      pitfallsObserved.push(hint)
+      pitfallsEvidence.push({ type: 'graph', detail: hint })
     }
   }
 

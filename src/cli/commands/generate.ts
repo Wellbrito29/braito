@@ -22,6 +22,12 @@ import { loadProjectContext } from '../../core/config/loadProjectContext.ts'
 import { computeHash } from '../../core/cache/computeHash.ts'
 import { loadCache, saveCache } from '../../core/cache/cacheStore.ts'
 import { loadAnalysisStore, saveAnalysisStore } from '../../core/cache/analysisStore.ts'
+import {
+  loadFingerprints,
+  saveFingerprints,
+  areDepsStale,
+  buildFingerprint,
+} from '../../core/cache/depFingerprintStore.ts'
 import { concurrentMap } from '../../core/utils/concurrentMap.ts'
 import { writeGraph } from '../../core/output/writeGraph.ts'
 import { logger } from '../../core/utils/logger.ts'
@@ -63,6 +69,7 @@ export async function runGenerate(args: {
   //    next run would regenerate every note (very expensive with claude-cli).
   const noteHashStore = await loadCache(root)
   const analysisStore = await loadAnalysisStore(root)
+  const fingerprintStore = await loadFingerprints(root)
   if (args.force) logger.info('Cache bypassed (--force) — entries will be re-validated')
 
   // 3. Pre-compute hashes and parse files incrementally
@@ -191,6 +198,19 @@ export async function runGenerate(args: {
     logger.warn(`Detected ${divergences.length} governance divergence(s): ${errors} error, ${warns} warn`)
   }
 
+  // Absolute → relative lookup for converting graph edges (absolute paths) into
+  // cache keys (relative paths) used by fileHashes / fingerprintStore.
+  const relPathByAbs = new Map<string, string>()
+  for (const f of files) relPathByAbs.set(f.path, f.relativePath)
+  const depsAsRelative = (absDeps: string[]): string[] => {
+    const out: string[] = []
+    for (const d of absDeps) {
+      const r = relPathByAbs.get(d)
+      if (r) out.push(r)
+    }
+    return out
+  }
+
   // Use concurrency cap from config when LLM is active; fall back to 1 (sequential) otherwise
   const concurrency = provider ? (llmConfig?.concurrency ?? 5) : 1
 
@@ -222,18 +242,35 @@ export async function runGenerate(args: {
   const progress = new ProgressBar(filteredAnalyses.length, 'Writing notes')
   const noteResults = await concurrentMap(
     filteredAnalyses,
-    async (analysis): Promise<{ relativePath: string; hash: string; diff?: NoteDiff } | null> => {
+    async (analysis): Promise<{ relativePath: string; hash: string; diff?: NoteDiff; depFingerprint: Record<string, string> } | null> => {
       const file = files.find((f) => f.path === analysis.filePath)!
       const currentHash = fileHashes.get(file.relativePath)!
 
       // Skip if the note is already up to date for this file. The aggregators
       // (index, search-index, graph metadata) are rebuilt from disk after the
       // loop, so cached files don't need to be carried in memory here.
+      //
+      // Transitive staleness: even when the file's own hash hasn't changed, a
+      // change in any of its direct deps can invalidate the inferred note
+      // (e.g., "Calls repository.findBySku" becomes wrong if findBySku was
+      // renamed). We check the per-file dep fingerprint and treat any mismatch
+      // as if the file itself had changed. Missing fingerprint (first run
+      // after this feature ships, or a brand-new file) is treated as "not
+      // stale" so we don't force a mass resync.
       if (!args.force && !args.forceFiles?.has(file.relativePath) && noteHashStore.get(file.relativePath) === currentHash) {
-        if (args.dryRun) {
-          dryRunEntries.push({ relativePath: file.relativePath, score: 0, useLlm: false, wouldSkip: true })
+        const depsRel = depsAsRelative(depGraph.get(analysis.filePath) ?? [])
+        const currentDepHashes = buildFingerprint(depsRel, fileHashes)
+        const stored = fingerprintStore.get(file.relativePath)
+        if (!areDepsStale(currentDepHashes, stored)) {
+          // Bootstrap migration: seed the fingerprint on first cache-hit after
+          // this feature ships, so subsequent runs can detect transitive changes.
+          if (!stored && !args.dryRun) fingerprintStore.set(file.relativePath, currentDepHashes)
+          if (args.dryRun) {
+            dryRunEntries.push({ relativePath: file.relativePath, score: 0, useLlm: false, wouldSkip: true })
+          }
+          return null
         }
-        return null
+        logger.debug(`Transitively stale: ${file.relativePath} — a direct dep changed`)
       }
 
       // Read existing note before overwriting (for diff mode)
@@ -283,9 +320,11 @@ export async function runGenerate(args: {
         logger.debug(`${file.relativePath}: score=${note.criticalityScore.toFixed(2)}, deps=${graph.directDependencies.length}, consumers=${graph.reverseDependencies.length}`)
       }
 
+      const depFingerprint = buildFingerprint(depsAsRelative(graph.directDependencies), fileHashes)
+
       if (args.dryRun) {
         dryRunEntries.push({ relativePath: file.relativePath, score: note.criticalityScore, useLlm: wouldUseLlm, wouldSkip: false })
-        return { relativePath: file.relativePath, hash: currentHash }
+        return { relativePath: file.relativePath, hash: currentHash, depFingerprint }
       }
 
       if (wouldUseLlm) {
@@ -325,7 +364,7 @@ export async function runGenerate(args: {
       await writeJsonNote(note, root, config.output)
       await writeMarkdownNote(note, root, config.output)
 
-      return { relativePath: file.relativePath, hash: currentHash, diff }
+      return { relativePath: file.relativePath, hash: currentHash, diff, depFingerprint }
     },
     concurrency,
   )
@@ -336,6 +375,7 @@ export async function runGenerate(args: {
     } else {
       if (!args.dryRun) {
         noteHashStore.set(result.relativePath, result.hash)
+        fingerprintStore.set(result.relativePath, result.depFingerprint)
       }
       if (result.diff) diffs.push(result.diff)
       written++
@@ -362,8 +402,9 @@ export async function runGenerate(args: {
     return
   }
 
-  // 9. Save note cache
+  // 9. Save note cache + transitive staleness fingerprints
   await saveCache(root, noteHashStore)
+  await saveFingerprints(root, fingerprintStore)
 
   // 10. Load every note from disk so the aggregators reflect the persisted
   //     state of the repo, not just the subset processed by this invocation.

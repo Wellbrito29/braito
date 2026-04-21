@@ -277,6 +277,73 @@ describe('generate --filter', () => {
     }
   })
 
+  it('transitive staleness: a consumer note is re-synthesized when its direct dep changes', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-trans-stale-'))
+    try {
+      fs.mkdirSync(path.join(tmp, 'src'))
+      fs.writeFileSync(path.join(tmp, 'src', 'dep.ts'), `export const value = 1`)
+      fs.writeFileSync(path.join(tmp, 'src', 'consumer.ts'), `import { value } from './dep'\nexport const doubled = value * 2`)
+
+      await runGenerate({ root: tmp })
+      const firstNote = JSON.parse(fs.readFileSync(path.join(tmp, '.ai-notes', 'src', 'consumer.ts.json'), 'utf-8'))
+      const firstGeneratedAt = firstNote.generatedAt
+
+      // Mutate the dep — consumer file itself unchanged
+      await new Promise((r) => setTimeout(r, 10))  // ensure generatedAt timestamp resolution
+      fs.writeFileSync(path.join(tmp, 'src', 'dep.ts'), `export const value = 2\nexport const extra = 99`)
+
+      await runGenerate({ root: tmp })
+      const secondNote = JSON.parse(fs.readFileSync(path.join(tmp, '.ai-notes', 'src', 'consumer.ts.json'), 'utf-8'))
+
+      // The consumer file's own hash hasn't changed, but because its dep did,
+      // the note should have been re-synthesized (new generatedAt timestamp).
+      expect(secondNote.generatedAt).not.toBe(firstGeneratedAt)
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
+  })
+
+  it('transitive staleness: consumer note is preserved when deps are unchanged', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-no-stale-'))
+    try {
+      fs.mkdirSync(path.join(tmp, 'src'))
+      fs.writeFileSync(path.join(tmp, 'src', 'dep.ts'), `export const value = 1`)
+      fs.writeFileSync(path.join(tmp, 'src', 'consumer.ts'), `import { value } from './dep'\nexport const doubled = value * 2`)
+
+      await runGenerate({ root: tmp })
+      const firstNote = JSON.parse(fs.readFileSync(path.join(tmp, '.ai-notes', 'src', 'consumer.ts.json'), 'utf-8'))
+
+      // No mutation — second run should hit the cache for every file
+      await runGenerate({ root: tmp })
+      const secondNote = JSON.parse(fs.readFileSync(path.join(tmp, '.ai-notes', 'src', 'consumer.ts.json'), 'utf-8'))
+
+      expect(secondNote.generatedAt).toBe(firstNote.generatedAt)
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
+  })
+
+  it('dep fingerprints persist across runs in cache/dep-fingerprints.json', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-fp-persist-'))
+    try {
+      fs.mkdirSync(path.join(tmp, 'src'))
+      fs.writeFileSync(path.join(tmp, 'src', 'a.ts'), `export const a = 1`)
+      fs.writeFileSync(path.join(tmp, 'src', 'b.ts'), `import { a } from './a'\nexport const b = a + 1`)
+
+      await runGenerate({ root: tmp })
+      const fpPath = path.join(tmp, 'cache', 'dep-fingerprints.json')
+      expect(fs.existsSync(fpPath)).toBe(true)
+      const fingerprints = JSON.parse(fs.readFileSync(fpPath, 'utf-8')) as Record<string, Record<string, string>>
+      // b.ts depends on a.ts; the fingerprint should record a.ts's hash
+      expect(fingerprints['src/b.ts']).toBeDefined()
+      expect(Object.keys(fingerprints['src/b.ts'])).toContain('src/a.ts')
+      // a.ts is a leaf — empty fingerprint, but still persisted
+      expect(fingerprints['src/a.ts']).toBeDefined()
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true })
+    }
+  })
+
   it('filter rerun preserves existing notes for unfiltered files in index', async () => {
     // Independent fixture: full run first, then filter rerun must keep both files in index.
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'braito-filter-keep-'))

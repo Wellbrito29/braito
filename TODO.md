@@ -38,8 +38,6 @@ Tracked next steps for braito. Move items to CHANGELOG.md when completed.
 
 ## Long-term
 
-- [ ] **rd-autonomous-agents integration** — implement the 8-step guide in `RD_AGENT_TODO.md`; wire braito MCP into Architect and Developer agents as pre-context injection
-
 - [x] **Python/Go language parity** — Python and Go analyzers now extract `exportDetails` with full signatures, docstrings, `__all__` filtering (Python), multiline imports (Python), and exported methods with receivers (Go)
 
 - [ ] **VS Code extension publish** — package and publish `vscode-extension/` to the VS Code Marketplace; add auto-generate on workspace open if `.ai-notes/` is missing

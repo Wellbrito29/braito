@@ -9,6 +9,7 @@ coverage/
 .claude/
 .codex
 .opencode/
+AGENTS.md
 example/
 docs-site/node_modules/
 docs-site/build/

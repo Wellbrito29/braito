@@ -4,6 +4,7 @@ import { OllamaProvider } from './ollama.ts'
 import { AnthropicProvider } from './anthropic.ts'
 import { OpenAIProvider } from './openai.ts'
 import { ClaudeCliProvider } from './claude-cli.ts'
+import { CodexCliProvider } from './codex.ts'
 
 export function createProvider(config: LLMConfig): LLMProvider {
   switch (config.provider) {
@@ -27,6 +28,9 @@ export function createProvider(config: LLMConfig): LLMProvider {
 
     case 'claude-cli':
       return new ClaudeCliProvider({ model: config.model })
+
+    case 'codex':
+      return new CodexCliProvider({ model: config.model })
 
     default:
       throw new Error(`Unknown LLM provider: ${(config as LLMConfig).provider}`)

@@ -5,7 +5,7 @@ export type DiscoveredFile = {
   size: number
 }
 
-export type LLMProviderName = 'ollama' | 'anthropic' | 'openai' | 'claude-cli'
+export type LLMProviderName = 'ollama' | 'anthropic' | 'openai' | 'claude-cli' | 'codex'
 
 export type LLMConfig = {
   provider: LLMProviderName

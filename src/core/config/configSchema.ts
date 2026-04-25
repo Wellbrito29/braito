@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 export const llmConfigSchema = z.object({
-  provider: z.enum(['ollama', 'anthropic', 'openai', 'claude-cli'], {
+  provider: z.enum(['ollama', 'anthropic', 'openai', 'claude-cli', 'codex'], {
     errorMap: () => ({
-      message: "llm.provider must be 'ollama', 'anthropic', 'openai', or 'claude-cli'",
+      message: "llm.provider must be 'ollama', 'anthropic', 'openai', 'claude-cli', or 'codex'",
     }),
   }),
   model: z.string().optional(),

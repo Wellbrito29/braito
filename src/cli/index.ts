@@ -25,6 +25,8 @@ const { values } = parseArgs({
     port:     { type: 'string' },
     'dry-run': { type: 'boolean' },
     'auto-generate': { type: 'boolean' },
+    'diff-base': { type: 'string' },
+    'new-source-quota': { type: 'string' },
     debug:    { type: 'boolean' },
     silent:   { type: 'boolean' },
     verbose:  { type: 'boolean', short: 'v' },
@@ -49,9 +51,21 @@ switch (command) {
     break
   }
 
-  case 'generate':
-    await runGenerate({ root: values.root, force: values.force, filter: values.filter, diff: values.diff, dryRun: values['dry-run'], language: values.language })
+  case 'generate': {
+    const quotaArg = values['new-source-quota']
+    const newSourceQuota = quotaArg ? parseInt(quotaArg, 10) : undefined
+    await runGenerate({
+      root: values.root,
+      force: values.force,
+      filter: values.filter,
+      diff: values.diff,
+      dryRun: values['dry-run'],
+      language: values.language,
+      diffBase: values['diff-base'],
+      newSourceQuota: Number.isFinite(newSourceQuota) ? newSourceQuota : undefined,
+    })
     break
+  }
 
   case 'watch':
     await runWatch({ root: values.root, language: values.language })

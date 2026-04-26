@@ -35,6 +35,9 @@ import { ProgressBar } from '../../core/utils/progress.ts'
 import type { AiFileNote } from '../../core/types/ai-note.ts'
 import type { NoteDiff } from '../../core/output/diffNotes.ts'
 import type { StaticFileAnalysis } from '../../core/types/file-analysis.ts'
+import { getDiffFiles, type DiffFiles } from '../../core/git/getDiffFiles.ts'
+import { applyDiffBoost } from '../../core/scoring/applyDiffBoost.ts'
+import { pickQuotaForcedFiles, DEFAULT_NEW_SOURCE_QUOTA } from '../../core/scoring/quotaSynthesis.ts'
 
 const DEFAULT_LLM_THRESHOLD = 0.4
 
@@ -47,6 +50,11 @@ export async function runGenerate(args: {
   language?: string
   verbose?: boolean
   forceFiles?: Set<string>
+  /** Git ref to diff against (e.g. "origin/main"). Enables diff-aware
+   *  synthesis budget: added files get boost + skip-category pruning + quota. */
+  diffBase?: string
+  /** Override quota for forced new-source files. Default 8. */
+  newSourceQuota?: number
 }): Promise<void> {
   const root = path.resolve(args.root ?? process.cwd())
   const config = await loadConfig(root)
@@ -156,6 +164,20 @@ export async function runGenerate(args: {
     logger.info(`Filter '${args.filter}' → ${filteredAnalyses.length} / ${analyses.length} files`)
   }
 
+  // 7b. Load diff state when --diff-base is provided. The diff drives:
+  //     - boost added files into the LLM threshold (via applyDiffBoost)
+  //     - prune test/config/type-only/generated files regardless of score
+  //     - reserve a quota of slots for newly-added source files so even low-
+  //       criticality additions get an .ai-note (the whole point of post-snapshot)
+  let diffFiles: DiffFiles | null = null
+  if (args.diffBase) {
+    diffFiles = getDiffFiles(args.diffBase, root)
+    logger.info(
+      `Diff vs ${args.diffBase}: ` +
+      `${diffFiles.added.size} added, ${diffFiles.modified.size} modified, ${diffFiles.deleted.size} deleted`,
+    )
+  }
+
   // 7. Setup LLM provider (if configured)
   //    When `highModel` is set, we also instantiate a premium provider — files whose
   //    criticality score is >= `highThreshold` are routed to it, the rest use the
@@ -209,6 +231,25 @@ export async function runGenerate(args: {
       if (r) out.push(r)
     }
     return out
+  }
+
+  // 7c. Pre-compute the quota forced-set. We need baseScore per file to rank
+  //      eligible candidates, but at this point we haven't built notes yet.
+  //      A cheap proxy: use #consumers in revGraph as a static proxy for
+  //      criticality. Files added by this PR have ~0 consumers anyway, so
+  //      ranking is mostly broken-ties-by-zero. Good enough for "force
+  //      coverage of new code"; the real boost still happens per-file below.
+  const quotaCandidates = filteredAnalyses.map((a) => ({
+    relativePath: path.relative(root, a.filePath),
+    baseScore: (revGraph.get(a.filePath) ?? []).length,
+  }))
+  const quotaForcedSet = pickQuotaForcedFiles(
+    quotaCandidates,
+    diffFiles,
+    args.newSourceQuota ?? DEFAULT_NEW_SOURCE_QUOTA,
+  )
+  if (diffFiles && quotaForcedSet.size > 0) {
+    logger.info(`Quota forces ${quotaForcedSet.size} new source file(s) into LLM synth`)
   }
 
   // Use concurrency cap from config when LLM is active; fall back to 1 (sequential) otherwise
@@ -298,7 +339,17 @@ export async function runGenerate(args: {
 
       const fileDivergences = divergenceMap.get(file.relativePath) ?? []
       let note = buildBasicNote(analysis, graph, tests, gitSignals, cycleFiles, governanceContext, fileDivergences, root, language)
-      const wouldUseLlm = !!(provider && note.criticalityScore >= llmThreshold)
+
+      // Diff-aware budget: applies skip-category prune + diff-edit boost +
+      // type-category boost. When `diffFiles` is null (no --diff-base), the
+      // boost is 0 across the board and behaviour matches the legacy threshold.
+      const boostResult = applyDiffBoost(file.relativePath, note.criticalityScore, diffFiles)
+      const quotaForce = quotaForcedSet.has(file.relativePath)
+      const wouldUseLlm = !!(
+        provider &&
+        !boostResult.skipped &&
+        (boostResult.finalScore >= llmThreshold || quotaForce)
+      )
 
       if (args.verbose) {
         const s = note.debugSignals
